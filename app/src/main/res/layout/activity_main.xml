@@ -2,7 +2,8 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
              xmlns:app="http://schemas.android.com/apk/res-auto"
              android:layout_width="match_parent"
-             android:layout_height="match_parent">
+             android:layout_height="match_parent"
+             android:background="@color/background_color">
 
     <!-- List View -->
     <LinearLayout
@@ -10,33 +11,42 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="20dp">
 
         <TextView
                 android:id="@+id/tv_song_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/no_song_selected"
-                android:textSize="18sp"
-                android:paddingBottom="16dp" />
+                android:textSize="20sp"
+                android:textColor="@color/primary_text"
+                android:paddingBottom="20dp" />
 
         <Button
                 android:id="@+id/btn_select"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/select_mp3" />
+                android:text="@string/select_mp3"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/primary_color"
+                android:layout_marginBottom="12dp" />
 
         <Button
                 android:id="@+id/btn_play"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/play" />
+                android:text="@string/play"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/accent_color"
+                android:layout_marginBottom="20dp" />
 
         <ListView
                 android:id="@+id/list_view"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:divider="@color/list_divider"
+                android:dividerHeight="1dp" />
 
     </LinearLayout>
 
@@ -46,28 +56,30 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone"
-            android:padding="16dp">
+            android:padding="20dp"
+            android:background="@color/background_color">
 
         <ImageView
                 android:id="@+id/iv_album_art"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:scaleType="centerCrop"
-                android:layout_marginTop="25dp"
+                android:layout_marginTop="30dp"
                 app:layout_constraintDimensionRatio="1:1"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintWidth_percent="0.8"
+                app:layout_constraintWidth_percent="0.85"
                 android:contentDescription="@string/my_image_description"/>
 
         <TextView
                 android:id="@+id/tv_player_song_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="50dp"
-                android:textSize="18sp"
+                android:layout_marginTop="40dp"
+                android:textSize="20sp"
                 android:textStyle="bold"
+                android:textColor="@color/primary_text"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/iv_album_art" />
@@ -78,6 +90,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:textSize="16sp"
+                android:textColor="@color/secondary_text"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tv_player_song_title" />
@@ -86,7 +99,9 @@
                 android:id="@+id/seek_bar"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="150dp"
+                android:layout_marginTop="40dp"
+                android:progressTint="@color/primary_color"
+                android:thumbTint="@color/primary_color"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tv_artist_name" />
@@ -96,6 +111,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:textColor="@color/secondary_text"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/seek_bar" />
 
@@ -104,6 +120,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:textColor="@color/secondary_text"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/seek_bar" />
 
@@ -111,7 +128,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:layout_marginBottom="25dp"
+                android:layout_marginBottom="30dp"
                 android:orientation="horizontal"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -119,28 +136,28 @@
 
             <ImageButton
                     android:id="@+id/btn_previous"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_previous"
-                    android:contentDescription="@string/my_image_description"/>
+                    android:contentDescription="@string/my_image_description" app:tint="@color/primary_color"/>
 
             <ImageButton
                     android:id="@+id/btn_play_pause"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    android:layout_marginHorizontal="16dp"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:layout_marginHorizontal="24dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_play"
-                    android:contentDescription="@string/my_image_description"/>
+                    android:contentDescription="@string/my_image_description" app:tint="@color/primary_color"/>
 
             <ImageButton
                     android:id="@+id/btn_next"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_next"
-                    android:contentDescription="@string/my_image_description"/>
+                    android:contentDescription="@string/my_image_description" app:tint="@color/primary_color"/>
 
         </LinearLayout>
 
