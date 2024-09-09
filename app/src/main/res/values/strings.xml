@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">AudioFlow</string>
+    <string name="select_mp3">Select MP3</string>
+    <string name="no_song_selected">No song selected</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="song_name">Patchwork</string>
+   <string name="my_image_description">Imaged</string>
+</resources>
