@@ -424,6 +424,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onBackPressed() {
+        if (playerScreen.visibility == View.VISIBLE) {
+            showListView()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     private fun getFileName(uri: Uri): String {
         val cursor = contentResolver.query(uri, null, null, null, null)
         return cursor?.use {
