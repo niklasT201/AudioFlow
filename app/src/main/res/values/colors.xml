@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="background_color">#000000</color>
+    <color name="player_color">#262626</color>
     <color name="primary_color">#00D4FF</color>
     <color name="primary_dark_color">#00A3CC</color>
     <color name="accent_color">#00D4FF</color>

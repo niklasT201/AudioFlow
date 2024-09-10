@@ -19,6 +19,7 @@ import java.io.File
 import java.util.*
 import android.media.MediaMetadataRetriever
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.core.content.FileProvider
 
@@ -43,6 +44,9 @@ class MainActivity : AppCompatActivity() {
     private var currentSongs: List<SongItem> = emptyList()
     private lateinit var playerScreen: View
     private lateinit var listScreen: View
+    private lateinit var miniPlayer: View
+    private lateinit var miniPlayerTitle: TextView
+    private lateinit var miniPlayerPlayPause: ImageButton
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 1
@@ -81,6 +85,9 @@ class MainActivity : AppCompatActivity() {
         listScreen = findViewById(R.id.list_view_container)
         playerSongTitleTextView = findViewById(R.id.tv_player_song_title)
 
+        miniPlayer = findViewById(R.id.mini_player)
+        miniPlayerTitle = findViewById(R.id.mini_player_title)
+        miniPlayerPlayPause = findViewById(R.id.mini_player_play_pause)
     }
 
     private fun setupListeners() {
@@ -89,6 +96,8 @@ class MainActivity : AppCompatActivity() {
         playPauseButton.setOnClickListener { togglePlayPause() }
         previousButton.setOnClickListener { playPreviousSong() }
         nextButton.setOnClickListener { playNextSong() }
+        miniPlayerPlayPause.setOnClickListener { togglePlayPause() }
+        miniPlayer.setOnClickListener { showPlayerView() }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
@@ -141,17 +150,27 @@ class MainActivity : AppCompatActivity() {
 
         val folderItems = musicFolders.map { folder ->
             val songCount = getSongsInFolder(folder).size
-            FolderItem(folder, "${folder.name} ($songCount songs)")
+            FolderItem(folder, folder.name, "$songCount songs")
         }
 
-        val adapter = ArrayAdapter(this, R.layout.list_item, R.id.list_item_text, folderItems.map { it.displayName })
+        val adapter = object : ArrayAdapter<FolderItem>(this, R.layout.list_item, folderItems) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = convertView ?: layoutInflater.inflate(R.layout.list_item, parent, false)
+                val folder = getItem(position)
+                view.findViewById<TextView>(R.id.list_item_title).text = folder?.name
+                view.findViewById<TextView>(R.id.list_item_artist).text = folder?.songCount
+                return view
+            }
+        }
+
         listView.adapter = adapter
         listView.setOnItemClickListener { _, _, position, _ ->
             loadSongsInFolder(folderItems[position].folder)
         }
     }
 
-    data class FolderItem(val folder: File, val displayName: String)
+    data class FolderItem(val folder: File, val name: String, val songCount: String)
+
 
     private fun loadSongsInFolder(folder: File) {
         currentFolder = folder
@@ -161,7 +180,15 @@ class MainActivity : AppCompatActivity() {
             listView.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("No songs found in this folder"))
             return
         }
-        val adapter = ArrayAdapter(this, R.layout.list_item, R.id.list_item_text, currentSongs.map { it.title })
+        val adapter = object : ArrayAdapter<SongItem>(this, R.layout.list_item, currentSongs) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = convertView ?: layoutInflater.inflate(R.layout.list_item, parent, false)
+                val song = getItem(position)
+                view.findViewById<TextView>(R.id.list_item_title).text = song?.title
+                view.findViewById<TextView>(R.id.list_item_artist).text = song?.artist
+                return view
+            }
+        }
         listView.adapter = adapter
         listView.setOnItemClickListener { _, _, position, _ ->
             playSong(position)
@@ -170,6 +197,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     data class SongItem(val file: File, val title: String, val artist: String)
+
+    private fun updateMiniPlayer(song: SongItem) {
+        miniPlayerTitle.text = "${song.title} - ${song.artist}"
+        miniPlayer.visibility = View.VISIBLE
+    }
 
     private fun showPlayerView() {
         findViewById<View>(R.id.list_view_container).visibility = View.GONE
@@ -298,6 +330,7 @@ class MainActivity : AppCompatActivity() {
             playButton.text = getString(R.string.pause)
             updatePlayerUI(song)
             showPlayerView()  // Show the player view and hide ActionBar
+            updateMiniPlayer(song)
 
             songTitleTextView.text = song.title
 

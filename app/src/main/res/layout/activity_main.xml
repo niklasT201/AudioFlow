@@ -48,7 +48,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingTop="20dp">  <!-- Removed paddingBottom -->
 
         <ListView
                 android:id="@+id/list_view"
@@ -57,6 +57,8 @@
                 android:layout_weight="1"
                 android:divider="@color/list_divider"
                 android:dividerHeight="1dp" />
+
+        <include layout="@layout/mini_player" />
     </LinearLayout>
 
     <!-- Player View -->
@@ -86,6 +88,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="40dp"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
                 android:scrollbars="none"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -112,6 +116,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
                 android:scrollbars="none"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -121,7 +127,7 @@
                     android:id="@+id/tv_artist_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textColor="@color/secondary_text"
                     android:singleLine="true"
                     android:ellipsize="marquee"
@@ -138,8 +144,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="40dp"
-                android:progressTint="@color/primary_color"
-                android:thumbTint="@color/primary_color"
+                android:layout_marginStart="13dp"
+                android:layout_marginEnd="13dp"
+                android:progressTint="@color/primary_text"
+                android:thumbTint="@color/primary_text"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/hsv_artist_name" />
@@ -151,6 +159,7 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginStart="24dp"
                 android:textColor="@color/secondary_text"
+                android:textSize="11sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/seek_bar" />
 
@@ -161,6 +170,7 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="24dp"
                 android:textColor="@color/secondary_text"
+                android:textSize="11sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/seek_bar" />
 
@@ -181,7 +191,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_previous"
                     android:contentDescription="@string/my_image_description"
-                    app:tint="@color/primary_color"/>
+                    />
 
             <ImageButton
                     android:id="@+id/btn_play_pause"
@@ -191,7 +201,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_play"
                     android:contentDescription="@string/my_image_description"
-                    app:tint="@color/primary_color"/>
+                    />
 
             <ImageButton
                     android:id="@+id/btn_next"
@@ -200,7 +210,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_next"
                     android:contentDescription="@string/my_image_description"
-                    app:tint="@color/primary_color"/>
+                    />
 
         </LinearLayout>
 

@@ -31,7 +31,7 @@
                 android:name=".MainActivity"
                 android:screenOrientation="portrait"
                 android:exported="true"
-                android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+                android:theme="@style/Theme.AudioFlow">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
