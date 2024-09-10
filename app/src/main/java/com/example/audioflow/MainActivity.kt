@@ -144,7 +144,7 @@ class MainActivity : AppCompatActivity() {
             FolderItem(folder, "${folder.name} ($songCount songs)")
         }
 
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, folderItems.map { it.displayName })
+        val adapter = ArrayAdapter(this, R.layout.list_item, R.id.list_item_text, folderItems.map { it.displayName })
         listView.adapter = adapter
         listView.setOnItemClickListener { _, _, position, _ ->
             loadSongsInFolder(folderItems[position].folder)
@@ -161,7 +161,7 @@ class MainActivity : AppCompatActivity() {
             listView.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("No songs found in this folder"))
             return
         }
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, currentSongs.map { it.title })
+        val adapter = ArrayAdapter(this, R.layout.list_item, R.id.list_item_text, currentSongs.map { it.title })
         listView.adapter = adapter
         listView.setOnItemClickListener { _, _, position, _ ->
             playSong(position)
@@ -174,12 +174,21 @@ class MainActivity : AppCompatActivity() {
     private fun showPlayerView() {
         findViewById<View>(R.id.list_view_container).visibility = View.GONE
         findViewById<View>(R.id.player_view_container).visibility = View.VISIBLE
+        findViewById<View>(R.id.single_song_selector).visibility = View.GONE
         supportActionBar?.hide()  // Hide the ActionBar
     }
 
     private fun showListView() {
         findViewById<View>(R.id.player_view_container).visibility = View.GONE
         findViewById<View>(R.id.list_view_container).visibility = View.VISIBLE
+        findViewById<View>(R.id.single_song_selector).visibility = View.GONE
+        supportActionBar?.show()  // Show the ActionBar
+    }
+
+    private fun showSelectSingle() {
+        findViewById<View>(R.id.player_view_container).visibility = View.GONE
+        findViewById<View>(R.id.list_view_container).visibility = View.GONE
+        findViewById<View>(R.id.single_song_selector).visibility = View.VISIBLE
         supportActionBar?.show()  // Show the ActionBar
     }
 
@@ -427,7 +436,9 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         if (playerScreen.visibility == View.VISIBLE) {
             showListView()
-        } else {
+        } else if (listScreen.visibility == View.VISIBLE) {
+            loadMusicFolders()
+        }else {
             super.onBackPressed()
         }
     }
