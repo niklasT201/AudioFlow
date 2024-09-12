@@ -8,21 +8,53 @@
               android:background="@color/player_color"
               android:visibility="gone">
 
-    <TextView
-            android:id="@+id/mini_player_title"
+    <ImageView
+            android:id="@+id/mini_player_cover"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="@string/my_image_description" />
+
+    <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textColor="@color/primary_text"
-            android:textSize="16sp"
-            android:ellipsize="end"
-            android:maxLines="1" />
+            android:orientation="vertical"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp">
+
+        <TextView
+                android:id="@+id/mini_player_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/primary_text"
+                android:textSize="16sp"
+                android:ellipsize="end"
+                android:maxLines="1" />
+
+        <TextView
+                android:id="@+id/mini_player_artist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/secondary_text"
+                android:textSize="14sp"
+                android:ellipsize="end"
+                android:maxLines="1" />
+    </LinearLayout>
 
     <ImageButton
             android:id="@+id/mini_player_play_pause"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:src="@android:drawable/ic_media_pause"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/play" />
+            android:contentDescription="@string/my_image_description" />
+
+    <ImageButton
+            android:id="@+id/mini_player_next"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@android:drawable/ic_media_next"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/my_image_description" />
 </LinearLayout>

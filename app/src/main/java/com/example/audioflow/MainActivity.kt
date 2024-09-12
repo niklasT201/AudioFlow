@@ -8,6 +8,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.provider.MediaStore
@@ -47,6 +48,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var miniPlayer: View
     private lateinit var miniPlayerTitle: TextView
     private lateinit var miniPlayerPlayPause: ImageButton
+    private lateinit var miniPlayerCover: ImageView
+    private lateinit var miniPlayerArtist: TextView
+    private lateinit var miniPlayerNext: ImageButton
+
+    private var lastPlayedSong: SongItem? = null
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 1
@@ -63,6 +69,7 @@ class MainActivity : AppCompatActivity() {
 
         if (checkPermission()) {
             loadMusicFolders()
+            restoreLastPlayedSong()
         } else {
             requestPermission()
         }
@@ -88,6 +95,9 @@ class MainActivity : AppCompatActivity() {
         miniPlayer = findViewById(R.id.mini_player)
         miniPlayerTitle = findViewById(R.id.mini_player_title)
         miniPlayerPlayPause = findViewById(R.id.mini_player_play_pause)
+        miniPlayerCover = findViewById(R.id.mini_player_cover)
+        miniPlayerArtist = findViewById(R.id.mini_player_artist)
+        miniPlayerNext = findViewById(R.id.mini_player_next)
     }
 
     private fun setupListeners() {
@@ -98,6 +108,7 @@ class MainActivity : AppCompatActivity() {
         nextButton.setOnClickListener { playNextSong() }
         miniPlayerPlayPause.setOnClickListener { togglePlayPause() }
         miniPlayer.setOnClickListener { showPlayerView() }
+        miniPlayerNext.setOnClickListener { playNextSong() }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
@@ -199,8 +210,64 @@ class MainActivity : AppCompatActivity() {
     data class SongItem(val file: File, val title: String, val artist: String)
 
     private fun updateMiniPlayer(song: SongItem) {
-        miniPlayerTitle.text = "${song.title} - ${song.artist}"
+        miniPlayerTitle.text = song.title
+        miniPlayerArtist.text = song.artist
         miniPlayer.visibility = View.VISIBLE
+
+        // Update album art
+        val albumArt = getAlbumArt(song.file.absolutePath)
+        if (albumArt != null) {
+            miniPlayerCover.setImageBitmap(albumArt)
+        } else {
+            miniPlayerCover.setImageResource(R.drawable.cover_art)
+        }
+
+        // Update play/pause button state
+        val playPauseResource = if (mediaPlayer?.isPlaying == true)
+            android.R.drawable.ic_media_pause
+        else
+            android.R.drawable.ic_media_play
+        miniPlayerPlayPause.setImageResource(playPauseResource)
+
+        // Save the last played song
+        lastPlayedSong = song
+        saveLastPlayedSong(song)
+    }
+
+    private fun saveLastPlayedSong(song: SongItem) {
+        val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
+        with(sharedPreferences.edit()) {
+            putString("lastPlayedTitle", song.title)
+            putString("lastPlayedArtist", song.artist)
+            putString("lastPlayedPath", song.file.absolutePath)
+            apply()
+        }
+    }
+
+    private fun restoreLastPlayedSong() {
+        val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
+        val lastPlayedTitle = sharedPreferences.getString("lastPlayedTitle", null)
+        val lastPlayedArtist = sharedPreferences.getString("lastPlayedArtist", null)
+        val lastPlayedPath = sharedPreferences.getString("lastPlayedPath", null)
+
+        if (lastPlayedTitle != null && lastPlayedArtist != null && lastPlayedPath != null) {
+            lastPlayedSong = SongItem(File(lastPlayedPath), lastPlayedTitle, lastPlayedArtist)
+            updateMiniPlayer(lastPlayedSong!!)
+
+            // Prepare the MediaPlayer with the last played song
+            try {
+                val uri = FileProvider.getUriForFile(
+                    this,
+                    "${packageName}.fileprovider",
+                    lastPlayedSong!!.file
+                )
+                mediaPlayer?.release()
+                mediaPlayer = MediaPlayer.create(this, uri)
+                // Don't start playing automatically, just prepare the MediaPlayer
+            } catch (e: Exception) {
+                Log.e("AudioFlow", "Error preparing last played song", e)
+            }
+        }
     }
 
     private fun showPlayerView() {
@@ -329,7 +396,6 @@ class MainActivity : AppCompatActivity() {
             mediaPlayer?.start()
             playButton.text = getString(R.string.pause)
             updatePlayerUI(song)
-            showPlayerView()  // Show the player view and hide ActionBar
             updateMiniPlayer(song)
 
             songTitleTextView.text = song.title
@@ -361,7 +427,7 @@ class MainActivity : AppCompatActivity() {
         if (albumArt != null) {
             albumArtImageView.setImageBitmap(albumArt)
         } else {
-            albumArtImageView.setImageResource(R.drawable.default_album_art) // Make sure to add a default album art drawable
+            albumArtImageView.setImageResource(R.drawable.cover_art)
         }
     }
 
@@ -400,9 +466,11 @@ class MainActivity : AppCompatActivity() {
             if (player.isPlaying) {
                 player.pause()
                 playPauseButton.setImageResource(android.R.drawable.ic_media_play)
+                miniPlayerPlayPause.setImageResource(android.R.drawable.ic_media_play)
             } else {
                 player.start()
                 playPauseButton.setImageResource(android.R.drawable.ic_media_pause)
+                miniPlayerPlayPause.setImageResource(android.R.drawable.ic_media_pause)
                 updateSeekBar()
             }
         }
@@ -488,5 +556,6 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         mediaPlayer?.release()
+        lastPlayedSong?.let { saveLastPlayedSong(it) }
     }
 }

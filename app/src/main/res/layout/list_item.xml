@@ -3,19 +3,19 @@
               android:layout_width="match_parent"
               android:layout_height="wrap_content"
               android:orientation="vertical"
-              android:padding="16dp">
+              android:padding="15dp">
 
     <TextView
             android:id="@+id/list_item_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/primary_text"
-            android:textSize="16sp" />
+            android:textSize="14sp" />
 
     <TextView
             android:id="@+id/list_item_artist"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/secondary_text"
-            android:textSize="14sp" />
+            android:textSize="12sp" />
 </LinearLayout>
