@@ -51,6 +51,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var miniPlayerCover: ImageView
     private lateinit var miniPlayerArtist: TextView
     private lateinit var miniPlayerNext: ImageButton
+    private lateinit var closePlayerButton: ImageButton
 
     private var lastPlayedSong: SongItem? = null
     private var currentFolderPath: String? = null
@@ -99,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         miniPlayerCover = findViewById(R.id.mini_player_cover)
         miniPlayerArtist = findViewById(R.id.mini_player_artist)
         miniPlayerNext = findViewById(R.id.mini_player_next)
+        closePlayerButton = findViewById(R.id.btn_close_player)
     }
 
     private fun setupListeners() {
@@ -110,6 +112,7 @@ class MainActivity : AppCompatActivity() {
         miniPlayerPlayPause.setOnClickListener { togglePlayPause() }
         miniPlayer.setOnClickListener { showPlayerView() }
         miniPlayerNext.setOnClickListener { playNextSong() }
+        closePlayerButton.setOnClickListener { showListView() }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
@@ -165,12 +168,12 @@ class MainActivity : AppCompatActivity() {
             FolderItem(folder, folder.name, "$songCount songs")
         }
 
-        val adapter = object : ArrayAdapter<FolderItem>(this, R.layout.list_item, folderItems) {
+        val adapter = object : ArrayAdapter<FolderItem>(this, R.layout.folder_list_item, folderItems) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = convertView ?: layoutInflater.inflate(R.layout.list_item, parent, false)
+                val view = convertView ?: layoutInflater.inflate(R.layout.folder_list_item, parent, false)
                 val folder = getItem(position)
-                view.findViewById<TextView>(R.id.list_item_title).text = folder?.name
-                view.findViewById<TextView>(R.id.list_item_artist).text = folder?.songCount
+                view.findViewById<TextView>(R.id.folder_item_title).text = folder?.name
+                view.findViewById<TextView>(R.id.folder_item_count).text = folder?.songCount
                 return view
             }
         }
@@ -580,7 +583,6 @@ class MainActivity : AppCompatActivity() {
 // Songs Options
 // Player Design Options
 // Maybe change icons player screen
-// Add folder icon
 // Add Playlist Create
 // Add Play Song next button
 // Time around play/plause button
@@ -589,7 +591,6 @@ class MainActivity : AppCompatActivity() {
 //Marging off cover mini player and folder list items
 // Play Button to Playlist top
 //Showing Folder Name at top
-// Rounded Cover
 // Close button at top
 // Search Function for Album, Artists, Songs
 // Home Screen, And Settings Screen
