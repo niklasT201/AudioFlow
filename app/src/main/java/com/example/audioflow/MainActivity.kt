@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var miniPlayerNext: ImageButton
 
     private var lastPlayedSong: SongItem? = null
+    private var currentFolderPath: String? = null
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 1
@@ -185,6 +186,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadSongsInFolder(folder: File) {
         currentFolder = folder
+        currentFolderPath = folder.absolutePath
         currentSongs = getSongsInFolder(folder)
         Log.d("AudioFlow", "Found ${currentSongs.size} songs in folder ${folder.name}")
         if (currentSongs.isEmpty()) {
@@ -240,6 +242,8 @@ class MainActivity : AppCompatActivity() {
             putString("lastPlayedTitle", song.title)
             putString("lastPlayedArtist", song.artist)
             putString("lastPlayedPath", song.file.absolutePath)
+            putString("currentFolderPath", currentFolderPath)
+            putInt("currentSongIndex", currentSongIndex)
             apply()
         }
     }
@@ -249,9 +253,12 @@ class MainActivity : AppCompatActivity() {
         val lastPlayedTitle = sharedPreferences.getString("lastPlayedTitle", null)
         val lastPlayedArtist = sharedPreferences.getString("lastPlayedArtist", null)
         val lastPlayedPath = sharedPreferences.getString("lastPlayedPath", null)
+        currentFolderPath = sharedPreferences.getString("currentFolderPath", null)
+        currentSongIndex = sharedPreferences.getInt("currentSongIndex", -1)
 
-        if (lastPlayedTitle != null && lastPlayedArtist != null && lastPlayedPath != null) {
+        if (lastPlayedTitle != null && lastPlayedArtist != null && lastPlayedPath != null && currentFolderPath != null) {
             lastPlayedSong = SongItem(File(lastPlayedPath), lastPlayedTitle, lastPlayedArtist)
+            loadSongsInFolder(File(currentFolderPath!!))
             updateMiniPlayer(lastPlayedSong!!)
 
             // Prepare the MediaPlayer with the last played song
@@ -263,7 +270,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 mediaPlayer?.release()
                 mediaPlayer = MediaPlayer.create(this, uri)
-                // Don't start playing automatically, just prepare the MediaPlayer
+                updatePlayerUI(lastPlayedSong!!)
             } catch (e: Exception) {
                 Log.e("AudioFlow", "Error preparing last played song", e)
             }
@@ -492,11 +499,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playNextSong() {
-        if (currentSongIndex < currentSongs.size - 1) {
-            playSong(currentSongIndex + 1)
+        if (currentSongs.isEmpty()) {
+            // If there are no songs loaded, try to reload the current folder
+            currentFolderPath?.let { path ->
+                loadSongsInFolder(File(path))
+            }
+        }
+
+        if (currentSongs.isNotEmpty()) {
+            val nextIndex = (currentSongIndex + 1) % currentSongs.size
+            playSong(nextIndex)
         } else {
-            // Optional: loop back to the first song
-            playSong(0)
+            Log.e("AudioFlow", "No songs available to play")
+            Toast.makeText(this, "No songs available to play", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -559,3 +574,22 @@ class MainActivity : AppCompatActivity() {
         lastPlayedSong?.let { saveLastPlayedSong(it) }
     }
 }
+
+// Getting Noti Player
+// Adding Repeat, Reapeat Once, Repeat choose
+// Songs Options
+// Player Design Options
+// Maybe change icons player screen
+// Add folder icon
+// Add Playlist Create
+// Add Play Song next button
+// Time around play/plause button
+// Sorting System changing numbers to last place
+// Darker Mini Player
+//Marging off cover mini player and folder list items
+// Play Button to Playlist top
+//Showing Folder Name at top
+// Rounded Cover
+// Close button at top
+// Search Function for Album, Artists, Songs
+// Home Screen, And Settings Screen
