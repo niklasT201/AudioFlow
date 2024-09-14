@@ -8,8 +8,8 @@
 
     <ImageView
             android:id="@+id/folder_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:src="@drawable/folder"
             android:contentDescription="@string/my_image_description"
             app:tint="@color/primary_text"/>

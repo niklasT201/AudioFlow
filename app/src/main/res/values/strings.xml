@@ -6,4 +6,5 @@
     <string name="pause">Pause</string>
     <string name="song_name">Patchwork</string>
    <string name="my_image_description">Imaged</string>
+    <string name="play_all">Play All</string>
 </resources>

@@ -52,6 +52,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var miniPlayerArtist: TextView
     private lateinit var miniPlayerNext: ImageButton
     private lateinit var closePlayerButton: ImageButton
+    private lateinit var backbtn: ImageButton
+    private lateinit var foldername: TextView
 
     private var lastPlayedSong: SongItem? = null
     private var currentFolderPath: String? = null
@@ -101,6 +103,8 @@ class MainActivity : AppCompatActivity() {
         miniPlayerArtist = findViewById(R.id.mini_player_artist)
         miniPlayerNext = findViewById(R.id.mini_player_next)
         closePlayerButton = findViewById(R.id.btn_close_player)
+        backbtn = findViewById(R.id.back_btn)
+        foldername = findViewById(R.id.tv_folder_name)
     }
 
     private fun setupListeners() {
@@ -113,6 +117,7 @@ class MainActivity : AppCompatActivity() {
         miniPlayer.setOnClickListener { showPlayerView() }
         miniPlayerNext.setOnClickListener { playNextSong() }
         closePlayerButton.setOnClickListener { showListView() }
+        backbtn.setOnClickListener { loadMusicFolders() }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
@@ -163,6 +168,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        findViewById<View>(R.id.folder_name_header).visibility = View.GONE
+
         val folderItems = musicFolders.map { folder ->
             val songCount = getSongsInFolder(folder).size
             FolderItem(folder, folder.name, "$songCount songs")
@@ -191,6 +198,10 @@ class MainActivity : AppCompatActivity() {
         currentFolder = folder
         currentFolderPath = folder.absolutePath
         currentSongs = getSongsInFolder(folder)
+
+        findViewById<View>(R.id.folder_name_header).visibility = View.VISIBLE
+        foldername.text = folder.name
+
         Log.d("AudioFlow", "Found ${currentSongs.size} songs in folder ${folder.name}")
         if (currentSongs.isEmpty()) {
             listView.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("No songs found in this folder"))
@@ -291,6 +302,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.player_view_container).visibility = View.GONE
         findViewById<View>(R.id.list_view_container).visibility = View.VISIBLE
         findViewById<View>(R.id.single_song_selector).visibility = View.GONE
+        findViewById<View>(R.id.folder_name_header).visibility = View.VISIBLE
         supportActionBar?.show()  // Show the ActionBar
     }
 
@@ -557,6 +569,7 @@ class MainActivity : AppCompatActivity() {
             showListView()
         } else if (listScreen.visibility == View.VISIBLE) {
             loadMusicFolders()
+            findViewById<View>(R.id.folder_name_header).visibility = View.GONE
         }else {
             super.onBackPressed()
         }
@@ -587,10 +600,8 @@ class MainActivity : AppCompatActivity() {
 // Add Play Song next button
 // Time around play/plause button
 // Sorting System changing numbers to last place
-// Darker Mini Player
-//Marging off cover mini player and folder list items
+// Marging off cover mini player and folder list items
 // Play Button to Playlist top
-//Showing Folder Name at top
-// Close button at top
+// Showing Folder Name at top
 // Search Function for Album, Artists, Songs
 // Home Screen, And Settings Screen

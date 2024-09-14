@@ -50,6 +50,13 @@
             android:orientation="vertical"
             android:paddingTop="20dp">
 
+        <include
+                android:id="@+id/folder_name_header"
+                layout="@layout/folder_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
         <ListView
                 android:id="@+id/list_view"
                 android:layout_width="match_parent"

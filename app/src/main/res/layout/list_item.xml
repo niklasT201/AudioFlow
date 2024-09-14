@@ -7,6 +7,31 @@
               android:paddingStart="18dp"
               android:paddingEnd="16dp">
 
+
+        <LinearLayout
+                android:id="@+id/folder_play_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@color/background_color">
+
+            <Button
+                    android:id="@+id/btn_play_all"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/play_all"
+                    android:textColor="@color/primary_text"
+                    android:backgroundTint="@color/background_color"/>
+
+            <TextView
+                    android:id="@+id/tv_song_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:textSize="14sp"
+                    android:textColor="@color/primary_text" />
+        </LinearLayout>
+
     <TextView
             android:id="@+id/list_item_title"
             android:layout_width="match_parent"
