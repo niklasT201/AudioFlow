@@ -54,6 +54,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var closePlayerButton: ImageButton
     private lateinit var backbtn: ImageButton
     private lateinit var foldername: TextView
+    private lateinit var contentFrame: FrameLayout
+    private lateinit var footer: View
+    private lateinit var btnHome: Button
+    private lateinit var btnSettings: Button
 
     private var lastPlayedSong: SongItem? = null
     private var currentFolderPath: String? = null
@@ -77,6 +81,8 @@ class MainActivity : AppCompatActivity() {
         } else {
             requestPermission()
         }
+
+        setupFooter()
     }
 
     private fun initializeViews() {
@@ -105,6 +111,11 @@ class MainActivity : AppCompatActivity() {
         closePlayerButton = findViewById(R.id.btn_close_player)
         backbtn = findViewById(R.id.back_btn)
         foldername = findViewById(R.id.tv_folder_name)
+
+        contentFrame = findViewById(R.id.content_frame)
+        footer = findViewById(R.id.footer)
+        btnHome = findViewById(R.id.btn_home)
+        btnSettings = findViewById(R.id.btn_settings)
     }
 
     private fun setupListeners() {
@@ -159,6 +170,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupFooter() {
+        btnHome.setOnClickListener {
+            showHomeView()
+        }
+
+        btnSettings.setOnClickListener {
+            showSettingsView()
+        }
+    }
+
+    private fun showHomeView() {
+        // Show the list of folders
+        contentFrame.removeAllViews()
+        contentFrame.addView(findViewById(R.id.list_view_container))
+        footer.visibility = View.VISIBLE
+    }
+
+    private fun showSettingsView() {
+        // Show the settings screen
+        contentFrame.removeAllViews()
+        val settingsView = layoutInflater.inflate(R.layout.settings_screen, contentFrame, false)
+        contentFrame.addView(settingsView)
+        footer.visibility = View.VISIBLE
+    }
+
     private fun loadMusicFolders() {
         val musicFolders = getMusicFolders()
         Log.d("AudioFlow", "Found ${musicFolders.size} music folders")
@@ -169,6 +205,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<View>(R.id.folder_name_header).visibility = View.GONE
+        findViewById<View>(R.id.footer).visibility = View.VISIBLE
+
+        listView.removeHeaderView(listView.findViewWithTag("header"))
 
         val folderItems = musicFolders.map { folder ->
             val songCount = getSongsInFolder(folder).size
@@ -200,6 +239,7 @@ class MainActivity : AppCompatActivity() {
         currentSongs = getSongsInFolder(folder)
 
         findViewById<View>(R.id.folder_name_header).visibility = View.VISIBLE
+        findViewById<View>(R.id.footer).visibility = View.GONE
         foldername.text = folder.name
 
         Log.d("AudioFlow", "Found ${currentSongs.size} songs in folder ${folder.name}")
@@ -207,6 +247,24 @@ class MainActivity : AppCompatActivity() {
             listView.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("No songs found in this folder"))
             return
         }
+
+        // Inflate and add the header view
+        val headerView = layoutInflater.inflate(R.layout.list_header, listView, false)
+        headerView.findViewById<TextView>(R.id.tv_song_count).text = "${currentSongs.size} songs"
+        headerView.findViewById<Button>(R.id.btn_play_all).setOnClickListener {
+            if (currentSongs.isNotEmpty()) {
+                playSong(0)
+                showPlayerView()
+            }
+        }
+
+        // Remove any existing header views
+        listView.removeHeaderView(listView.findViewWithTag("header"))
+
+        // Add the new header view
+        headerView.tag = "header"
+        listView.addHeaderView(headerView)
+
         val adapter = object : ArrayAdapter<SongItem>(this, R.layout.list_item, currentSongs) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = convertView ?: layoutInflater.inflate(R.layout.list_item, parent, false)
@@ -295,6 +353,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.list_view_container).visibility = View.GONE
         findViewById<View>(R.id.player_view_container).visibility = View.VISIBLE
         findViewById<View>(R.id.single_song_selector).visibility = View.GONE
+        footer.visibility = View.GONE
         supportActionBar?.hide()  // Hide the ActionBar
     }
 
@@ -303,6 +362,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.list_view_container).visibility = View.VISIBLE
         findViewById<View>(R.id.single_song_selector).visibility = View.GONE
         findViewById<View>(R.id.folder_name_header).visibility = View.VISIBLE
+        footer.visibility = View.GONE
         supportActionBar?.show()  // Show the ActionBar
     }
 
@@ -565,15 +625,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (playerScreen.visibility == View.VISIBLE) {
-            showListView()
-        } else if (listScreen.visibility == View.VISIBLE) {
-            loadMusicFolders()
-            findViewById<View>(R.id.folder_name_header).visibility = View.GONE
-        }else {
-            super.onBackPressed()
+        when {
+            playerScreen.visibility == View.VISIBLE ->
+                {showListView()
+                    findViewById<View>(R.id.footer).visibility = View.GONE
+                }
+            listScreen.visibility == View.VISIBLE -> {
+                loadMusicFolders()
+                findViewById<View>(R.id.folder_name_header).visibility = View.GONE
+                findViewById<View>(R.id.footer).visibility = View.VISIBLE
+            }
+            contentFrame.getChildAt(0).id != R.id.list_view_container -> showHomeView()
+            else -> super.onBackPressed()
         }
     }
+
 
     private fun getFileName(uri: Uri): String {
         val cursor = contentResolver.query(uri, null, null, null, null)
@@ -591,17 +657,13 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-// Getting Noti Player
-// Adding Repeat, Reapeat Once, Repeat choose
+// Getting Not Player
+// Adding Repeat, Repeat Once, Repeat choose
 // Songs Options
 // Player Design Options
 // Maybe change icons player screen
 // Add Playlist Create
 // Add Play Song next button
-// Time around play/plause button
+// Time around play/pause button
 // Sorting System changing numbers to last place
-// Marging off cover mini player and folder list items
-// Play Button to Playlist top
-// Showing Folder Name at top
 // Search Function for Album, Artists, Songs
-// Home Screen, And Settings Screen

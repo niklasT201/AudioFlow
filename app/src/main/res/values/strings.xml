@@ -5,6 +5,8 @@
     <string name="play">Play</string>
     <string name="pause">Pause</string>
     <string name="song_name">Patchwork</string>
-   <string name="my_image_description">Imaged</string>
+    <string name="my_image_description">Imaged</string>
     <string name="play_all">Play All</string>
+    <string name="home">Home</string>
+    <string name="settings">Settings</string>
 </resources>
