@@ -48,31 +48,6 @@
                 android:layout_marginBottom="20dp" />
     </LinearLayout>
 
-    <!-- List View -->
-    <LinearLayout
-            android:id="@+id/list_view_container"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:paddingTop="20dp">
-
-        <include
-                android:id="@+id/folder_name_header"
-                layout="@layout/folder_header"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:visibility="gone" />
-
-        <ListView
-                android:id="@+id/list_view"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:divider="@color/list_divider"
-                android:dividerHeight="1dp" />
-
-        <include layout="@layout/mini_player" />
-    </LinearLayout>
 
     <!-- Player View -->
     <androidx.constraintlayout.widget.ConstraintLayout

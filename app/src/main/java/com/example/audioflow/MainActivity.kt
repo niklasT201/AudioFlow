@@ -26,32 +26,35 @@ import androidx.core.content.FileProvider
 
 class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
-    private lateinit var playPauseButton: ImageButton
-    private lateinit var previousButton: ImageButton
-    private lateinit var nextButton: ImageButton
+    private lateinit var playPauseButton: ImageButton //
+    private lateinit var previousButton: ImageButton //
+    private lateinit var nextButton: ImageButton //
     private lateinit var playButton: Button
     private lateinit var selectButton: Button
-    private lateinit var listView: ListView
     private lateinit var songTitleTextView: TextView
-    private lateinit var playerSongTitleTextView: TextView
-    private lateinit var artistNameTextView: TextView
-    private lateinit var albumArtImageView: ImageView
-    private lateinit var seekBar: SeekBar
-    private lateinit var currentTimeTextView: TextView
+    private lateinit var playerSongTitleTextView: TextView //
+    private lateinit var artistNameTextView: TextView //
+    private lateinit var closePlayerButton: ImageButton //
+    private lateinit var albumArtImageView: ImageView //
+    private lateinit var seekBar: SeekBar //
+    private lateinit var currentTimeTextView: TextView //
     private lateinit var totalTimeTextView: TextView
+
     private var selectedSongUri: Uri? = null
     private var currentFolder: File? = null
     private var currentSongIndex: Int = -1
     private var currentSongs: List<SongItem> = emptyList()
     private lateinit var playerScreen: View
-    private lateinit var listScreen: View
+    private lateinit var homeScreen: View
+    private lateinit var songsScreen: View
+    private lateinit var settingsScreen: View
+    private var folderItems: List<FolderItem> = emptyList()
     private lateinit var miniPlayer: View
     private lateinit var miniPlayerTitle: TextView
     private lateinit var miniPlayerPlayPause: ImageButton
     private lateinit var miniPlayerCover: ImageView
     private lateinit var miniPlayerArtist: TextView
     private lateinit var miniPlayerNext: ImageButton
-    private lateinit var closePlayerButton: ImageButton
     private lateinit var backbtn: ImageButton
     private lateinit var foldername: TextView
     private lateinit var contentFrame: FrameLayout
@@ -71,13 +74,23 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
+        // Initialize screens
         initializeViews()
-        setupListeners()
+
+        // Set up navigation
+        setupNavigation()
+
+        // Load music folders
+        loadMusicFolders()
+
+        setupSeekBar()
+
+        // Show home screen by default
+        showScreen(homeScreen)
 
         if (checkPermission()) {
             loadMusicFolders()
-            restoreLastPlayedSong()
+         //   restoreLastPlayedSong()
         } else {
             requestPermission()
         }
@@ -86,58 +99,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initializeViews() {
-        selectButton = findViewById(R.id.btn_select)
-        listView = findViewById(R.id.list_view)
-        songTitleTextView = findViewById(R.id.tv_song_title)
-        playButton = findViewById(R.id.btn_play)
+        contentFrame = findViewById(R.id.content_frame)
+        val footer = findViewById<View>(R.id.footer)
+        btnHome = footer.findViewById(R.id.btn_home)
+        btnSettings = footer.findViewById(R.id.btn_settings)
+
+        homeScreen = layoutInflater.inflate(R.layout.home_screen, contentFrame, false)
+        songsScreen = layoutInflater.inflate(R.layout.songs_screen, contentFrame, false)
+        settingsScreen = layoutInflater.inflate(R.layout.settings_screen, contentFrame, false)
+        playerScreen = findViewById(R.id.player_view_container)
+
+        playerSongTitleTextView = findViewById(R.id.tv_player_song_title)
         artistNameTextView = findViewById(R.id.tv_artist_name)
-        albumArtImageView = findViewById(R.id.iv_album_art)
-        seekBar = findViewById(R.id.seek_bar)
-        currentTimeTextView = findViewById(R.id.tv_current_time)
-        totalTimeTextView = findViewById(R.id.tv_total_time)
         playPauseButton = findViewById(R.id.btn_play_pause)
+        seekBar = findViewById(R.id.seek_bar)
+        albumArtImageView = findViewById(R.id.iv_album_art)
         previousButton = findViewById(R.id.btn_previous)
         nextButton = findViewById(R.id.btn_next)
-        playerScreen = findViewById(R.id.player_view_container)
-        listScreen = findViewById(R.id.list_view_container)
-        playerSongTitleTextView = findViewById(R.id.tv_player_song_title)
-
-        miniPlayer = findViewById(R.id.mini_player)
-        miniPlayerTitle = findViewById(R.id.mini_player_title)
-        miniPlayerPlayPause = findViewById(R.id.mini_player_play_pause)
-        miniPlayerCover = findViewById(R.id.mini_player_cover)
-        miniPlayerArtist = findViewById(R.id.mini_player_artist)
-        miniPlayerNext = findViewById(R.id.mini_player_next)
         closePlayerButton = findViewById(R.id.btn_close_player)
-        backbtn = findViewById(R.id.back_btn)
-        foldername = findViewById(R.id.tv_folder_name)
-
-        contentFrame = findViewById(R.id.content_frame)
-        footer = findViewById(R.id.footer)
-        btnHome = findViewById(R.id.btn_home)
-        btnSettings = findViewById(R.id.btn_settings)
-    }
-
-    private fun setupListeners() {
-        selectButton.setOnClickListener { openMusicSelector() }
-        playButton.setOnClickListener { playMusic() }
-        playPauseButton.setOnClickListener { togglePlayPause() }
-        previousButton.setOnClickListener { playPreviousSong() }
-        nextButton.setOnClickListener { playNextSong() }
-        miniPlayerPlayPause.setOnClickListener { togglePlayPause() }
-        miniPlayer.setOnClickListener { showPlayerView() }
-        miniPlayerNext.setOnClickListener { playNextSong() }
-        closePlayerButton.setOnClickListener { showListView() }
-        backbtn.setOnClickListener { loadMusicFolders() }
-        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    mediaPlayer?.seekTo(progress)
-                }
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
+        currentTimeTextView = findViewById(R.id.tv_current_time)
+        totalTimeTextView = findViewById(R.id.tv_total_time)
     }
 
     private fun checkPermission(): Boolean {
@@ -170,46 +151,90 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupNavigation() {
+        findViewById<Button>(R.id.btn_home).setOnClickListener { showScreen(homeScreen) }
+        findViewById<Button>(R.id.btn_settings).setOnClickListener { showScreen(settingsScreen) }
+
+        // Set up folder list click listener
+        homeScreen.findViewById<ListView>(R.id.folder_list_view).setOnItemClickListener { _, _, position, _ ->
+            loadSongsInFolder(folderItems[position].folder)
+            showScreen(songsScreen)
+        }
+
+        // Set up song list click listener
+        songsScreen.findViewById<ListView>(R.id.song_list_view).setOnItemClickListener { _, _, position, _ ->
+            playSong(position)
+            showScreen(playerScreen)
+        }
+
+        songsScreen.findViewById<ImageButton>(R.id.back_btn).setOnClickListener {
+            showScreen(homeScreen)
+        }
+
+        // Set up close player button
+        playerScreen.findViewById<ImageButton>(R.id.btn_close_player).setOnClickListener {
+            showScreen(songsScreen)
+        }
+
+        playerScreen.findViewById<ImageButton>(R.id.btn_next).setOnClickListener {
+            playNextSong()
+        }
+
+        playerScreen.findViewById<ImageButton>(R.id.btn_previous).setOnClickListener {
+            playPreviousSong()
+        }
+
+        playerScreen.findViewById<ImageButton>(R.id.btn_play_pause).setOnClickListener {
+            togglePlayPause()
+        }
+    }
+
+    private fun showScreen(screen: View) {
+        contentFrame.removeAllViews()
+        contentFrame.addView(screen)
+
+        // Update visibility of footer and header
+        findViewById<View>(R.id.footer)?.visibility = when (screen) {
+            homeScreen, settingsScreen -> View.VISIBLE
+            else -> View.GONE
+        }
+
+        songsScreen.findViewById<View>(R.id.folder_name_header)?.visibility = when (screen) {
+            songsScreen -> View.VISIBLE
+            else -> View.GONE
+        }
+
+        // Update mini player visibility
+        songsScreen.findViewById<View>(R.id.mini_player)?.visibility = when (screen) {
+            songsScreen -> if (lastPlayedSong != null) View.VISIBLE else View.GONE
+            else -> View.GONE
+        }
+    }
+
     private fun setupFooter() {
         btnHome.setOnClickListener {
-            showHomeView()
+            Log.d("AudioFlow", "Home button clicked")
+            try {
+                showScreen(homeScreen)
+            } catch (e: Exception) {
+                Log.e("AudioFlow", "Error showing home view", e)
+                Toast.makeText(this, "Error showing home view: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
 
         btnSettings.setOnClickListener {
-            showSettingsView()
+            Log.d("AudioFlow", "Settings button clicked")
+            try {
+                showScreen(settingsScreen)
+            } catch (e: Exception) {
+                Log.e("AudioFlow", "Error showing settings view", e)
+                Toast.makeText(this, "Error showing settings view: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
-    }
-
-    private fun showHomeView() {
-        // Show the list of folders
-        contentFrame.removeAllViews()
-        contentFrame.addView(findViewById(R.id.list_view_container))
-        footer.visibility = View.VISIBLE
-    }
-
-    private fun showSettingsView() {
-        // Show the settings screen
-        contentFrame.removeAllViews()
-        val settingsView = layoutInflater.inflate(R.layout.settings_screen, contentFrame, false)
-        contentFrame.addView(settingsView)
-        footer.visibility = View.VISIBLE
     }
 
     private fun loadMusicFolders() {
-        val musicFolders = getMusicFolders()
-        Log.d("AudioFlow", "Found ${musicFolders.size} music folders")
-        if (musicFolders.isEmpty()) {
-            Log.d("AudioFlow", "No music folders found")
-            listView.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("No music folders found"))
-            return
-        }
-
-        findViewById<View>(R.id.folder_name_header).visibility = View.GONE
-        findViewById<View>(R.id.footer).visibility = View.VISIBLE
-
-        listView.removeHeaderView(listView.findViewWithTag("header"))
-
-        val folderItems = musicFolders.map { folder ->
+        folderItems = getMusicFolders().map { folder ->
             val songCount = getSongsInFolder(folder).size
             FolderItem(folder, folder.name, "$songCount songs")
         }
@@ -224,46 +249,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        listView.adapter = adapter
-        listView.setOnItemClickListener { _, _, position, _ ->
-            loadSongsInFolder(folderItems[position].folder)
-        }
+        homeScreen.findViewById<ListView>(R.id.folder_list_view).adapter = adapter
     }
 
-    data class FolderItem(val folder: File, val name: String, val songCount: String)
-
-
     private fun loadSongsInFolder(folder: File) {
-        currentFolder = folder
-        currentFolderPath = folder.absolutePath
         currentSongs = getSongsInFolder(folder)
 
-        findViewById<View>(R.id.folder_name_header).visibility = View.VISIBLE
-        findViewById<View>(R.id.footer).visibility = View.GONE
-        foldername.text = folder.name
-
-        Log.d("AudioFlow", "Found ${currentSongs.size} songs in folder ${folder.name}")
-        if (currentSongs.isEmpty()) {
-            listView.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("No songs found in this folder"))
-            return
-        }
-
-        // Inflate and add the header view
-        val headerView = layoutInflater.inflate(R.layout.list_header, listView, false)
-        headerView.findViewById<TextView>(R.id.tv_song_count).text = "${currentSongs.size} songs"
-        headerView.findViewById<Button>(R.id.btn_play_all).setOnClickListener {
-            if (currentSongs.isNotEmpty()) {
-                playSong(0)
-                showPlayerView()
-            }
-        }
-
-        // Remove any existing header views
-        listView.removeHeaderView(listView.findViewWithTag("header"))
-
-        // Add the new header view
-        headerView.tag = "header"
-        listView.addHeaderView(headerView)
+        songsScreen.findViewById<TextView>(R.id.tv_folder_name).text = folder.name
 
         val adapter = object : ArrayAdapter<SongItem>(this, R.layout.list_item, currentSongs) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
@@ -274,34 +266,40 @@ class MainActivity : AppCompatActivity() {
                 return view
             }
         }
-        listView.adapter = adapter
-        listView.setOnItemClickListener { _, _, position, _ ->
-            playSong(position)
-            showPlayerView()
-        }
+        songsScreen.findViewById<ListView>(R.id.song_list_view).adapter = adapter
     }
 
-    data class SongItem(val file: File, val title: String, val artist: String)
 
     private fun updateMiniPlayer(song: SongItem) {
-        miniPlayerTitle.text = song.title
-        miniPlayerArtist.text = song.artist
+        val miniPlayer = songsScreen.findViewById<View>(R.id.mini_player)
+        miniPlayer.findViewById<TextView>(R.id.mini_player_title).text = song.title
+        miniPlayer.findViewById<TextView>(R.id.mini_player_artist).text = song.artist
         miniPlayer.visibility = View.VISIBLE
 
         // Update album art
         val albumArt = getAlbumArt(song.file.absolutePath)
         if (albumArt != null) {
-            miniPlayerCover.setImageBitmap(albumArt)
+            miniPlayer.findViewById<ImageView>(R.id.mini_player_cover).setImageBitmap(albumArt)
         } else {
-            miniPlayerCover.setImageResource(R.drawable.cover_art)
+            miniPlayer.findViewById<ImageView>(R.id.mini_player_cover).setImageResource(R.drawable.cover_art)
         }
 
         // Update play/pause button state
+        val miniPlayerPlayPause = miniPlayer.findViewById<ImageButton>(R.id.mini_player_play_pause)
         val playPauseResource = if (mediaPlayer?.isPlaying == true)
             android.R.drawable.ic_media_pause
         else
             android.R.drawable.ic_media_play
         miniPlayerPlayPause.setImageResource(playPauseResource)
+
+        // Set up click listeners for mini player controls
+        miniPlayerPlayPause.setOnClickListener { togglePlayPause() }
+        miniPlayer.findViewById<ImageButton>(R.id.mini_player_next).setOnClickListener { playNextSong() }
+        miniPlayer.setOnClickListener {
+            showScreen(playerScreen)
+            updateSeekBar()
+        }
+
 
         // Save the last played song
         lastPlayedSong = song
@@ -349,26 +347,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showPlayerView() {
-        findViewById<View>(R.id.list_view_container).visibility = View.GONE
-        findViewById<View>(R.id.player_view_container).visibility = View.VISIBLE
-        findViewById<View>(R.id.single_song_selector).visibility = View.GONE
-        footer.visibility = View.GONE
-        supportActionBar?.hide()  // Hide the ActionBar
-    }
-
-    private fun showListView() {
-        findViewById<View>(R.id.player_view_container).visibility = View.GONE
-        findViewById<View>(R.id.list_view_container).visibility = View.VISIBLE
-        findViewById<View>(R.id.single_song_selector).visibility = View.GONE
-        findViewById<View>(R.id.folder_name_header).visibility = View.VISIBLE
-        footer.visibility = View.GONE
-        supportActionBar?.show()  // Show the ActionBar
-    }
-
     private fun showSelectSingle() {
-        findViewById<View>(R.id.player_view_container).visibility = View.GONE
-        findViewById<View>(R.id.list_view_container).visibility = View.GONE
         findViewById<View>(R.id.single_song_selector).visibility = View.VISIBLE
         supportActionBar?.show()  // Show the ActionBar
     }
@@ -476,11 +455,13 @@ class MainActivity : AppCompatActivity() {
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer.create(this, uri)
             mediaPlayer?.start()
-            playButton.text = getString(R.string.pause)
+
+            showScreen(playerScreen)  // Add this line to show the player screen
+            findViewById<View>(R.id.player_view_container).visibility = View.VISIBLE
+
             updatePlayerUI(song)
             updateMiniPlayer(song)
 
-            songTitleTextView.text = song.title
 
             mediaPlayer?.setOnCompletionListener {
                 playNextSong()
@@ -492,8 +473,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updatePlayerUI(song: SongItem) {
-        findViewById<TextView>(R.id.tv_player_song_title).text = song.title
-        songTitleTextView.text = song.title
+        playerSongTitleTextView.text = song.title
         artistNameTextView.text = song.artist
         playPauseButton.setImageResource(android.R.drawable.ic_media_pause)
 
@@ -502,6 +482,8 @@ class MainActivity : AppCompatActivity() {
             seekBar.max = player.duration
             seekBar.progress = 0
             updateSeekBar()
+
+            totalTimeTextView.text = formatTime(player.duration)
         }
 
         // Set album art
@@ -513,18 +495,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupSeekBar() {
+        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    mediaPlayer?.seekTo(progress)
+                    currentTimeTextView.text = formatTime(progress)
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                // You can add code here if needed
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                // You can add code here if needed
+            }
+        })
+    }
+
     private fun updateSeekBar() {
         mediaPlayer?.let { player ->
-            seekBar.progress = player.currentPosition
-            currentTimeTextView.text = formatTime(player.currentPosition)
-            totalTimeTextView.text = formatTime(player.duration)
-
             if (player.isPlaying) {
+                seekBar.progress = player.currentPosition
+                currentTimeTextView.text = formatTime(player.currentPosition)
                 seekBar.postDelayed({ updateSeekBar() }, 1000)
             }
         }
     }
-
     private fun formatTime(milliseconds: Int): String {
         val seconds = milliseconds / 1000
         val minutes = seconds / 60
@@ -544,17 +542,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun togglePlayPause() {
-        mediaPlayer?.let { player ->
-            if (player.isPlaying) {
-                player.pause()
-                playPauseButton.setImageResource(android.R.drawable.ic_media_play)
-                miniPlayerPlayPause.setImageResource(android.R.drawable.ic_media_play)
-            } else {
-                player.start()
-                playPauseButton.setImageResource(android.R.drawable.ic_media_pause)
-                miniPlayerPlayPause.setImageResource(android.R.drawable.ic_media_pause)
-                updateSeekBar()
+        try {
+            mediaPlayer?.let { player ->
+                if (player.isPlaying) {
+                    player.pause()
+                    playPauseButton.setImageResource(android.R.drawable.ic_media_play)
+                    findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(android.R.drawable.ic_media_play)
+                } else {
+                    player.start()
+                    playPauseButton.setImageResource(android.R.drawable.ic_media_pause)
+                    findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(android.R.drawable.ic_media_pause)
+                    updateSeekBar()
+                }
+                lastPlayedSong?.let { updateMiniPlayer(it) }
             }
+        } catch (e: Exception) {
+            Log.e("AudioFlow", "Error toggling play/pause: ${e.message}", e)
+            Toast.makeText(this, "Error playing/pausing: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -625,21 +629,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        when {
-            playerScreen.visibility == View.VISIBLE ->
-                {showListView()
-                    findViewById<View>(R.id.footer).visibility = View.GONE
-                }
-            listScreen.visibility == View.VISIBLE -> {
-                loadMusicFolders()
-                findViewById<View>(R.id.folder_name_header).visibility = View.GONE
-                findViewById<View>(R.id.footer).visibility = View.VISIBLE
-            }
-            contentFrame.getChildAt(0).id != R.id.list_view_container -> showHomeView()
+        when (contentFrame.getChildAt(0)) {
+            songsScreen -> showScreen(homeScreen)
+            playerScreen -> showScreen(songsScreen)
+            settingsScreen -> showScreen(homeScreen)
             else -> super.onBackPressed()
         }
     }
-
 
     private fun getFileName(uri: Uri): String {
         val cursor = contentResolver.query(uri, null, null, null, null)
@@ -655,6 +651,9 @@ class MainActivity : AppCompatActivity() {
         mediaPlayer?.release()
         lastPlayedSong?.let { saveLastPlayedSong(it) }
     }
+
+    data class FolderItem(val folder: File, val name: String, val songCount: String)
+    data class SongItem(val file: File, val title: String, val artist: String)
 }
 
 // Getting Not Player
