@@ -215,6 +215,11 @@ class MainActivity : AppCompatActivity() {
             else -> null
         }
         miniPlayer?.visibility = if (lastPlayedSong != null) View.VISIBLE else View.GONE
+
+        // Show player screen if it's the selected screen
+        if (screen == playerScreen) {
+            playerScreen.visibility = View.VISIBLE
+        }
     }
 
     private fun setupFooter() {
@@ -260,7 +265,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadSongsInFolder(folder: File) {
         currentSongs = getSongsInFolder(folder)
-        currentPlaylist = currentSongs.toList()
         currentFolderPath = folder.absolutePath
 
         songsScreen.findViewById<TextView>(R.id.tv_folder_name).text = folder.name
@@ -276,6 +280,13 @@ class MainActivity : AppCompatActivity() {
             }
         }
         songsScreen.findViewById<ListView>(R.id.song_list_view).adapter = adapter
+
+        // Set up song list click listener
+        songsScreen.findViewById<ListView>(R.id.song_list_view).setOnItemClickListener { _, _, position, _ ->
+            currentPlaylist = currentSongs.toList()  // Set currentPlaylist when starting playback
+            playSong(position)
+            showScreen(playerScreen)
+        }
     }
 
 
@@ -329,6 +340,10 @@ class MainActivity : AppCompatActivity() {
             putString("lastPlayedPath", song.file.absolutePath)
             putString("currentFolderPath", currentFolderPath)
             putInt("currentSongIndex", currentSongIndex)
+
+            // Save the current playlist
+            putString("currentPlaylist", currentPlaylist.joinToString("|") { it.file.absolutePath })
+
             apply()
         }
     }
@@ -597,11 +612,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playPreviousSong() {
-        if (currentSongIndex > 0) {
-            playSong(currentSongIndex - 1)
-        } else {
-            // Optional: loop back to the last song
-            playSong(currentSongs.size - 1)
+        if (currentPlaylist.isNotEmpty()) {
+            val previousIndex = if (currentSongIndex > 0) currentSongIndex - 1 else currentPlaylist.size - 1
+            playSong(previousIndex)
         }
     }
 
@@ -616,17 +629,12 @@ class MainActivity : AppCompatActivity() {
             // If there are no songs loaded, try to reload the current folder
             currentFolderPath?.let { path ->
                 loadSongsInFolder(File(path))
+                currentPlaylist = currentSongs.toList()
             }
         }
 
         if (currentPlaylist.isNotEmpty()) {
-            val currentSongFile = lastPlayedSong?.file
-            val currentIndex = currentPlaylist.indexOfFirst { it.file == currentSongFile }
-            val nextIndex = if (currentIndex != -1) {
-                (currentIndex + 1) % currentPlaylist.size
-            } else {
-                0
-            }
+            val nextIndex = (currentSongIndex + 1) % currentPlaylist.size
             playSong(nextIndex, showPlayerScreen)
         } else {
             Log.e("AudioFlow", "No songs available to play")
@@ -707,5 +715,4 @@ class MainActivity : AppCompatActivity() {
 // Sorting System changing numbers to last place
 // Search Function for Album, Artists, Songs
 
-// I have a problem. when i for example listen to a song from folder 1, then going to folder 2 while listening the folder 1 song, then press the next button on the mini player, instead of the next song playing from folder 1, the first song of folder 2 starts playing. do you understand my problem
 // list_header-xml fixed instead of scrolling with the list
