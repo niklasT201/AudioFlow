@@ -39,6 +39,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var seekBar: SeekBar
     private lateinit var currentTimeTextView: TextView
     private lateinit var totalTimeTextView: TextView
+    private lateinit var playSettingsButton: ImageButton
+    private lateinit var playerSettingsButton: ImageButton
+    private var currentPlayMode: PlayMode = PlayMode.NORMAL
+    private var isShuffled: Boolean = false
+    private var originalPlaylist: List<SongItem> = emptyList()
+
+    enum class PlayMode {
+        NORMAL, REPEAT_ALL, REPEAT_ONE, SHUFFLE
+    }
 
     private lateinit var playAllButton: Button
     private lateinit var songCountTextView: TextView
@@ -53,6 +62,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var songsScreen: View
     private lateinit var settingsScreen: View
     private var folderItems: List<FolderItem> = emptyList()
+
     private lateinit var contentFrame: FrameLayout
     private lateinit var btnHome: Button
     private lateinit var btnSettings: Button
@@ -79,6 +89,8 @@ class MainActivity : AppCompatActivity() {
         loadMusicFolders()
 
         setupSeekBar()
+
+        setupPlaySettings()
 
         // Show home screen by default
         showScreen(homeScreen)
@@ -114,6 +126,8 @@ class MainActivity : AppCompatActivity() {
         closePlayerButton = findViewById(R.id.btn_close_player)
         currentTimeTextView = findViewById(R.id.tv_current_time)
         totalTimeTextView = findViewById(R.id.tv_total_time)
+        playSettingsButton = findViewById(R.id.btn_play_settings)
+        playerSettingsButton = findViewById(R.id.btn_player_settings)
 
         playAllButton = songsScreen.findViewById(R.id.btn_play_all)
         songCountTextView = songsScreen.findViewById(R.id.tv_song_count)
@@ -219,6 +233,68 @@ class MainActivity : AppCompatActivity() {
         // Show player screen if it's the selected screen
         if (screen == playerScreen) {
             playerScreen.visibility = View.VISIBLE
+        }
+    }
+
+    private fun setupPlaySettings() {
+        playSettingsButton.setOnClickListener {
+            currentPlayMode = when (currentPlayMode) {
+                PlayMode.NORMAL -> PlayMode.REPEAT_ALL
+                PlayMode.REPEAT_ALL -> PlayMode.REPEAT_ONE
+                PlayMode.REPEAT_ONE -> PlayMode.SHUFFLE
+                PlayMode.SHUFFLE -> PlayMode.NORMAL
+            }
+            updatePlaySettingsIcon()
+            applyPlayMode()
+        }
+    }
+
+    private fun updatePlaySettingsIcon() {
+        val iconResource = when (currentPlayMode) {
+            PlayMode.NORMAL -> R.drawable.no_repeat
+            PlayMode.REPEAT_ALL -> R.drawable.repeat
+            PlayMode.REPEAT_ONE -> R.drawable.repeat_once
+            PlayMode.SHUFFLE -> R.drawable.shuffle
+        }
+        playSettingsButton.setImageResource(iconResource)
+    }
+
+    private fun applyPlayMode() {
+        when (currentPlayMode) {
+            PlayMode.NORMAL -> {
+                mediaPlayer?.isLooping = false
+                if (isShuffled) {
+                    isShuffled = false
+                    currentPlaylist = originalPlaylist.toList()
+                    currentSongIndex = originalPlaylist.indexOf(currentPlaylist[currentSongIndex])
+                }
+            }
+            PlayMode.REPEAT_ALL -> {
+                mediaPlayer?.isLooping = false
+                if (isShuffled) {
+                    isShuffled = false
+                    currentPlaylist = originalPlaylist.toList()
+                    currentSongIndex = originalPlaylist.indexOf(currentPlaylist[currentSongIndex])
+                }
+            }
+            PlayMode.REPEAT_ONE -> {
+                mediaPlayer?.isLooping = true
+                if (isShuffled) {
+                    isShuffled = false
+                    currentPlaylist = originalPlaylist.toList()
+                    currentSongIndex = originalPlaylist.indexOf(currentPlaylist[currentSongIndex])
+                }
+            }
+            PlayMode.SHUFFLE -> {
+                mediaPlayer?.isLooping = false
+                if (!isShuffled) {
+                    isShuffled = true
+                    originalPlaylist = currentPlaylist.toList()
+                    val currentSong = currentPlaylist[currentSongIndex]
+                    currentPlaylist = currentPlaylist.shuffled()
+                    currentSongIndex = currentPlaylist.indexOf(currentSong)
+                }
+            }
         }
     }
 
@@ -511,7 +587,11 @@ class MainActivity : AppCompatActivity() {
             updateMiniPlayer(song)
 
             mediaPlayer?.setOnCompletionListener {
-                playNextSong()
+                when (currentPlayMode) {
+                    PlayMode.NORMAL, PlayMode.REPEAT_ALL -> playNextSong()
+                    PlayMode.REPEAT_ONE -> mediaPlayer?.start()
+                    PlayMode.SHUFFLE -> playRandomSong()
+                }
             }
         } catch (e: Exception) {
             Log.e("AudioFlow", "Error playing song", e)
@@ -613,9 +693,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun playPreviousSong() {
         if (currentPlaylist.isNotEmpty()) {
-            val previousIndex = if (currentSongIndex > 0) currentSongIndex - 1 else currentPlaylist.size - 1
-            playSong(previousIndex)
+            currentSongIndex  = if (currentSongIndex > 0) currentSongIndex - 1 else currentPlaylist.size - 1
+            playSong(currentSongIndex )
         }
+    }
+
+    private fun playRandomSong() {
+        if (currentPlaylist.isEmpty()) return
+
+        val randomIndex = (currentSongIndex + 1 + Random().nextInt(currentPlaylist.size - 1)) % currentPlaylist.size
+        playSong(randomIndex)
     }
 
     private fun openMusicSelector() {
@@ -634,8 +721,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (currentPlaylist.isNotEmpty()) {
-            val nextIndex = (currentSongIndex + 1) % currentPlaylist.size
-            playSong(nextIndex, showPlayerScreen)
+            currentSongIndex  = (currentSongIndex + 1) % currentPlaylist.size
+            playSong(currentSongIndex , showPlayerScreen)
         } else {
             Log.e("AudioFlow", "No songs available to play")
             Toast.makeText(this, "No songs available to play", Toast.LENGTH_SHORT).show()

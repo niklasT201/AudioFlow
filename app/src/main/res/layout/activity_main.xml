@@ -193,19 +193,28 @@
                 app:layout_constraintStart_toStartOf="parent">
 
             <ImageButton
+                    android:id="@+id/btn_play_settings"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginEnd="24dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/repeat"
+                    android:contentDescription="@string/play_settings_description"/>
+
+            <ImageButton
                     android:id="@+id/btn_previous"
                     android:layout_width="56dp"
                     android:layout_height="56dp"
+                    android:layout_marginEnd="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_previous"
-                    android:contentDescription="@string/my_image_description"
-                    />
+                    android:contentDescription="@string/my_image_description" />
 
             <ImageButton
                     android:id="@+id/btn_play_pause"
-                    android:layout_width="72dp"
+                    android:layout_width="30dp"
                     android:layout_height="72dp"
-                    android:layout_marginHorizontal="24dp"
+                    android:layout_marginHorizontal="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_play"
                     android:contentDescription="@string/my_image_description"
@@ -215,10 +224,19 @@
                     android:id="@+id/btn_next"
                     android:layout_width="56dp"
                     android:layout_height="56dp"
+                    android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_next"
-                    android:contentDescription="@string/my_image_description"
-                    />
+                    android:contentDescription="@string/my_image_description" />
+
+            <ImageButton
+                    android:id="@+id/btn_player_settings"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginStart="24dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/info"
+                    android:contentDescription="@string/info"/>
 
         </LinearLayout>
 
