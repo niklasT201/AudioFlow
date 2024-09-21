@@ -92,12 +92,15 @@ class MainActivity : AppCompatActivity() {
 
         setupPlaySettings()
 
+        restorePlayMode()
+
         // Show home screen by default
         showScreen(homeScreen)
 
         if (checkPermission()) {
             loadMusicFolders()
             restoreLastPlayedSong()
+            updatePlayPauseButton()
         } else {
             requestPermission()
         }
@@ -236,6 +239,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun savePlayMode() {
+        val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
+        with(sharedPreferences.edit()) {
+            putString("currentPlayMode", currentPlayMode.name)
+            apply()
+        }
+    }
+
+    private fun restorePlayMode() {
+        val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
+        val savedPlayMode = sharedPreferences.getString("currentPlayMode", PlayMode.NORMAL.name)
+        currentPlayMode = PlayMode.valueOf(savedPlayMode ?: PlayMode.NORMAL.name)
+        updatePlaySettingsIcon()
+    }
+
     private fun setupPlaySettings() {
         playSettingsButton.setOnClickListener {
             currentPlayMode = when (currentPlayMode) {
@@ -246,6 +264,7 @@ class MainActivity : AppCompatActivity() {
             }
             updatePlaySettingsIcon()
             applyPlayMode()
+            savePlayMode()  // Save the play mode when it changes
         }
     }
 
@@ -344,7 +363,7 @@ class MainActivity : AppCompatActivity() {
         currentFolderPath = folder.absolutePath
 
         songsScreen.findViewById<TextView>(R.id.tv_folder_name).text = folder.name
-        songCountTextView.text = "${currentSongs.size} songs"
+        songCountTextView.text = "(${currentSongs.size})"
 
         val adapter = object : ArrayAdapter<SongItem>(this, R.layout.list_item, currentSongs) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
@@ -435,6 +454,7 @@ class MainActivity : AppCompatActivity() {
         if (lastPlayedTitle != null && lastPlayedArtist != null && lastPlayedPath != null && currentFolderPath != null) {
             lastPlayedSong = SongItem(File(lastPlayedPath), lastPlayedTitle, lastPlayedArtist)
             loadSongsInFolder(File(currentFolderPath!!))
+            currentPlaylist = currentSongs.toList()  // Ensure currentPlaylist is set
             updateMiniPlayer(lastPlayedSong!!)
 
             // Update mini player visibility on both screens
@@ -450,21 +470,30 @@ class MainActivity : AppCompatActivity() {
                 )
                 mediaPlayer?.release()
                 mediaPlayer = MediaPlayer.create(this, uri)
+                setupMediaPlayerCompletionListener()  // Set up completion listener
 
                 // Initialize the player screen
                 updatePlayerUI(lastPlayedSong!!)
 
                 // Set up click listener for mini player to open player screen
-                homeScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener {
+                val miniPlayerClickListener = View.OnClickListener {
                     showScreen(playerScreen)
                     playerScreen.visibility = View.VISIBLE
                 }
-                songsScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener {
-                    showScreen(playerScreen)
-                    playerScreen.visibility = View.VISIBLE
-                }
+                homeScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
+                songsScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
             } catch (e: Exception) {
                 Log.e("AudioFlow", "Error preparing last played song", e)
+            }
+        }
+    }
+
+    private fun setupMediaPlayerCompletionListener() {
+        mediaPlayer?.setOnCompletionListener {
+            when (currentPlayMode) {
+                PlayMode.NORMAL, PlayMode.REPEAT_ALL -> playNextSong()
+                PlayMode.REPEAT_ONE -> mediaPlayer?.start()
+                PlayMode.SHUFFLE -> playRandomSong()
             }
         }
     }
@@ -578,6 +607,8 @@ class MainActivity : AppCompatActivity() {
             mediaPlayer = MediaPlayer.create(this, uri)
             mediaPlayer?.start()
 
+            setupMediaPlayerCompletionListener()
+
             if (showPlayerScreen) {
                 showScreen(playerScreen)
                 findViewById<View>(R.id.player_view_container).visibility = View.VISIBLE
@@ -585,14 +616,6 @@ class MainActivity : AppCompatActivity() {
 
             updatePlayerUI(song)
             updateMiniPlayer(song)
-
-            mediaPlayer?.setOnCompletionListener {
-                when (currentPlayMode) {
-                    PlayMode.NORMAL, PlayMode.REPEAT_ALL -> playNextSong()
-                    PlayMode.REPEAT_ONE -> mediaPlayer?.start()
-                    PlayMode.SHUFFLE -> playRandomSong()
-                }
-            }
         } catch (e: Exception) {
             Log.e("AudioFlow", "Error playing song", e)
             Toast.makeText(this, "Error playing song: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -602,7 +625,7 @@ class MainActivity : AppCompatActivity() {
     private fun updatePlayerUI(song: SongItem) {
         playerSongTitleTextView.text = song.title
         artistNameTextView.text = song.artist
-        playPauseButton.setImageResource(android.R.drawable.ic_media_pause)
+        updatePlayPauseButton()
 
         // Update seek bar
         mediaPlayer?.let { player ->
@@ -611,6 +634,7 @@ class MainActivity : AppCompatActivity() {
             updateSeekBar()
 
             totalTimeTextView.text = formatTime(player.duration)
+            currentTimeTextView.text = formatTime(0)  // Always show the current time
         }
 
         // Set album art
@@ -643,13 +667,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateSeekBar() {
         mediaPlayer?.let { player ->
-            if (player.isPlaying) {
-                seekBar.progress = player.currentPosition
-                currentTimeTextView.text = formatTime(player.currentPosition)
-                seekBar.postDelayed({ updateSeekBar() }, 1000)
-            }
+            seekBar.progress = player.currentPosition
+            currentTimeTextView.text = formatTime(player.currentPosition)
+            seekBar.postDelayed({ updateSeekBar() }, 1000)
         }
     }
+
     private fun formatTime(milliseconds: Int): String {
         val seconds = milliseconds / 1000
         val minutes = seconds / 60
@@ -668,21 +691,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun updatePlayPauseButton() {
+        val isPlaying = mediaPlayer?.isPlaying == true
+        val resource = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+        playPauseButton.setImageResource(resource)
+        homeScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(resource)
+        songsScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(resource)
+    }
+
     private fun togglePlayPause() {
         try {
             mediaPlayer?.let { player ->
                 if (player.isPlaying) {
                     player.pause()
-                    playPauseButton.setImageResource(android.R.drawable.ic_media_play)
-                    homeScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(android.R.drawable.ic_media_play)
-                    songsScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(android.R.drawable.ic_media_play)
                 } else {
                     player.start()
-                    playPauseButton.setImageResource(android.R.drawable.ic_media_pause)
-                    homeScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(android.R.drawable.ic_media_pause)
-                    songsScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(android.R.drawable.ic_media_pause)
+                    setupMediaPlayerCompletionListener()  // Ensure the completion listener is set
                     updateSeekBar()
                 }
+                updatePlayPauseButton()
                 lastPlayedSong?.let { updateMiniPlayer(it) }
             }
         } catch (e: Exception) {
@@ -785,6 +812,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         mediaPlayer?.release()
         lastPlayedSong?.let { saveLastPlayedSong(it) }
+        savePlayMode()
     }
 
     data class FolderItem(val folder: File, val name: String, val songCount: String)
@@ -792,7 +820,6 @@ class MainActivity : AppCompatActivity() {
 }
 
 // Getting Not Player
-// Adding Repeat, Repeat Once, Repeat choose
 // Songs Options
 // Player Design Options
 // Maybe change icons player screen
