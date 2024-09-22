@@ -192,47 +192,44 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent">
 
-            <ImageButton
+            <ImageView
                     android:id="@+id/btn_play_settings"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:layout_marginEnd="24dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/repeat"
                     android:contentDescription="@string/play_settings_description"/>
 
-            <ImageButton
+            <ImageView
                     android:id="@+id/btn_previous"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_media_previous"
+                    android:src="@drawable/previous"
                     android:contentDescription="@string/my_image_description" />
 
-            <ImageButton
+            <ImageView
                     android:id="@+id/btn_play_pause"
-                    android:layout_width="30dp"
+                    android:layout_width="72dp"
                     android:layout_height="72dp"
-                    android:layout_marginHorizontal="8dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_play"
                     android:contentDescription="@string/my_image_description"
                     />
 
-            <ImageButton
+            <ImageView
                     android:id="@+id/btn_next"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_media_next"
+                    android:src="@drawable/next"
                     android:contentDescription="@string/my_image_description" />
 
-            <ImageButton
+            <ImageView
                     android:id="@+id/btn_player_settings"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:layout_marginStart="24dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/info"

@@ -15,7 +15,6 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import java.io.File
 import java.util.*
 import android.media.MediaMetadataRetriever
@@ -23,12 +22,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.core.content.FileProvider
+import java.text.Collator
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
-    private lateinit var playPauseButton: ImageButton
-    private lateinit var previousButton: ImageButton
-    private lateinit var nextButton: ImageButton
+    private lateinit var playPauseButton: ImageView
+    private lateinit var previousButton: ImageView
+    private lateinit var nextButton: ImageView
     private lateinit var playButton: Button
     private lateinit var selectButton: Button
     private lateinit var songTitleTextView: TextView
@@ -39,8 +40,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var seekBar: SeekBar
     private lateinit var currentTimeTextView: TextView
     private lateinit var totalTimeTextView: TextView
-    private lateinit var playSettingsButton: ImageButton
-    private lateinit var playerSettingsButton: ImageButton
+    private lateinit var playSettingsButton: ImageView
+    private lateinit var playerSettingsButton: ImageView
     private var currentPlayMode: PlayMode = PlayMode.NORMAL
     private var isShuffled: Boolean = false
     private var originalPlaylist: List<SongItem> = emptyList()
@@ -49,7 +50,8 @@ class MainActivity : AppCompatActivity() {
         NORMAL, REPEAT_ALL, REPEAT_ONE, SHUFFLE
     }
 
-    private lateinit var playAllButton: Button
+    private lateinit var playAllButton: LinearLayout
+    private lateinit var playAllImage: ImageButton
     private lateinit var songCountTextView: TextView
 
     private var selectedSongUri: Uri? = null
@@ -132,10 +134,17 @@ class MainActivity : AppCompatActivity() {
         playSettingsButton = findViewById(R.id.btn_play_settings)
         playerSettingsButton = findViewById(R.id.btn_player_settings)
 
-        playAllButton = songsScreen.findViewById(R.id.btn_play_all)
+        playAllButton = songsScreen.findViewById(R.id.playlist_container)
+        playAllImage = songsScreen.findViewById(R.id.playlist_start_button)
         songCountTextView = songsScreen.findViewById(R.id.tv_song_count)
 
         playAllButton.setOnClickListener {
+            if (currentSongs.isNotEmpty()) {
+                playSong(0)
+            }
+        }
+
+        playAllImage.setOnClickListener {
             if (currentSongs.isNotEmpty()) {
                 playSong(0)
             }
@@ -197,15 +206,15 @@ class MainActivity : AppCompatActivity() {
             showScreen(songsScreen)
         }
 
-        playerScreen.findViewById<ImageButton>(R.id.btn_next).setOnClickListener {
+        playerScreen.findViewById<ImageView>(R.id.btn_next).setOnClickListener {
             playNextSong()
         }
 
-        playerScreen.findViewById<ImageButton>(R.id.btn_previous).setOnClickListener {
+        playerScreen.findViewById<ImageView>(R.id.btn_previous).setOnClickListener {
             playPreviousSong()
         }
 
-        playerScreen.findViewById<ImageButton>(R.id.btn_play_pause).setOnClickListener {
+        playerScreen.findViewById<ImageView>(R.id.btn_play_pause).setOnClickListener {
             togglePlayPause()
         }
     }
@@ -363,7 +372,7 @@ class MainActivity : AppCompatActivity() {
         currentFolderPath = folder.absolutePath
 
         songsScreen.findViewById<TextView>(R.id.tv_folder_name).text = folder.name
-        songCountTextView.text = "(${currentSongs.size})"
+        songCountTextView.text = "Play all (${currentSongs.size})"
 
         val adapter = object : ArrayAdapter<SongItem>(this, R.layout.list_item, currentSongs) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
@@ -547,7 +556,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        return songs
+        return customSongSort(songs)
     }
 
     private fun getMusicFolders(): List<File> {
@@ -574,6 +583,26 @@ class MainActivity : AppCompatActivity() {
 
         Log.d("AudioFlow", "Found ${musicFolders.size} music folders")
         return musicFolders.toList()
+    }
+
+    private fun customSongSort(songs: List<SongItem>): List<SongItem> {
+        val germanCollator = Collator.getInstance(Locale.GERMAN).apply {
+            strength = Collator.PRIMARY
+        }
+
+        return songs.sortedWith(compareBy<SongItem> { song ->
+            val title = song.title.toLowerCase(Locale.GERMAN)
+            when {
+                title.first().isDigit() -> "zzz$title"  // Move numbers to the end
+                title.startsWith("ä") -> "a" + title.substring(1)
+                title.startsWith("ö") -> "o" + title.substring(1)
+                title.startsWith("ü") -> "u" + title.substring(1)
+                else -> title.replace("ä", "a")
+                    .replace("ö", "o")
+                    .replace("ü", "u")
+                    .replace("ß", "ss")
+            }
+        }.thenBy { germanCollator.getCollationKey(it.title) })
     }
 
     private fun findMusicFoldersRecursively(dir: File, musicFolders: MutableList<File>) {
@@ -693,10 +722,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun updatePlayPauseButton() {
         val isPlaying = mediaPlayer?.isPlaying == true
-        val resource = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+        val resource = if (isPlaying) R.drawable.pause_button else R.drawable.play_button
+        val miniResource = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
         playPauseButton.setImageResource(resource)
-        homeScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(resource)
-        songsScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(resource)
+        homeScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
+        songsScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
     }
 
     private fun togglePlayPause() {
@@ -822,11 +852,9 @@ class MainActivity : AppCompatActivity() {
 // Getting Not Player
 // Songs Options
 // Player Design Options
-// Maybe change icons player screen
 // Add Playlist Create
 // Add Play Song next button
 // Time around play/pause button
-// Sorting System changing numbers to last place
 // Search Function for Album, Artists, Songs
 
 // list_header-xml fixed instead of scrolling with the list

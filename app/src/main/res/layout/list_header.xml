@@ -1,38 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:id="@+id/play_all_container"
+              android:id="@+id/playlist_container"
               android:layout_width="match_parent"
               android:layout_height="wrap_content"
               android:orientation="horizontal"
-              android:padding="16dp"
-              android:background="?attr/selectableItemBackground"
+              android:layout_marginStart="18dp"
               android:clickable="true"
+              android:background="@color/background_color"
               android:focusable="true">
 
-    <ImageView
-            android:id="@+id/playlist_start_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+    <ImageButton
+            android:id="@+id/playlist_start_button"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
             android:src="@drawable/play_playlist"
-            android:layout_gravity="center_vertical"
-            android:contentDescription="@string/play_all" />
-
-    <TextView
-            android:id="@+id/btn_play_all"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/play_all"
-            android:textColor="@color/primary_text"
-            android:layout_marginStart="16dp"
-            android:layout_gravity="center_vertical"
-            android:textSize="16sp" />
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/my_image_description" />
 
     <TextView
             android:id="@+id/tv_song_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="17dp"
             android:textSize="14sp"
-            android:textColor="@color/primary_text"
-            android:layout_marginStart="8dp"
-            android:layout_gravity="center_vertical" />
+            android:textColor="@color/primary_text" />
 </LinearLayout>
