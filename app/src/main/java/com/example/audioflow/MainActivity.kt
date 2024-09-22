@@ -409,7 +409,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Update play/pause button state
-            val miniPlayerPlayPause = view.findViewById<ImageButton>(R.id.mini_player_play_pause)
+            val miniPlayerPlayPause = view.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)
             val playPauseResource = if (mediaPlayer?.isPlaying == true)
                 android.R.drawable.ic_media_pause
             else
@@ -434,6 +434,14 @@ class MainActivity : AppCompatActivity() {
         // Save the last played song
         lastPlayedSong = song
         saveLastPlayedSong(song)
+    }
+
+    private fun updateMiniPlayerProgress(progress: Float) {
+        val miniPlayerPlayPause = homeScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)
+        miniPlayerPlayPause?.setProgress(progress)
+
+        val songsScreenMiniPlayerPlayPause = songsScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)
+        songsScreenMiniPlayerPlayPause?.setProgress(progress)
     }
 
     private fun saveLastPlayedSong(song: SongItem) {
@@ -500,7 +508,17 @@ class MainActivity : AppCompatActivity() {
     private fun setupMediaPlayerCompletionListener() {
         mediaPlayer?.setOnCompletionListener {
             when (currentPlayMode) {
-                PlayMode.NORMAL, PlayMode.REPEAT_ALL -> playNextSong()
+                PlayMode.NORMAL -> {
+                    if (currentSongIndex < currentPlaylist.size - 1) {
+                        playNextSong()
+                    } else {
+                        // At the last song, stop playback
+                        mediaPlayer?.pause()
+                        updatePlayPauseButton()
+                        Toast.makeText(this, "Playlist ended", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                PlayMode.REPEAT_ALL -> playNextSong()
                 PlayMode.REPEAT_ONE -> mediaPlayer?.start()
                 PlayMode.SHUFFLE -> playRandomSong()
             }
@@ -645,6 +663,7 @@ class MainActivity : AppCompatActivity() {
 
             updatePlayerUI(song)
             updateMiniPlayer(song)
+            updateMiniPlayerProgress(0f)
         } catch (e: Exception) {
             Log.e("AudioFlow", "Error playing song", e)
             Toast.makeText(this, "Error playing song: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -698,6 +717,11 @@ class MainActivity : AppCompatActivity() {
         mediaPlayer?.let { player ->
             seekBar.progress = player.currentPosition
             currentTimeTextView.text = formatTime(player.currentPosition)
+
+            // Update mini player progress
+            val progress = player.currentPosition.toFloat() / player.duration.toFloat()
+            updateMiniPlayerProgress(progress)
+
             seekBar.postDelayed({ updateSeekBar() }, 1000)
         }
     }
@@ -725,8 +749,8 @@ class MainActivity : AppCompatActivity() {
         val resource = if (isPlaying) R.drawable.pause_button else R.drawable.play_button
         val miniResource = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
         playPauseButton.setImageResource(resource)
-        homeScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
-        songsScreen.findViewById<ImageButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
+        homeScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
+        songsScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
     }
 
     private fun togglePlayPause() {
@@ -750,8 +774,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun playPreviousSong() {
         if (currentPlaylist.isNotEmpty()) {
-            currentSongIndex  = if (currentSongIndex > 0) currentSongIndex - 1 else currentPlaylist.size - 1
-            playSong(currentSongIndex )
+            when (currentPlayMode) {
+                PlayMode.NORMAL -> {
+                    if (currentSongIndex > 0) {
+                        currentSongIndex--
+                        playSong(currentSongIndex)
+                    } else {
+                        // At the first song, do nothing or maybe show a toast
+                        Toast.makeText(this, "This is the first song", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                else -> {
+                    currentSongIndex = if (currentSongIndex > 0) currentSongIndex - 1 else currentPlaylist.size - 1
+                    playSong(currentSongIndex)
+                }
+            }
         }
     }
 
@@ -778,8 +815,23 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (currentPlaylist.isNotEmpty()) {
-            currentSongIndex  = (currentSongIndex + 1) % currentPlaylist.size
-            playSong(currentSongIndex , showPlayerScreen)
+            when (currentPlayMode) {
+                PlayMode.NORMAL -> {
+                    if (currentSongIndex < currentPlaylist.size - 1) {
+                        currentSongIndex++
+                        playSong(currentSongIndex, showPlayerScreen)
+                    } else {
+                        // At the last song, stop playback or maybe show a toast
+                        mediaPlayer?.pause()
+                        updatePlayPauseButton()
+                        Toast.makeText(this, "Playlist ended", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                else -> {
+                    currentSongIndex = (currentSongIndex + 1) % currentPlaylist.size
+                    playSong(currentSongIndex, showPlayerScreen)
+                }
+            }
         } else {
             Log.e("AudioFlow", "No songs available to play")
             Toast.makeText(this, "No songs available to play", Toast.LENGTH_SHORT).show()
@@ -850,11 +902,39 @@ class MainActivity : AppCompatActivity() {
 }
 
 // Getting Not Player
-// Songs Options
+// Get Playback for songs
+// Options song
 // Player Design Options
 // Add Playlist Create
+// Add/search Folder to List
 // Add Play Song next button
-// Time around play/pause button
 // Search Function for Album, Artists, Songs
+// add icon for current song and folder
+// add Album to song list
+// add smoother animations to app
+// correct margin for play button mini player and time circle
+// add alphabet list to travel faster to the songs with special letter
+// song list settings for one song
+// holding song item for settings too
+// See Name of play mode when switching through
+
+// info screen
+// sound changes
+// color changing
+// cover changing
+// maybe driver mode
+// timer to close app
+// delete/rename file
+// Songs metadata changing
+
+// settings screen
+// allow song previous button to set time back to 0
+// allow app to display being always on
+// Timer also available
+// About App
+// Maybe add small infos about a song
+
+// Holding down pause/play button to repeat song times
+// shuffle mode next/previous bug, else works fine
 
 // list_header-xml fixed instead of scrolling with the list

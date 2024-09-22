@@ -52,10 +52,11 @@
                 android:maxLines="1" />
     </LinearLayout>
 
-    <ImageButton
+    <com.example.audioflow.CircularProgressButton
             android:id="@+id/mini_player_play_pause"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
             android:src="@android:drawable/ic_media_pause"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/my_image_description" />
