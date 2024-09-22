@@ -46,6 +46,9 @@ class MainActivity : AppCompatActivity() {
     private var isShuffled: Boolean = false
     private var originalPlaylist: List<SongItem> = emptyList()
 
+    private var alphabetIndexView: AlphabetIndexView? = null
+    private var songListView: ListView? = null
+
     enum class PlayMode {
         NORMAL, REPEAT_ALL, REPEAT_ONE, SHUFFLE
     }
@@ -248,6 +251,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupAlphabetIndex() {
+        alphabetIndexView?.onLetterSelectedListener = { letter ->
+            val position = findPositionForLetter(letter)
+            songListView?.setSelection(position)
+        }
+    }
+
+    private fun findPositionForLetter(letter: String): Int {
+        for (i in currentSongs.indices) {
+            if (currentSongs[i].title.startsWith(letter, ignoreCase = true)) {
+                return i
+            }
+        }
+        return 0
+    }
+
     private fun savePlayMode() {
         val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
         with(sharedPreferences.edit()) {
@@ -351,7 +370,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadMusicFolders() {
         folderItems = getMusicFolders().map { folder ->
             val songCount = getSongsInFolder(folder).size
-            FolderItem(folder, folder.name, "$songCount songs")
+            FolderItem(folder, folder.name, "$songCount songs", folder.absolutePath == currentFolderPath)
         }
 
         val adapter = object : ArrayAdapter<FolderItem>(this, R.layout.folder_list_item, folderItems) {
@@ -360,6 +379,8 @@ class MainActivity : AppCompatActivity() {
                 val folder = getItem(position)
                 view.findViewById<TextView>(R.id.folder_item_title).text = folder?.name
                 view.findViewById<TextView>(R.id.folder_item_count).text = folder?.songCount
+                view.findViewById<ImageView>(R.id.folder_current_song_icon).visibility =
+                    if (folder?.isCurrentFolder == true) View.VISIBLE else View.GONE
                 return view
             }
         }
@@ -374,16 +395,28 @@ class MainActivity : AppCompatActivity() {
         songsScreen.findViewById<TextView>(R.id.tv_folder_name).text = folder.name
         songCountTextView.text = "Play all (${currentSongs.size})"
 
+        // Initialize views here
+        alphabetIndexView = songsScreen.findViewById(R.id.alphabet_index)
+        songListView = songsScreen.findViewById(R.id.song_list_view)
+
+        setupAlphabetIndex()
+
         val adapter = object : ArrayAdapter<SongItem>(this, R.layout.list_item, currentSongs) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = convertView ?: layoutInflater.inflate(R.layout.list_item, parent, false)
                 val song = getItem(position)
                 view.findViewById<TextView>(R.id.list_item_title).text = song?.title
-                view.findViewById<TextView>(R.id.list_item_artist).text = song?.artist
+                view.findViewById<TextView>(R.id.list_item_artist).text = "${song?.artist} - ${song?.album}"
+                view.findViewById<ImageView>(R.id.song_current_song_icon).visibility =
+                    if (song == lastPlayedSong) View.VISIBLE else View.GONE
                 return view
             }
         }
         songsScreen.findViewById<ListView>(R.id.song_list_view).adapter = adapter
+
+        // Update folder list to show current folder
+        folderItems.forEach { it.isCurrentFolder = it.folder.absolutePath == currentFolderPath }
+        (homeScreen.findViewById<ListView>(R.id.folder_list_view).adapter as ArrayAdapter<*>).notifyDataSetChanged()
 
         // Set up song list click listener
         songsScreen.findViewById<ListView>(R.id.song_list_view).setOnItemClickListener { _, _, position, _ ->
@@ -449,6 +482,7 @@ class MainActivity : AppCompatActivity() {
         with(sharedPreferences.edit()) {
             putString("lastPlayedTitle", song.title)
             putString("lastPlayedArtist", song.artist)
+            putString("lastPlayedAlbum", song.album)
             putString("lastPlayedPath", song.file.absolutePath)
             putString("currentFolderPath", currentFolderPath)
             putInt("currentSongIndex", currentSongIndex)
@@ -464,12 +498,13 @@ class MainActivity : AppCompatActivity() {
         val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
         val lastPlayedTitle = sharedPreferences.getString("lastPlayedTitle", null)
         val lastPlayedArtist = sharedPreferences.getString("lastPlayedArtist", null)
+        val lastPlayedAlbum = sharedPreferences.getString("lastPlayedAlbum", null)
         val lastPlayedPath = sharedPreferences.getString("lastPlayedPath", null)
         currentFolderPath = sharedPreferences.getString("currentFolderPath", null)
         currentSongIndex = sharedPreferences.getInt("currentSongIndex", -1)
 
-        if (lastPlayedTitle != null && lastPlayedArtist != null && lastPlayedPath != null && currentFolderPath != null) {
-            lastPlayedSong = SongItem(File(lastPlayedPath), lastPlayedTitle, lastPlayedArtist)
+        if (lastPlayedTitle != null && lastPlayedArtist != null && lastPlayedAlbum != null && lastPlayedPath != null && currentFolderPath != null) {
+            lastPlayedSong = SongItem(File(lastPlayedPath), lastPlayedTitle, lastPlayedArtist, lastPlayedAlbum)
             loadSongsInFolder(File(currentFolderPath!!))
             currentPlaylist = currentSongs.toList()  // Ensure currentPlaylist is set
             updateMiniPlayer(lastPlayedSong!!)
@@ -534,7 +569,8 @@ class MainActivity : AppCompatActivity() {
         val projection = arrayOf(
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.ARTIST
+            MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.ALBUM
         )
         val selection = MediaStore.Audio.Media.IS_MUSIC + " != 0 AND " + MediaStore.Audio.Media.DATA + " LIKE ?"
         val selectionArgs = arrayOf("${folder.absolutePath}%")
@@ -551,26 +587,30 @@ class MainActivity : AppCompatActivity() {
             val pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
             val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
             val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+            val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
             while (cursor.moveToNext()) {
                 val path = cursor.getString(pathColumn)
                 var title = cursor.getString(titleColumn)
                 val artist = cursor.getString(artistColumn)
+                var album = cursor.getString(albumColumn)
                 val file = File(path)
 
-                if (title.isNullOrEmpty() || artist.isNullOrEmpty()) {
+                if (title.isNullOrEmpty() || artist.isNullOrEmpty() || album.isNullOrEmpty()) {
                     val retriever = MediaMetadataRetriever()
                     try {
                         retriever.setDataSource(path)
                         title = title ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE) ?: file.nameWithoutExtension
+                        album = album ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM) ?: "Unknown Album"
                     } catch (e: Exception) {
                         Log.e("AudioFlow", "Error retrieving metadata for $path", e)
                         title = file.nameWithoutExtension
+                        album = "Unknown Album"
                     } finally {
                         retriever.release()
                     }
                 }
 
-                songs.add(SongItem(file, title, artist))
+                songs.add(SongItem(file, title, artist, album))
             }
         }
 
@@ -664,6 +704,10 @@ class MainActivity : AppCompatActivity() {
             updatePlayerUI(song)
             updateMiniPlayer(song)
             updateMiniPlayerProgress(0f)
+
+            // Refresh the song list view to show the current song icon
+            (songsScreen.findViewById<ListView>(R.id.song_list_view).adapter as ArrayAdapter<*>).notifyDataSetChanged()
+
         } catch (e: Exception) {
             Log.e("AudioFlow", "Error playing song", e)
             Toast.makeText(this, "Error playing song: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -897,8 +941,8 @@ class MainActivity : AppCompatActivity() {
         savePlayMode()
     }
 
-    data class FolderItem(val folder: File, val name: String, val songCount: String)
-    data class SongItem(val file: File, val title: String, val artist: String)
+    data class FolderItem(val folder: File, val name: String, val songCount: String, var isCurrentFolder: Boolean = false)
+    data class SongItem(val file: File, val title: String, val artist: String, val album: String)
 }
 
 // Getting Not Player
@@ -909,11 +953,8 @@ class MainActivity : AppCompatActivity() {
 // Add/search Folder to List
 // Add Play Song next button
 // Search Function for Album, Artists, Songs
-// add icon for current song and folder
-// add Album to song list
 // add smoother animations to app
-// correct margin for play button mini player and time circle
-// add alphabet list to travel faster to the songs with special letter
+// correct margin for play button mini player and time circle & Alphabet Travel System
 // song list settings for one song
 // holding song item for settings too
 // See Name of play mode when switching through
@@ -938,3 +979,5 @@ class MainActivity : AppCompatActivity() {
 // shuffle mode next/previous bug, else works fine
 
 // list_header-xml fixed instead of scrolling with the list
+
+//can you help me with my kotlin android app? I would like to have a special feature. I want that when you hold down the play/pause button of the player screen, for maybe like 2 seconds, then a number in like a small round container appears and this number gets higher how longer you hold down on this button. for example when I don't hold down the button for 2 seconds or longer, then this container will not appear and the value will be like 0, that means that the current playing song will not repeat itself, it will once finish, go to the next song in the playlist, but when the value is over 0, so for example 4, then the current song will repeat itself 4 times after finishing. Song finishes, repeats, number in container gets down to 3, song finishes, repeats, number gets down to 2 and so on. Once the value is 0, the container disappears and the song will when finished go to the next song. hope you get what I mean :) and WITHOUT a library when possible

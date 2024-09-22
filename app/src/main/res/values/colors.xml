@@ -8,4 +8,5 @@
     <color name="primary_text">#FFFFFF</color>
     <color name="secondary_text">#B0B0B0</color>
     <color name="list_divider">#242424</color>
+    <color name="alphabet_text_color">#757575</color>
 </resources>

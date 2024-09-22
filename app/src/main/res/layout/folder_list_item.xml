@@ -36,5 +36,17 @@
                 android:layout_height="wrap_content"
                 android:textColor="@color/secondary_text"
                 android:textSize="14sp" />
+
     </LinearLayout>
+
+        <ImageView
+                android:id="@+id/folder_current_song_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/current_song"
+                android:visibility="gone"
+                android:contentDescription="@string/home"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="5dp"/>
+
 </LinearLayout>
