@@ -19,6 +19,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/primary_text"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textSize="15sp" />
 
     <TextView
@@ -26,6 +28,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/secondary_text"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textSize="13sp" />
 
     </LinearLayout>
@@ -35,5 +39,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/current_song"
-            android:visibility="gone" android:contentDescription="@string/home"/>
+            android:layout_marginStart="8dp"
+            android:visibility="gone"
+            android:contentDescription="@string/home"/>
 </LinearLayout>

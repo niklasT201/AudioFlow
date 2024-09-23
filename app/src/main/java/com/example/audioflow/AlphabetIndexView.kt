@@ -36,6 +36,18 @@ class AlphabetIndexView @JvmOverloads constructor(
         }
     }
 
+    fun setVisibilityWithAnimation(isVisible: Boolean) {
+        if (isVisible) {
+            this.visibility = View.VISIBLE
+            this.alpha = 0f
+            this.animate().alpha(1f).setDuration(200).start()
+        } else {
+            this.animate().alpha(0f).setDuration(200).withEndAction {
+                this.visibility = View.GONE
+            }.start()
+        }
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         when (event.action) {
             MotionEvent.ACTION_DOWN,

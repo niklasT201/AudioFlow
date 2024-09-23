@@ -10,30 +10,28 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-    <include
-            layout="@layout/list_header"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-    <RelativeLayout
+    <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:orientation="horizontal">
 
         <ListView
                 android:id="@+id/song_list_view"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:scrollbars="none"
                 android:divider="@color/list_divider"
                 android:dividerHeight="1dp" />
 
         <com.example.audioflow.AlphabetIndexView
                 android:id="@+id/alphabet_index"
-                android:layout_width="20dp"
+                android:layout_width="30dp"
                 android:layout_height="match_parent"
-                android:layout_alignParentEnd="true" />
+                android:layout_marginStart="4dp" />
 
-    </RelativeLayout>
+    </LinearLayout>
 
     <include layout="@layout/mini_player" />
 </LinearLayout>

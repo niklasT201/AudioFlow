@@ -137,21 +137,6 @@ class MainActivity : AppCompatActivity() {
         playSettingsButton = findViewById(R.id.btn_play_settings)
         playerSettingsButton = findViewById(R.id.btn_player_settings)
 
-        playAllButton = songsScreen.findViewById(R.id.playlist_container)
-        playAllImage = songsScreen.findViewById(R.id.playlist_start_button)
-        songCountTextView = songsScreen.findViewById(R.id.tv_song_count)
-
-        playAllButton.setOnClickListener {
-            if (currentSongs.isNotEmpty()) {
-                playSong(0)
-            }
-        }
-
-        playAllImage.setOnClickListener {
-            if (currentSongs.isNotEmpty()) {
-                playSong(0)
-            }
-        }
     }
 
     private fun checkPermission(): Boolean {
@@ -251,8 +236,43 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val scrollListener = object : AbsListView.OnScrollListener {
+        private var isScrolling = false
+        private val hideRunnable = Runnable { hideAlphabetIndex() }
+
+        override fun onScrollStateChanged(view: AbsListView?, scrollState: Int) {
+            when (scrollState) {
+                AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL,
+                AbsListView.OnScrollListener.SCROLL_STATE_FLING -> {
+                    isScrolling = true
+                    showAlphabetIndex()
+                    view?.removeCallbacks(hideRunnable)
+                }
+                AbsListView.OnScrollListener.SCROLL_STATE_IDLE -> {
+                    isScrolling = false
+                    view?.postDelayed(hideRunnable, 4000) // Hide after 1 second of inactivity
+                }
+            }
+        }
+
+        override fun onScroll(view: AbsListView?, firstVisibleItem: Int, visibleItemCount: Int, totalItemCount: Int) {
+            if (isScrolling) {
+                showAlphabetIndex()
+            }
+        }
+    }
+
+    private fun showAlphabetIndex() {
+        alphabetIndexView?.setVisibilityWithAnimation(true)
+    }
+
+    private fun hideAlphabetIndex() {
+        alphabetIndexView?.setVisibilityWithAnimation(false)
+    }
+
     private fun setupAlphabetIndex() {
         alphabetIndexView?.onLetterSelectedListener = { letter ->
+            showAlphabetIndex()
             val position = findPositionForLetter(letter)
             songListView?.setSelection(position)
         }
@@ -393,7 +413,22 @@ class MainActivity : AppCompatActivity() {
         currentFolderPath = folder.absolutePath
 
         songsScreen.findViewById<TextView>(R.id.tv_folder_name).text = folder.name
+
+        // Add header view to ListView
+        val headerView = layoutInflater.inflate(R.layout.list_header, songListView, false)
+        songListView?.addHeaderView(headerView)
+
+        // Set up the song count in the header
+        val songCountTextView = headerView.findViewById<TextView>(R.id.tv_song_count)
         songCountTextView.text = "Play all (${currentSongs.size})"
+
+        // Set up click listener for the play all button
+        val playAllButton = headerView.findViewById<ImageButton>(R.id.playlist_start_button)
+        playAllButton.setOnClickListener {
+            if (currentSongs.isNotEmpty()) {
+                playSong(0)
+            }
+        }
 
         // Initialize views here
         alphabetIndexView = songsScreen.findViewById(R.id.alphabet_index)
@@ -413,6 +448,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
         songsScreen.findViewById<ListView>(R.id.song_list_view).adapter = adapter
+        songsScreen.findViewById<ListView>(R.id.song_list_view).setOnScrollListener(scrollListener)
+
+        // Initially hide the alphabet index
+        alphabetIndexView?.visibility = View.GONE
 
         // Update folder list to show current folder
         folderItems.forEach { it.isCurrentFolder = it.folder.absolutePath == currentFolderPath }
@@ -954,7 +993,7 @@ class MainActivity : AppCompatActivity() {
 // Add Play Song next button
 // Search Function for Album, Artists, Songs
 // add smoother animations to app
-// correct margin for play button mini player and time circle & Alphabet Travel System
+// correct margin for play button mini player and time circle
 // song list settings for one song
 // holding song item for settings too
 // See Name of play mode when switching through
@@ -977,7 +1016,5 @@ class MainActivity : AppCompatActivity() {
 
 // Holding down pause/play button to repeat song times
 // shuffle mode next/previous bug, else works fine
-
-// list_header-xml fixed instead of scrolling with the list
 
 //can you help me with my kotlin android app? I would like to have a special feature. I want that when you hold down the play/pause button of the player screen, for maybe like 2 seconds, then a number in like a small round container appears and this number gets higher how longer you hold down on this button. for example when I don't hold down the button for 2 seconds or longer, then this container will not appear and the value will be like 0, that means that the current playing song will not repeat itself, it will once finish, go to the next song in the playlist, but when the value is over 0, so for example 4, then the current song will repeat itself 4 times after finishing. Song finishes, repeats, number in container gets down to 3, song finishes, repeats, number gets down to 2 and so on. Once the value is 0, the container disappears and the song will when finished go to the next song. hope you get what I mean :) and WITHOUT a library when possible
