@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var playSettingsButton: ImageView
     private lateinit var playerSettingsButton: ImageView
     private var currentPlayMode: PlayMode = PlayMode.NORMAL
-    private var isShuffled: Boolean = false
+    private var isShuffleMode = false
     private var originalPlaylist: List<SongItem> = emptyList()
 
     private var alphabetIndexView: AlphabetIndexView? = null
@@ -52,10 +52,6 @@ class MainActivity : AppCompatActivity() {
     enum class PlayMode {
         NORMAL, REPEAT_ALL, REPEAT_ONE, SHUFFLE
     }
-
-    private lateinit var playAllButton: LinearLayout
-    private lateinit var playAllImage: ImageButton
-    private lateinit var songCountTextView: TextView
 
     private var selectedSongUri: Uri? = null
     private var currentFolder: File? = null
@@ -310,58 +306,75 @@ class MainActivity : AppCompatActivity() {
                 PlayMode.REPEAT_ONE -> PlayMode.SHUFFLE
                 PlayMode.SHUFFLE -> PlayMode.NORMAL
             }
+            isShuffleMode = currentPlayMode == PlayMode.SHUFFLE
             updatePlaySettingsIcon()
             applyPlayMode()
-            savePlayMode()  // Save the play mode when it changes
+            savePlayMode()
+        }
+
+        // Add a long click listener for shuffle
+        playSettingsButton.setOnLongClickListener {
+            isShuffleMode = !isShuffleMode
+            currentPlayMode = if (isShuffleMode) {
+                PlayMode.SHUFFLE
+            } else {
+                PlayMode.NORMAL
+            }
+            updatePlaySettingsIcon()
+            applyPlayMode()
+            savePlayMode()
+            true
         }
     }
 
     private fun updatePlaySettingsIcon() {
-        val iconResource = when (currentPlayMode) {
-            PlayMode.NORMAL -> R.drawable.no_repeat
-            PlayMode.REPEAT_ALL -> R.drawable.repeat
-            PlayMode.REPEAT_ONE -> R.drawable.repeat_once
-            PlayMode.SHUFFLE -> R.drawable.shuffle
+        val iconResource = when {
+            isShuffleMode -> R.drawable.shuffle
+            currentPlayMode == PlayMode.NORMAL -> R.drawable.no_repeat
+            currentPlayMode == PlayMode.REPEAT_ALL -> R.drawable.repeat
+            currentPlayMode == PlayMode.REPEAT_ONE -> R.drawable.repeat_once
+            else -> R.drawable.no_repeat
         }
         playSettingsButton.setImageResource(iconResource)
     }
 
     private fun applyPlayMode() {
         when (currentPlayMode) {
-            PlayMode.NORMAL -> {
+            PlayMode.NORMAL, PlayMode.REPEAT_ALL -> {
                 mediaPlayer?.isLooping = false
-                if (isShuffled) {
-                    isShuffled = false
-                    currentPlaylist = originalPlaylist.toList()
-                    currentSongIndex = originalPlaylist.indexOf(currentPlaylist[currentSongIndex])
-                }
-            }
-            PlayMode.REPEAT_ALL -> {
-                mediaPlayer?.isLooping = false
-                if (isShuffled) {
-                    isShuffled = false
-                    currentPlaylist = originalPlaylist.toList()
-                    currentSongIndex = originalPlaylist.indexOf(currentPlaylist[currentSongIndex])
+                if (isShuffleMode) {
+                    shufflePlaylist()
+                } else {
+                    restoreOriginalPlaylist()
                 }
             }
             PlayMode.REPEAT_ONE -> {
                 mediaPlayer?.isLooping = true
-                if (isShuffled) {
-                    isShuffled = false
-                    currentPlaylist = originalPlaylist.toList()
-                    currentSongIndex = originalPlaylist.indexOf(currentPlaylist[currentSongIndex])
-                }
+                restoreOriginalPlaylist()
             }
             PlayMode.SHUFFLE -> {
                 mediaPlayer?.isLooping = false
-                if (!isShuffled) {
-                    isShuffled = true
-                    originalPlaylist = currentPlaylist.toList()
-                    val currentSong = currentPlaylist[currentSongIndex]
-                    currentPlaylist = currentPlaylist.shuffled()
-                    currentSongIndex = currentPlaylist.indexOf(currentSong)
-                }
+                shufflePlaylist()
             }
+        }
+    }
+
+    private fun shufflePlaylist() {
+        if (!isShuffleMode) {
+            isShuffleMode = true
+            originalPlaylist = currentPlaylist.toList()
+            val currentSong = currentPlaylist[currentSongIndex]
+            currentPlaylist = currentPlaylist.shuffled()
+            currentSongIndex = currentPlaylist.indexOf(currentSong)
+        }
+    }
+
+    private fun restoreOriginalPlaylist() {
+        if (isShuffleMode) {
+            isShuffleMode = false
+            val currentSong = currentPlaylist[currentSongIndex]
+            currentPlaylist = originalPlaylist.toList()
+            currentSongIndex = currentPlaylist.indexOf(currentSong)
         }
     }
 
@@ -410,9 +423,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadSongsInFolder(folder: File) {
         currentSongs = getSongsInFolder(folder)
-        currentFolderPath = folder.absolutePath
 
         songsScreen.findViewById<TextView>(R.id.tv_folder_name).text = folder.name
+
+        // Remove existing header view if any
+        if ((songListView?.headerViewsCount ?: 0) > 0) {
+            songListView?.removeHeaderView(songListView?.getChildAt(0))
+        }
 
         // Add header view to ListView
         val headerView = layoutInflater.inflate(R.layout.list_header, songListView, false)
@@ -426,6 +443,7 @@ class MainActivity : AppCompatActivity() {
         val playAllButton = headerView.findViewById<ImageButton>(R.id.playlist_start_button)
         playAllButton.setOnClickListener {
             if (currentSongs.isNotEmpty()) {
+                currentPlaylist = currentSongs.toList()  // Update the current playlist
                 playSong(0)
             }
         }
@@ -453,16 +471,22 @@ class MainActivity : AppCompatActivity() {
         // Initially hide the alphabet index
         alphabetIndexView?.visibility = View.GONE
 
-        // Update folder list to show current folder
-        folderItems.forEach { it.isCurrentFolder = it.folder.absolutePath == currentFolderPath }
-        (homeScreen.findViewById<ListView>(R.id.folder_list_view).adapter as ArrayAdapter<*>).notifyDataSetChanged()
-
         // Set up song list click listener
         songsScreen.findViewById<ListView>(R.id.song_list_view).setOnItemClickListener { _, _, position, _ ->
-            currentPlaylist = currentSongs.toList()  // Set currentPlaylist when starting playback
-            playSong(position)
-            showScreen(playerScreen)
+            val actualPosition = position - 1 // Adjust for header
+            if (actualPosition >= 0) { // Ensure we're not clicking the header
+                currentPlaylist = currentSongs.toList()
+                playSong(actualPosition)
+                currentFolderPath = folder.absolutePath
+                updateFolderList()
+                showScreen(playerScreen)
+            }
         }
+    }
+
+    private fun updateFolderList() {
+        folderItems.forEach { it.isCurrentFolder = it.folder.absolutePath == currentFolderPath }
+        (homeScreen.findViewById<ListView>(R.id.folder_list_view).adapter as ArrayAdapter<*>).notifyDataSetChanged()
     }
 
 
@@ -688,7 +712,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         return songs.sortedWith(compareBy<SongItem> { song ->
-            val title = song.title.toLowerCase(Locale.GERMAN)
+            val title = song.title.lowercase(Locale.GERMAN)
             when {
                 title.first().isDigit() -> "zzz$title"  // Move numbers to the end
                 title.startsWith("ä") -> "a" + title.substring(1)
@@ -744,12 +768,29 @@ class MainActivity : AppCompatActivity() {
             updateMiniPlayer(song)
             updateMiniPlayerProgress(0f)
 
+            // Update the folder list to show the current folder icon
+            currentFolderPath = song.file.parent
+            updateFolderList()
+
             // Refresh the song list view to show the current song icon
-            (songsScreen.findViewById<ListView>(R.id.song_list_view).adapter as ArrayAdapter<*>).notifyDataSetChanged()
+            refreshSongList()
 
         } catch (e: Exception) {
             Log.e("AudioFlow", "Error playing song", e)
             Toast.makeText(this, "Error playing song: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun refreshSongList() {
+        val listView = songsScreen.findViewById<ListView>(R.id.song_list_view)
+        val adapter = listView.adapter
+        if (adapter is HeaderViewListAdapter) {
+            val wrappedAdapter = adapter.wrappedAdapter
+            if (wrappedAdapter is ArrayAdapter<*>) {
+                wrappedAdapter.notifyDataSetChanged()
+            }
+        } else if (adapter is ArrayAdapter<*>) {
+            adapter.notifyDataSetChanged()
         }
     }
 
@@ -899,19 +940,12 @@ class MainActivity : AppCompatActivity() {
 
         if (currentPlaylist.isNotEmpty()) {
             when (currentPlayMode) {
-                PlayMode.NORMAL -> {
-                    if (currentSongIndex < currentPlaylist.size - 1) {
-                        currentSongIndex++
-                        playSong(currentSongIndex, showPlayerScreen)
-                    } else {
-                        // At the last song, stop playback or maybe show a toast
-                        mediaPlayer?.pause()
-                        updatePlayPauseButton()
-                        Toast.makeText(this, "Playlist ended", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                else -> {
+                PlayMode.NORMAL, PlayMode.REPEAT_ALL, PlayMode.REPEAT_ONE -> {
                     currentSongIndex = (currentSongIndex + 1) % currentPlaylist.size
+                    playSong(currentSongIndex, showPlayerScreen)
+                }
+                PlayMode.SHUFFLE -> {
+                    currentSongIndex = (0 until currentPlaylist.size).random()
                     playSong(currentSongIndex, showPlayerScreen)
                 }
             }
@@ -962,6 +996,13 @@ class MainActivity : AppCompatActivity() {
             settingsScreen -> showScreen(homeScreen)
             else -> super.onBackPressed()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadMusicFolders()
+        // If you have a current song playing, update the UI
+        lastPlayedSong?.let { updateMiniPlayer(it) }
     }
 
     private fun getFileName(uri: Uri): String {
@@ -1015,6 +1056,5 @@ class MainActivity : AppCompatActivity() {
 // Maybe add small infos about a song
 
 // Holding down pause/play button to repeat song times
-// shuffle mode next/previous bug, else works fine
 
 //can you help me with my kotlin android app? I would like to have a special feature. I want that when you hold down the play/pause button of the player screen, for maybe like 2 seconds, then a number in like a small round container appears and this number gets higher how longer you hold down on this button. for example when I don't hold down the button for 2 seconds or longer, then this container will not appear and the value will be like 0, that means that the current playing song will not repeat itself, it will once finish, go to the next song in the playlist, but when the value is over 0, so for example 4, then the current song will repeat itself 4 times after finishing. Song finishes, repeats, number in container gets down to 3, song finishes, repeats, number gets down to 2 and so on. Once the value is 0, the container disappears and the song will when finished go to the next song. hope you get what I mean :) and WITHOUT a library when possible
