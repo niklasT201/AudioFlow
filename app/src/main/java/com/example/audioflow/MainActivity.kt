@@ -45,6 +45,8 @@ class MainActivity : AppCompatActivity() {
     private var currentPlayMode: PlayMode = PlayMode.NORMAL
     private var isShuffleMode = false
     private var originalPlaylist: List<SongItem> = emptyList()
+    private var headerView: View? = null
+    private var playModeToast: Toast? = null
 
     private var alphabetIndexView: AlphabetIndexView? = null
     private var songListView: ListView? = null
@@ -133,6 +135,7 @@ class MainActivity : AppCompatActivity() {
         playSettingsButton = findViewById(R.id.btn_play_settings)
         playerSettingsButton = findViewById(R.id.btn_player_settings)
 
+        songListView = songsScreen.findViewById(R.id.song_list_view)
     }
 
     private fun checkPermission(): Boolean {
@@ -338,6 +341,24 @@ class MainActivity : AppCompatActivity() {
         playSettingsButton.setImageResource(iconResource)
     }
 
+    private fun showPlayModeToast() {
+        val playModeText = when (currentPlayMode) {
+            PlayMode.NORMAL -> "Normal Mode"
+            PlayMode.REPEAT_ALL -> "Repeat All"
+            PlayMode.REPEAT_ONE -> "Repeat One"
+            PlayMode.SHUFFLE -> "Shuffle"
+        }
+
+        if (playModeToast == null) {
+            playModeToast = Toast.makeText(this, playModeText, Toast.LENGTH_SHORT)
+        } else {
+            playModeToast?.setText(playModeText)
+        }
+
+        // Show the toast for 2 seconds
+        playModeToast?.show()
+    }
+
     private fun applyPlayMode() {
         when (currentPlayMode) {
             PlayMode.NORMAL, PlayMode.REPEAT_ALL -> {
@@ -357,6 +378,9 @@ class MainActivity : AppCompatActivity() {
                 shufflePlaylist()
             }
         }
+
+        // Display the updated play mode toast
+        showPlayModeToast()
     }
 
     private fun shufflePlaylist() {
@@ -424,49 +448,49 @@ class MainActivity : AppCompatActivity() {
     private fun loadSongsInFolder(folder: File) {
         currentSongs = getSongsInFolder(folder)
 
+        showScreen(songsScreen)
+
         songsScreen.findViewById<TextView>(R.id.tv_folder_name).text = folder.name
 
-        // Remove existing header view if any
-        if ((songListView?.headerViewsCount ?: 0) > 0) {
-            songListView?.removeHeaderView(songListView?.getChildAt(0))
+        // Initialize the header view if it doesn't exist
+        if (headerView == null) {
+            headerView = layoutInflater.inflate(R.layout.list_header, null)
         }
 
-        // Add header view to ListView
-        val headerView = layoutInflater.inflate(R.layout.list_header, songListView, false)
-        songListView?.addHeaderView(headerView)
+        // Check if the songListView is not null before adding the header view
+        songListView?.let { listView ->
+            // Remove any existing header views
+            if (listView.headerViewsCount > 0) {
+                listView.removeHeaderView(listView.getChildAt(0))
+            }
 
-        // Set up the song count in the header
-        val songCountTextView = headerView.findViewById<TextView>(R.id.tv_song_count)
-        songCountTextView.text = "Play all (${currentSongs.size})"
+            // Add the header view to the ListView
+            listView.addHeaderView(headerView)
+        }
 
-        // Set up click listener for the play all button
-        val playAllButton = headerView.findViewById<ImageButton>(R.id.playlist_start_button)
-        playAllButton.setOnClickListener {
+        // Update the header view
+        val songCountTextView = headerView?.findViewById<TextView>(R.id.tv_song_count)
+        songCountTextView?.text = "Play all (${currentSongs.size})"
+
+        // Set up the click listener for the play all button
+        val playAllButton = headerView?.findViewById<ImageButton>(R.id.playlist_start_button)
+        playAllButton?.setOnClickListener {
             if (currentSongs.isNotEmpty()) {
-                currentPlaylist = currentSongs.toList()  // Update the current playlist
+                currentPlaylist = currentSongs.toList()
                 playSong(0)
             }
         }
 
         // Initialize views here
         alphabetIndexView = songsScreen.findViewById(R.id.alphabet_index)
-        songListView = songsScreen.findViewById(R.id.song_list_view)
+        //songListView = songsScreen.findViewById(R.id.song_list_view)
 
         setupAlphabetIndex()
 
-        val adapter = object : ArrayAdapter<SongItem>(this, R.layout.list_item, currentSongs) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = convertView ?: layoutInflater.inflate(R.layout.list_item, parent, false)
-                val song = getItem(position)
-                view.findViewById<TextView>(R.id.list_item_title).text = song?.title
-                view.findViewById<TextView>(R.id.list_item_artist).text = "${song?.artist} - ${song?.album}"
-                view.findViewById<ImageView>(R.id.song_current_song_icon).visibility =
-                    if (song == lastPlayedSong) View.VISIBLE else View.GONE
-                return view
-            }
-        }
-        songsScreen.findViewById<ListView>(R.id.song_list_view).adapter = adapter
-        songsScreen.findViewById<ListView>(R.id.song_list_view).setOnScrollListener(scrollListener)
+        // Initialize the song list view adapter
+        val adapter = createSongListAdapter(currentSongs)
+        songListView?.adapter = adapter
+        songListView?.setOnScrollListener(scrollListener)
 
         // Initially hide the alphabet index
         alphabetIndexView?.visibility = View.GONE
@@ -480,6 +504,20 @@ class MainActivity : AppCompatActivity() {
                 currentFolderPath = folder.absolutePath
                 updateFolderList()
                 showScreen(playerScreen)
+            }
+        }
+    }
+
+    private fun createSongListAdapter(songs: List<SongItem>): ArrayAdapter<SongItem> {
+        return object : ArrayAdapter<SongItem>(this, R.layout.list_item, songs) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = convertView ?: layoutInflater.inflate(R.layout.list_item, parent, false)
+                val song = getItem(position)
+                view.findViewById<TextView>(R.id.list_item_title).text = song?.title
+                view.findViewById<TextView>(R.id.list_item_artist).text = "${song?.artist} - ${song?.album}"
+                view.findViewById<ImageView>(R.id.song_current_song_icon).visibility =
+                    if (song == lastPlayedSong) View.VISIBLE else View.GONE
+                return view
             }
         }
     }
@@ -1037,7 +1075,6 @@ class MainActivity : AppCompatActivity() {
 // correct margin for play button mini player and time circle
 // song list settings for one song
 // holding song item for settings too
-// See Name of play mode when switching through
 
 // info screen
 // sound changes
