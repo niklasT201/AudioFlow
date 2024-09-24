@@ -63,11 +63,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var playerScreen: View
     private lateinit var homeScreen: View
     private lateinit var songsScreen: View
+    private lateinit var searchScreen: View
     private lateinit var settingsScreen: View
     private var folderItems: List<FolderItem> = emptyList()
 
     private lateinit var contentFrame: FrameLayout
     private lateinit var btnHome: Button
+    private lateinit var btnSearch: Button
     private lateinit var btnSettings: Button
 
     private var lastPlayedSong: SongItem? = null
@@ -115,10 +117,12 @@ class MainActivity : AppCompatActivity() {
         contentFrame = findViewById(R.id.content_frame)
         val footer = findViewById<View>(R.id.footer)
         btnHome = footer.findViewById(R.id.btn_home)
+        btnSearch = footer.findViewById(R.id.btn_search)
         btnSettings = footer.findViewById(R.id.btn_settings)
 
         homeScreen = layoutInflater.inflate(R.layout.home_screen, contentFrame, false)
         songsScreen = layoutInflater.inflate(R.layout.songs_screen, contentFrame, false)
+        searchScreen = layoutInflater.inflate(R.layout.search_screen, contentFrame, false)
         settingsScreen = layoutInflater.inflate(R.layout.settings_screen, contentFrame, false)
         playerScreen = findViewById(R.id.player_view_container)
 
@@ -170,6 +174,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupNavigation() {
         findViewById<Button>(R.id.btn_home).setOnClickListener { showScreen(homeScreen) }
+        findViewById<Button>(R.id.btn_search).setOnClickListener { showScreen(searchScreen) }
         findViewById<Button>(R.id.btn_settings).setOnClickListener { showScreen(settingsScreen) }
 
         // Set up folder list click listener
@@ -212,7 +217,7 @@ class MainActivity : AppCompatActivity() {
 
         // Update visibility of footer and header
         findViewById<View>(R.id.footer)?.visibility = when (screen) {
-            homeScreen, settingsScreen -> View.VISIBLE
+            homeScreen, searchScreen, settingsScreen -> View.VISIBLE
             else -> View.GONE
         }
 
@@ -224,6 +229,7 @@ class MainActivity : AppCompatActivity() {
         // Update mini player visibility
         val miniPlayer = when (screen) {
             homeScreen -> homeScreen.findViewById<View>(R.id.mini_player)
+            searchScreen -> searchScreen.findViewById<View>(R.id.mini_player)
             songsScreen -> songsScreen.findViewById<View>(R.id.mini_player)
             else -> null
         }
@@ -413,6 +419,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        btnSearch.setOnClickListener {
+            Log.d("AudioFlow", "Search button clicked")
+            try {
+                showScreen(searchScreen)
+            } catch (e: Exception) {
+                Log.e("AudioFlow", "Error showing search view", e)
+                Toast.makeText(this, "Error showing search view: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+
         btnSettings.setOnClickListener {
             Log.d("AudioFlow", "Settings button clicked")
             try {
@@ -562,6 +578,8 @@ class MainActivity : AppCompatActivity() {
         // Update mini player on home screen
         homeScreen.findViewById<View>(R.id.mini_player)?.let { updateMiniPlayerView(it) }
 
+        searchScreen.findViewById<View>(R.id.mini_player)?.let { updateMiniPlayerView(it) }
+
         // Update mini player on songs screen
         songsScreen.findViewById<View>(R.id.mini_player)?.let { updateMiniPlayerView(it) }
 
@@ -576,6 +594,9 @@ class MainActivity : AppCompatActivity() {
 
         val songsScreenMiniPlayerPlayPause = songsScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)
         songsScreenMiniPlayerPlayPause?.setProgress(progress)
+
+        val searchScreenMiniPlayerPlayPause = searchScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)
+        searchScreenMiniPlayerPlayPause?.setProgress(progress)
     }
 
     private fun saveLastPlayedSong(song: SongItem) {
@@ -613,6 +634,7 @@ class MainActivity : AppCompatActivity() {
             // Update mini player visibility on both screens
             homeScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
             songsScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
+            searchScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
 
             // Prepare the MediaPlayer with the last played song
             try {
@@ -635,6 +657,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 homeScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
                 songsScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
+                searchScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
             } catch (e: Exception) {
                 Log.e("AudioFlow", "Error preparing last played song", e)
             }
@@ -913,6 +936,7 @@ class MainActivity : AppCompatActivity() {
         playPauseButton.setImageResource(resource)
         homeScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
         songsScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
+        searchScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
     }
 
     private fun togglePlayPause() {
@@ -1032,6 +1056,7 @@ class MainActivity : AppCompatActivity() {
             songsScreen -> showScreen(homeScreen)
             playerScreen -> showScreen(songsScreen)
             settingsScreen -> showScreen(homeScreen)
+            searchScreen -> showScreen(homeScreen)
             else -> super.onBackPressed()
         }
     }
@@ -1072,7 +1097,6 @@ class MainActivity : AppCompatActivity() {
 // Add Play Song next button
 // Search Function for Album, Artists, Songs
 // add smoother animations to app
-// correct margin for play button mini player and time circle
 // song list settings for one song
 // holding song item for settings too
 
@@ -1091,7 +1115,5 @@ class MainActivity : AppCompatActivity() {
 // Timer also available
 // About App
 // Maybe add small infos about a song
-
-// Holding down pause/play button to repeat song times
 
 //can you help me with my kotlin android app? I would like to have a special feature. I want that when you hold down the play/pause button of the player screen, for maybe like 2 seconds, then a number in like a small round container appears and this number gets higher how longer you hold down on this button. for example when I don't hold down the button for 2 seconds or longer, then this container will not appear and the value will be like 0, that means that the current playing song will not repeat itself, it will once finish, go to the next song in the playlist, but when the value is over 0, so for example 4, then the current song will repeat itself 4 times after finishing. Song finishes, repeats, number in container gets down to 3, song finishes, repeats, number gets down to 2 and so on. Once the value is 0, the container disappears and the song will when finished go to the next song. hope you get what I mean :) and WITHOUT a library when possible
