@@ -13,4 +13,6 @@
     <string name="search_option">Search</string>
     <string name="play_settings_description">Play Settings</string>
     <string name="info">Infos</string>
+    <string name="search_hint">Search for</string>
+    <string name="edit">Edit</string>
 </resources>

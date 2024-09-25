@@ -2,17 +2,45 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:orientation="vertical"
-              android:padding="16dp">
+              android:orientation="vertical">
 
-    <TextView
-            android:layout_width="wrap_content"
+    <SearchView
+            android:id="@+id/searchView"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/search_option"
-            android:textSize="24sp"
             android:textColor="@color/primary_text"
-            android:layout_marginBottom="16dp" />
+            android:queryHint="Search for songs, artists, or albums" />
+
+    <RadioGroup
+            android:id="@+id/modeRadioGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:orientation="horizontal">
+
+        <RadioButton
+                android:id="@+id/playModeRadio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:textColor="@color/primary_text"
+                android:text="@string/play" />
+
+        <RadioButton
+                android:id="@+id/editModeRadio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/primary_text"
+                android:text="@string/edit" />
+    </RadioGroup>
+
+    <ListView
+            android:id="@+id/searchResultsList"
+            android:textColor="@color/primary_text"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:padding="8dp"
+            android:layout_weight="1" />
 
     <include layout="@layout/mini_player" />
-
 </LinearLayout>

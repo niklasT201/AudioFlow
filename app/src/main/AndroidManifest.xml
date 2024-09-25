@@ -38,6 +38,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+
+        <!-- Add this new activity declaration -->
+        <activity
+                android:name=".SearchActivity"
+                android:exported="false"
+                android:theme="@style/Theme.AudioFlow">
+        </activity>
     </application>
 
 </manifest>

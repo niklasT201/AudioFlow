@@ -63,7 +63,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var playerScreen: View
     private lateinit var homeScreen: View
     private lateinit var songsScreen: View
-    private lateinit var searchScreen: View
     private lateinit var settingsScreen: View
     private var folderItems: List<FolderItem> = emptyList()
 
@@ -122,7 +121,6 @@ class MainActivity : AppCompatActivity() {
 
         homeScreen = layoutInflater.inflate(R.layout.home_screen, contentFrame, false)
         songsScreen = layoutInflater.inflate(R.layout.songs_screen, contentFrame, false)
-        searchScreen = layoutInflater.inflate(R.layout.search_screen, contentFrame, false)
         settingsScreen = layoutInflater.inflate(R.layout.settings_screen, contentFrame, false)
         playerScreen = findViewById(R.id.player_view_container)
 
@@ -174,7 +172,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupNavigation() {
         findViewById<Button>(R.id.btn_home).setOnClickListener { showScreen(homeScreen) }
-        findViewById<Button>(R.id.btn_search).setOnClickListener { showScreen(searchScreen) }
         findViewById<Button>(R.id.btn_settings).setOnClickListener { showScreen(settingsScreen) }
 
         // Set up folder list click listener
@@ -217,7 +214,7 @@ class MainActivity : AppCompatActivity() {
 
         // Update visibility of footer and header
         findViewById<View>(R.id.footer)?.visibility = when (screen) {
-            homeScreen, searchScreen, settingsScreen -> View.VISIBLE
+            homeScreen, settingsScreen -> View.VISIBLE
             else -> View.GONE
         }
 
@@ -229,7 +226,6 @@ class MainActivity : AppCompatActivity() {
         // Update mini player visibility
         val miniPlayer = when (screen) {
             homeScreen -> homeScreen.findViewById<View>(R.id.mini_player)
-            searchScreen -> searchScreen.findViewById<View>(R.id.mini_player)
             songsScreen -> songsScreen.findViewById<View>(R.id.mini_player)
             else -> null
         }
@@ -422,7 +418,8 @@ class MainActivity : AppCompatActivity() {
         btnSearch.setOnClickListener {
             Log.d("AudioFlow", "Search button clicked")
             try {
-                showScreen(searchScreen)
+                val intent = Intent(this, SearchActivity::class.java)
+                startActivity(intent)
             } catch (e: Exception) {
                 Log.e("AudioFlow", "Error showing search view", e)
                 Toast.makeText(this, "Error showing search view: ${e.message}", Toast.LENGTH_LONG).show()
@@ -462,6 +459,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadSongsInFolder(folder: File) {
+        Log.d("AudioFlow", "Loading folder: ${folder.name}")
+        Log.d("AudioFlow", "Current song index: $currentSongIndex")
+        Log.d("AudioFlow", "Song count of folder: ${currentSongs.size}")
+        Log.d("AudioFlow", "ListView header count: ${songListView?.headerViewsCount}")
+
         currentSongs = getSongsInFolder(folder)
 
         showScreen(songsScreen)
@@ -578,8 +580,6 @@ class MainActivity : AppCompatActivity() {
         // Update mini player on home screen
         homeScreen.findViewById<View>(R.id.mini_player)?.let { updateMiniPlayerView(it) }
 
-        searchScreen.findViewById<View>(R.id.mini_player)?.let { updateMiniPlayerView(it) }
-
         // Update mini player on songs screen
         songsScreen.findViewById<View>(R.id.mini_player)?.let { updateMiniPlayerView(it) }
 
@@ -594,9 +594,6 @@ class MainActivity : AppCompatActivity() {
 
         val songsScreenMiniPlayerPlayPause = songsScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)
         songsScreenMiniPlayerPlayPause?.setProgress(progress)
-
-        val searchScreenMiniPlayerPlayPause = searchScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)
-        searchScreenMiniPlayerPlayPause?.setProgress(progress)
     }
 
     private fun saveLastPlayedSong(song: SongItem) {
@@ -634,7 +631,6 @@ class MainActivity : AppCompatActivity() {
             // Update mini player visibility on both screens
             homeScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
             songsScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
-            searchScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
 
             // Prepare the MediaPlayer with the last played song
             try {
@@ -657,7 +653,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 homeScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
                 songsScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
-                searchScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
             } catch (e: Exception) {
                 Log.e("AudioFlow", "Error preparing last played song", e)
             }
@@ -936,7 +931,6 @@ class MainActivity : AppCompatActivity() {
         playPauseButton.setImageResource(resource)
         homeScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
         songsScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
-        searchScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
     }
 
     private fun togglePlayPause() {
@@ -1056,7 +1050,6 @@ class MainActivity : AppCompatActivity() {
             songsScreen -> showScreen(homeScreen)
             playerScreen -> showScreen(songsScreen)
             settingsScreen -> showScreen(homeScreen)
-            searchScreen -> showScreen(homeScreen)
             else -> super.onBackPressed()
         }
     }
