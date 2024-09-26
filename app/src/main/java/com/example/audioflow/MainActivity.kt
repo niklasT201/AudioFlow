@@ -461,69 +461,59 @@ class MainActivity : AppCompatActivity() {
     private fun loadSongsInFolder(folder: File) {
         Log.d("AudioFlow", "Loading folder: ${folder.name}")
         Log.d("AudioFlow", "Current song index: $currentSongIndex")
-        Log.d("AudioFlow", "Song count of folder: ${currentSongs.size}")
-        Log.d("AudioFlow", "ListView header count: ${songListView?.headerViewsCount}")
 
         currentSongs = getSongsInFolder(folder)
+
+        Log.d("AudioFlow", "Song count of folder: ${currentSongs.size}")
 
         showScreen(songsScreen)
 
         songsScreen.findViewById<TextView>(R.id.tv_folder_name).text = folder.name
 
-        // Initialize the header view if it doesn't exist
-        if (headerView == null) {
-            headerView = layoutInflater.inflate(R.layout.list_header, null)
-        }
-
-        // Check if the songListView is not null before adding the header view
+        // Check if the songListView is not null before manipulating it
         songListView?.let { listView ->
             // Remove any existing header views
-            if (listView.headerViewsCount > 0) {
-                listView.removeHeaderView(listView.getChildAt(0))
+            listView.removeHeaderView(headerView)
+            headerView = null
+
+            // Create and add a new header view
+            headerView = layoutInflater.inflate(R.layout.list_header, listView, false)
+            headerView?.findViewById<TextView>(R.id.tv_song_count)?.text = "Play all (${currentSongs.size})"
+            val playAllButton = headerView?.findViewById<ImageButton>(R.id.playlist_start_button)
+            playAllButton?.setOnClickListener {
+                if (currentSongs.isNotEmpty()) {
+                    currentPlaylist = currentSongs.toList()
+                    playSong(0)
+                }
             }
-
-            // Add the header view to the ListView
             listView.addHeaderView(headerView)
-        }
 
-        // Update the header view
-        val songCountTextView = headerView?.findViewById<TextView>(R.id.tv_song_count)
-        songCountTextView?.text = "Play all (${currentSongs.size})"
+            // Initialize the song list view adapter
+            val adapter = createSongListAdapter(currentSongs)
+            listView.adapter = adapter
+            listView.setOnScrollListener(scrollListener)
 
-        // Set up the click listener for the play all button
-        val playAllButton = headerView?.findViewById<ImageButton>(R.id.playlist_start_button)
-        playAllButton?.setOnClickListener {
-            if (currentSongs.isNotEmpty()) {
-                currentPlaylist = currentSongs.toList()
-                playSong(0)
+            // Set up song list click listener
+            listView.setOnItemClickListener { _, _, position, _ ->
+                val actualPosition = position - 1 // Adjust for header
+                if (actualPosition >= 0) { // Ensure we're not clicking the header
+                    currentPlaylist = currentSongs.toList()
+                    playSong(actualPosition)
+                    currentFolderPath = folder.absolutePath
+                    updateFolderList()
+                    showScreen(playerScreen)
+                }
             }
         }
 
         // Initialize views here
         alphabetIndexView = songsScreen.findViewById(R.id.alphabet_index)
-        //songListView = songsScreen.findViewById(R.id.song_list_view)
-
         setupAlphabetIndex()
-
-        // Initialize the song list view adapter
-        val adapter = createSongListAdapter(currentSongs)
-        songListView?.adapter = adapter
-        songListView?.setOnScrollListener(scrollListener)
 
         // Initially hide the alphabet index
         alphabetIndexView?.visibility = View.GONE
 
-        // Set up song list click listener
-        songsScreen.findViewById<ListView>(R.id.song_list_view).setOnItemClickListener { _, _, position, _ ->
-            val actualPosition = position - 1 // Adjust for header
-            if (actualPosition >= 0) { // Ensure we're not clicking the header
-                currentPlaylist = currentSongs.toList()
-                playSong(actualPosition)
-                currentFolderPath = folder.absolutePath
-                updateFolderList()
-                showScreen(playerScreen)
-            }
-        }
+        Log.d("AudioFlow", "ListView header count: ${songListView?.headerViewsCount}")
     }
 
     private fun createSongListAdapter(songs: List<SongItem>): ArrayAdapter<SongItem> {
