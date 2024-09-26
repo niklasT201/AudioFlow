@@ -15,4 +15,9 @@
     <string name="info">Infos</string>
     <string name="search_hint">Search for</string>
     <string name="edit">Edit</string>
+    <string name="cover">Change Cover</string>
+    <string name="artist_title">Title</string>
+    <string name="artist">Artist</string>
+    <string name="artist_album">Album</string>
+    <string name="save_button">Save</string>
 </resources>

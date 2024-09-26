@@ -1,5 +1,6 @@
 package com.example.audioflow
 
+import android.app.Activity
 import android.os.Bundle
 import android.widget.ListView
 import android.widget.RadioGroup
@@ -12,7 +13,7 @@ import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.TextView
 import android.provider.MediaStore
-import android.content.ContentUris
+import android.content.Intent
 import java.io.File
 
 class SearchActivity : AppCompatActivity() {
@@ -31,14 +32,12 @@ class SearchActivity : AppCompatActivity() {
         searchResultsList = findViewById(R.id.searchResultsList)
 
         allSongs = getAllSongs()
-        adapter = SearchResultsAdapter(this, emptyList())
+        adapter = SearchResultsAdapter(this, allSongs.map { SearchResultItem.Song(it) })
         searchResultsList.adapter = adapter
 
         setupSearchView()
         setupModeRadioGroup()
         setupListViewClickListener()
-
-        performSearch("") // This will show all songs
     }
 
     private fun setupSearchView() {
@@ -152,9 +151,27 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun editSongMetadata(song: SongItem) {
-        // Implement this method to edit the metadata of the selected song
-        // You'll need to create a new activity or dialog for editing metadata
+        val intent = Intent(this, EditMetadataActivity::class.java)
+        intent.putExtra("songPath", song.file.absolutePath)
+        intent.putExtra("songTitle", song.title)
+        intent.putExtra("songArtist", song.artist)
+        intent.putExtra("songAlbum", song.album)
+        startActivityForResult(intent, EDIT_METADATA_REQUEST)
     }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == EDIT_METADATA_REQUEST && resultCode == Activity.RESULT_OK) {
+            // Refresh the song list after metadata edit
+            allSongs = getAllSongs()
+            performSearch(searchView.query.toString())
+        }
+    }
+
+    companion object {
+        const val EDIT_METADATA_REQUEST = 1
+    }
+
 }
 
 class SearchResultsAdapter(

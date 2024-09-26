@@ -46,6 +46,8 @@
                 android:exported="false"
                 android:theme="@style/Theme.AudioFlow">
         </activity>
+
+        <activity android:name=".EditMetadataActivity" />
     </application>
 
 </manifest>
