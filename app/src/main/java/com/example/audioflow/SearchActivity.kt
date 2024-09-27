@@ -2,18 +2,15 @@ package com.example.audioflow
 
 import android.app.Activity
 import android.os.Bundle
-import android.widget.ListView
-import android.widget.RadioGroup
-import android.widget.SearchView
 import androidx.appcompat.app.AppCompatActivity
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
-import android.widget.TextView
 import android.provider.MediaStore
 import android.content.Intent
+import android.widget.*
+import androidx.appcompat.widget.SearchView  // Change this import
 import java.io.File
 
 class SearchActivity : AppCompatActivity() {
@@ -41,10 +38,6 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun setupSearchView() {
-        searchView.isIconifiedByDefault = false
-        searchView.isIconified = false
-        searchView.requestFocus()
-
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 performSearch(query)

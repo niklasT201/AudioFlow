@@ -10,6 +10,40 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+            <ImageView
+                    android:id="@+id/back_btn"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:src="@drawable/before"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/my_image_description" />
+
+            <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="@color/primary_text"
+                    android:text="@string/song_info"
+                    android:layout_marginStart="5dp"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+            <ImageView
+                    android:id="@+id/saveButton"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:src="@drawable/edit_button"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/my_image_description" />
+
+        </LinearLayout>
+
         <ImageView
                 android:id="@+id/coverImageView"
                 android:layout_width="200dp"
@@ -18,7 +52,7 @@
                 android:layout_marginBottom="16dp"
                 android:scaleType="centerCrop"
                 android:src="@drawable/cover_art"
-                android:contentDescription="@string/my_image_description"/>
+                android:contentDescription="@string/my_image_description" />
 
         <Button
                 android:id="@+id/changeCoverButton"
@@ -28,54 +62,90 @@
                 android:text="@string/cover"
                 android:layout_marginBottom="16dp" />
 
-        <com.google.android.material.textfield.TextInputLayout
+        <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:layout_marginBottom="8dp">
 
-            <EditText
-                    android:id="@+id/titleEditText"
-                    android:layout_width="match_parent"
+            <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:hint="@string/artist_title"
-                    android:inputType="text"
-                    android:autofillHints="Title"/>
-        </com.google.android.material.textfield.TextInputLayout>
+                    android:text="@string/title_label"
+                    android:textColor="@color/secondary_text"
+                    android:layout_marginEnd="8dp" />
 
-        <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                <EditText
+                        android:id="@+id/titleEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:autofillHints="Title" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:layout_marginBottom="8dp">
 
-            <EditText
-                    android:id="@+id/artistEditText"
-                    android:layout_width="match_parent"
+            <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:hint="@string/artist"
-                    android:inputType="text"
-                    android:autofillHints="Artist"/>
-        </com.google.android.material.textfield.TextInputLayout>
+                    android:text="@string/artist_label"
+                    android:textColor="@color/secondary_text"
+                    android:layout_marginEnd="8dp" />
 
-        <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                <EditText
+                        android:id="@+id/artistEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:autofillHints="Artist" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="horizontal"
                 android:layout_marginBottom="16dp">
 
-            <EditText
-                    android:id="@+id/albumEditText"
-                    android:layout_width="match_parent"
+            <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:hint="@string/artist_album"
-                    android:inputType="text"
-                    android:autofillHints="Album"/>
-        </com.google.android.material.textfield.TextInputLayout>
+                    android:text="@string/album_label"
+                    android:textColor="@color/secondary_text"
+                    android:layout_marginEnd="8dp" />
 
-        <Button
-                android:id="@+id/saveButton"
-                android:layout_width="wrap_content"
+            <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                <EditText
+                        android:id="@+id/albumEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:autofillHints="Album" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <TextView
+                android:id="@+id/songPathTextView"
+                android:textColor="@color/secondary_text"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/save_button"
-                android:layout_gravity="center_horizontal" />
+                android:layout_marginBottom="16dp" />
 
     </LinearLayout>
 </ScrollView>

@@ -17,7 +17,11 @@
     <string name="edit">Edit</string>
     <string name="cover">Change Cover</string>
     <string name="artist_title">Title</string>
+    <string name="title_label">Title:</string>
     <string name="artist">Artist</string>
+    <string name="artist_label">Artist:</string>
     <string name="artist_album">Album</string>
+    <string name="album_label">Album:</string>
     <string name="save_button">Save</string>
+    <string name="song_info">Song Info</string>
 </resources>

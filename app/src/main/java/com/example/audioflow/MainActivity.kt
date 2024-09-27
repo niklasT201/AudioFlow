@@ -1083,6 +1083,19 @@ class MainActivity : AppCompatActivity() {
 // song list settings for one song
 // holding song item for settings too
 
+// search screen
+// improving design
+// remove keyboard opening at start
+// add play function
+
+// metadata screen
+// improve design
+// add mp3 name
+// add lyric option
+// add remove cover button
+// add delete file button
+// add reset button
+
 // info screen
 // sound changes
 // color changing
