@@ -12,39 +12,50 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="4dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="#2C2C2C"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintWidth_percent="0.8">
+            app:layout_constraintWidth_percent="0.9">
+
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="24dp">
 
+            <!-- Title of the Song above the seekbar -->
             <TextView
+                    android:id="@+id/current_song_title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Playback Options"
+                    android:textColor="#FFFFFF"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:layout_marginBottom="16dp"/>
+                    android:gravity="center"
+                    android:layout_marginBottom="16dp" />
 
+            <!-- Seekbar with Playback Speed -->
             <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginBottom="16dp">
+                    android:layout_marginBottom="24dp">
 
                 <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Playback Speed:"
-                        android:layout_gravity="center_vertical"/>
+                        android:text="@string/playback_speed"
+                        android:textColor="#CCCCCC"
+                        android:layout_gravity="center_vertical" />
 
                 <SeekBar
                         android:id="@+id/playback_speed_seekbar"
@@ -52,43 +63,116 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:max="200"
-                        android:progress="100"/>
+                        android:progress="100"
+                        android:progressTint="#4CAF50"
+                        android:thumbTint="#4CAF50" />
 
                 <TextView
                         android:id="@+id/playback_speed_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="1.0x"
-                        android:layout_gravity="center_vertical"/>
-
+                        android:text="@string/default_speed"
+                        android:textColor="#CCCCCC"
+                        android:layout_gravity="center_vertical" />
             </LinearLayout>
 
-            <Button
-                    android:id="@+id/btn_rename_file"
+            <!-- Rename File Item -->
+            <LinearLayout
+                    android:id="@+id/item_rename_file"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Rename File"
-                    android:layout_marginBottom="8dp"/>
+                    android:orientation="horizontal"
+                    android:paddingVertical="12dp">
 
-            <Button
-                    android:id="@+id/btn_delete_file"
+                <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/rename_icon"
+                        android:layout_marginEnd="16dp"
+                        android:contentDescription="@string/my_image_description"/>
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/rename_file"
+                        android:textColor="#FFFFFF"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical" />
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#444444"
+                    android:layout_marginStart="40dp" />
+
+            <!-- Delete File Item -->
+            <LinearLayout
+                    android:id="@+id/item_delete_file"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Delete File"
-                    android:layout_marginBottom="8dp"/>
+                    android:orientation="horizontal"
+                    android:paddingVertical="12dp">
 
-            <Button
-                    android:id="@+id/btn_edit_metadata"
+                <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/delete_icon"
+                        android:layout_marginEnd="16dp"
+                        android:contentDescription="@string/my_image_description"/>
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/delete_file"
+                        android:textColor="#FFFFFF"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical" />
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#444444"
+                    android:layout_marginStart="40dp" />
+
+            <!-- Edit Metadata Item -->
+            <LinearLayout
+                    android:id="@+id/item_edit_metadata"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Edit Metadata"
-                    android:layout_marginBottom="8dp"/>
+                    android:orientation="horizontal"
+                    android:paddingVertical="12dp">
 
+                <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/edit_button"
+                        android:layout_marginEnd="16dp"
+                        android:contentDescription="@string/my_image_description"/>
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/edit_metadata"
+                        android:textColor="#FFFFFF"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Close Button as Footer -->
             <Button
                     android:id="@+id/btn_close_overlay"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Close"/>
+                    android:text="@string/close"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#555555"
+                    android:layout_marginTop="16dp" />
 
         </LinearLayout>
 

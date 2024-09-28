@@ -24,6 +24,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.core.content.FileProvider
+import java.io.FileNotFoundException
+import java.io.IOException
 import java.text.Collator
 import java.util.Locale
 
@@ -46,6 +48,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var playerSettingsButton: ImageView
 
     private lateinit var playerOptionsOverlay: View
+    private lateinit var currentsongtitle: TextView
     private lateinit var playbackSpeedSeekBar: SeekBar
     private lateinit var playbackSpeedText: TextView
 
@@ -106,6 +109,7 @@ class MainActivity : AppCompatActivity() {
         restorePlayMode()
 
         playerOptionsOverlay = findViewById(R.id.player_options_overlay)
+        currentsongtitle = findViewById(R.id.current_song_title)
         playbackSpeedSeekBar = findViewById(R.id.playback_speed_seekbar)
         playbackSpeedText = findViewById(R.id.playback_speed_text)
         playerSettingsButton = findViewById(R.id.btn_player_settings)
@@ -254,6 +258,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupPlayerOptionsOverlay() {
         playerSettingsButton.setOnClickListener {
             playerOptionsOverlay.visibility = View.VISIBLE
+            currentsongtitle.text = "Unknown Title"
         }
 
         findViewById<Button>(R.id.btn_close_overlay).setOnClickListener {
@@ -272,17 +277,17 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        findViewById<Button>(R.id.btn_rename_file).setOnClickListener {
+        findViewById<LinearLayout>(R.id.item_rename_file).setOnClickListener {
             // Implement rename file functionality
             showRenameDialog()
         }
 
-        findViewById<Button>(R.id.btn_delete_file).setOnClickListener {
+        findViewById<LinearLayout>(R.id.item_delete_file).setOnClickListener {
             // Implement delete file functionality
             showDeleteConfirmationDialog()
         }
 
-        findViewById<Button>(R.id.btn_edit_metadata).setOnClickListener {
+        findViewById<LinearLayout>(R.id.item_edit_metadata).setOnClickListener {
             // Navigate to EditMetadataActivity
             val intent = Intent(this, EditMetadataActivity::class.java)
             intent.putExtra("filePath", currentPlaylist[currentSongIndex].file.absolutePath)
@@ -570,7 +575,7 @@ class MainActivity : AppCompatActivity() {
         Log.d("AudioFlow", "Loading folder: ${folder.name}")
         Log.d("AudioFlow", "Current song index: $currentSongIndex")
 
-        currentSongs = getSongsInFolder(folder)
+        currentSongs = getSongsInFolder(folder).filter { it.file.exists() }
 
         Log.d("AudioFlow", "Song count of folder: ${currentSongs.size}")
 
@@ -592,6 +597,8 @@ class MainActivity : AppCompatActivity() {
                 if (currentSongs.isNotEmpty()) {
                     currentPlaylist = currentSongs.toList()
                     playSong(0)
+                }else {
+                    Toast.makeText(this, "No songs available in this folder", Toast.LENGTH_SHORT).show()
                 }
             }
             listView.addHeaderView(headerView)
@@ -713,48 +720,69 @@ class MainActivity : AppCompatActivity() {
 
     private fun restoreLastPlayedSong() {
         val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
-        val lastPlayedTitle = sharedPreferences.getString("lastPlayedTitle", null)
-        val lastPlayedArtist = sharedPreferences.getString("lastPlayedArtist", null)
-        val lastPlayedAlbum = sharedPreferences.getString("lastPlayedAlbum", null)
         val lastPlayedPath = sharedPreferences.getString("lastPlayedPath", null)
-        currentFolderPath = sharedPreferences.getString("currentFolderPath", null)
-        currentSongIndex = sharedPreferences.getInt("currentSongIndex", -1)
 
-        if (lastPlayedTitle != null && lastPlayedArtist != null && lastPlayedAlbum != null && lastPlayedPath != null && currentFolderPath != null) {
-            lastPlayedSong = SongItem(File(lastPlayedPath), lastPlayedTitle, lastPlayedArtist, lastPlayedAlbum)
-            loadSongsInFolder(File(currentFolderPath!!))
-            currentPlaylist = currentSongs.toList()  // Ensure currentPlaylist is set
-            updateMiniPlayer(lastPlayedSong!!)
+        if (lastPlayedPath != null) {
+            val file = File(lastPlayedPath)
+            if (file.exists()) {
+                try {
+                    val lastPlayedTitle = sharedPreferences.getString("lastPlayedTitle", null) ?: file.nameWithoutExtension
+                    val lastPlayedArtist = sharedPreferences.getString("lastPlayedArtist", null) ?: "Unknown Artist"
+                    val lastPlayedAlbum = sharedPreferences.getString("lastPlayedAlbum", null) ?: "Unknown Album"
+                    currentFolderPath = sharedPreferences.getString("currentFolderPath", null)
+                    currentSongIndex = sharedPreferences.getInt("currentSongIndex", -1)
 
-            // Update mini player visibility on both screens
-            homeScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
-            songsScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
+                    lastPlayedSong = SongItem(file, lastPlayedTitle, lastPlayedArtist, lastPlayedAlbum)
+                    currentFolderPath?.let { loadSongsInFolder(File(it)) }
+                    currentPlaylist = currentSongs.toList()
+                    updateMiniPlayer(lastPlayedSong!!)
 
-            // Prepare the MediaPlayer with the last played song
-            try {
-                val uri = FileProvider.getUriForFile(
-                    this,
-                    "${packageName}.fileprovider",
-                    lastPlayedSong!!.file
-                )
-                mediaPlayer?.release()
-                mediaPlayer = MediaPlayer.create(this, uri)
-                setupMediaPlayerCompletionListener()  // Set up completion listener
+                    // Update mini player visibility on both screens
+                    homeScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
+                    songsScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
 
-                // Initialize the player screen
-                updatePlayerUI(lastPlayedSong!!)
+                    // Prepare the MediaPlayer with the last played song
+                    val uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", file)
+                    mediaPlayer?.release()
+                    mediaPlayer = MediaPlayer.create(this, uri)
+                    setupMediaPlayerCompletionListener()
 
-                // Set up click listener for mini player to open player screen
-                val miniPlayerClickListener = View.OnClickListener {
-                    showScreen(playerScreen)
-                    playerScreen.visibility = View.VISIBLE
+                    // Initialize the player screen
+                    updatePlayerUI(lastPlayedSong!!)
+
+                    // Set up click listener for mini player to open player screen
+                    val miniPlayerClickListener = View.OnClickListener {
+                        showScreen(playerScreen)
+                        playerScreen.visibility = View.VISIBLE
+                    }
+                    homeScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
+                    songsScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
+                } catch (e: Exception) {
+                    Log.e("AudioFlow", "Error restoring last played song", e)
+                    // Clear the last played song data if there's an error
+                    clearLastPlayedSongData()
                 }
-                homeScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
-                songsScreen.findViewById<View>(R.id.mini_player)?.setOnClickListener(miniPlayerClickListener)
-            } catch (e: Exception) {
-                Log.e("AudioFlow", "Error preparing last played song", e)
+            } else {
+                // File doesn't exist, clear the last played song data
+                clearLastPlayedSongData()
             }
         }
+    }
+
+    private fun clearLastPlayedSongData() {
+        val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
+        with(sharedPreferences.edit()) {
+            remove("lastPlayedTitle")
+            remove("lastPlayedArtist")
+            remove("lastPlayedAlbum")
+            remove("lastPlayedPath")
+            remove("currentFolderPath")
+            remove("currentSongIndex")
+            apply()
+        }
+        lastPlayedSong = null
+        currentFolderPath = null
+        currentSongIndex = -1
     }
 
     private fun setupMediaPlayerCompletionListener() {
@@ -902,6 +930,10 @@ class MainActivity : AppCompatActivity() {
         val song = currentPlaylist[position]
 
         try {
+            if (!song.file.exists()) {
+                throw FileNotFoundException("The audio file does not exist")
+            }
+
             val uri = FileProvider.getUriForFile(
                 this,
                 "${packageName}.fileprovider",
@@ -909,6 +941,11 @@ class MainActivity : AppCompatActivity() {
             )
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer.create(this, uri)
+
+            if (mediaPlayer == null) {
+                throw IOException("Failed to create MediaPlayer for this file")
+            }
+
             mediaPlayer?.start()
 
             setupMediaPlayerCompletionListener()
@@ -930,8 +967,33 @@ class MainActivity : AppCompatActivity() {
             refreshSongList()
 
         } catch (e: Exception) {
-            Log.e("AudioFlow", "Error playing song", e)
-            Toast.makeText(this, "Error playing song: ${e.message}", Toast.LENGTH_SHORT).show()
+            when (e) {
+                is FileNotFoundException, is IOException -> {
+                    Log.e("AudioFlow", "Error playing song: ${e.message}", e)
+                    Toast.makeText(this, "Error playing song: ${e.message}", Toast.LENGTH_SHORT).show()
+                    removeCurrentSongAndPlayNext()
+                }
+                else -> {
+                    Log.e("AudioFlow", "Unexpected error playing song", e)
+                    Toast.makeText(this, "Unexpected error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun removeCurrentSongAndPlayNext() {
+        if (currentSongIndex >= 0 && currentSongIndex < currentPlaylist.size) {
+            currentPlaylist = currentPlaylist.filterIndexed { index, _ -> index != currentSongIndex }
+            if (currentPlaylist.isNotEmpty()) {
+                currentSongIndex = currentSongIndex.coerceAtMost(currentPlaylist.size - 1)
+                playSong(currentSongIndex)
+            } else {
+                // No more songs in the playlist
+                mediaPlayer?.release()
+                mediaPlayer = null
+                updatePlayerUI(SongItem(File(""), "No songs available", "", ""))
+                Toast.makeText(this, "No more songs available", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -949,8 +1011,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updatePlayerUI(song: SongItem) {
-        playerSongTitleTextView.text = song.title
-        artistNameTextView.text = song.artist
+        playerSongTitleTextView.text = song.title.takeIf { it.isNotBlank() } ?: "Unknown Title"
+        artistNameTextView.text = song.artist.takeIf { it.isNotBlank() } ?: "Unknown Artist"
         updatePlayPauseButton()
 
         // Update seek bar
@@ -1013,12 +1075,19 @@ class MainActivity : AppCompatActivity() {
 
     private fun getAlbumArt(path: String): android.graphics.Bitmap? {
         val retriever = MediaMetadataRetriever()
-        retriever.setDataSource(path)
-        val art = retriever.embeddedPicture
-        return if (art != null) {
-            BitmapFactory.decodeByteArray(art, 0, art.size)
-        } else {
+        return try {
+            retriever.setDataSource(path)
+            val art = retriever.embeddedPicture
+            if (art != null) {
+                BitmapFactory.decodeByteArray(art, 0, art.size)
+            } else {
+                null
+            }
+        } catch (e: IllegalArgumentException) {
+            Log.e("AudioFlow", "Error retrieving album art: ${e.message}")
             null
+        } finally {
+            retriever.release()
         }
     }
 
@@ -1188,11 +1257,13 @@ class MainActivity : AppCompatActivity() {
 // Add Play Song next button
 // add smoother animations to app
 // song list settings for one song
-// holding song item for settings too
+// holding song item for settings to
+// fix edit metadata issue
 
 // search screen
 // add play function
 // add playlist add button
+// maybe more space between search bar and top
 
 // metadata screen
 // add remove cover button
@@ -1200,8 +1271,10 @@ class MainActivity : AppCompatActivity() {
 // add reset button
 
 // info screen
+// show current song title
+// improve rename/delete design screen
+// remove space from close button
 // closing back to player screen
-// improve Design
 // sound changes
 // color changing
 // cover changing
@@ -1212,6 +1285,7 @@ class MainActivity : AppCompatActivity() {
 // settings screen
 // allow song previous button to set time back to 0
 // allow app to display being always on
+// show cover optional in search screen
 // Timer also available
 // About App
 // Maybe add small infos about a song
