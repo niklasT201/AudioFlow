@@ -9,8 +9,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.provider.MediaStore
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
+import android.os.AsyncTask
 import android.widget.*
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
@@ -207,29 +209,44 @@ class SearchResultsAdapter(
         view.findViewById<TextView>(R.id.artistAlbum).text = "${song.songItem.artist} - ${song.songItem.album}"
 
         val albumCover = view.findViewById<ImageView>(R.id.albumCover)
-        loadAlbumArt(song.songItem.file.absolutePath, albumCover)
+
+        // Set default placeholder immediately
+        albumCover.setImageResource(R.drawable.cover_art)
+
+        // Load album art in the background
+        LoadAlbumArtTask(albumCover).execute(song.songItem.file.absolutePath)
 
         return view
     }
 
-    private fun loadAlbumArt(filePath: String, imageView: ImageView) {
-        val mediaMetadataRetriever = MediaMetadataRetriever()
-        try {
-            mediaMetadataRetriever.setDataSource(filePath)
-            val albumArt = mediaMetadataRetriever.embeddedPicture
-            if (albumArt != null) {
-                val bitmap = BitmapFactory.decodeByteArray(albumArt, 0, albumArt.size)
-                imageView.setImageBitmap(bitmap)
-            } else {
-                imageView.setImageResource(R.drawable.cover_art) // Set a default album art
+    // AsyncTask to load the album art in the background
+    private class LoadAlbumArtTask(val imageView: ImageView) : AsyncTask<String, Void, Bitmap?>() {
+        override fun doInBackground(vararg params: String): Bitmap? {
+            val filePath = params[0]
+            val mediaMetadataRetriever = MediaMetadataRetriever()
+            try {
+                mediaMetadataRetriever.setDataSource(filePath)
+                val albumArt = mediaMetadataRetriever.embeddedPicture
+                if (albumArt != null) {
+                    return BitmapFactory.decodeByteArray(albumArt, 0, albumArt.size)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                mediaMetadataRetriever.release()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            imageView.setImageResource(R.drawable.cover_art) // Set a default album art
-        } finally {
-            mediaMetadataRetriever.release()
+            return null
+        }
+
+        override fun onPostExecute(result: Bitmap?) {
+            if (result != null) {
+                imageView.setImageBitmap(result)
+            } else {
+                imageView.setImageResource(R.drawable.cover_art)  // Set default if no album art
+            }
         }
     }
+
 
     fun updateData(newItems: List<SearchResultItem>) {
         items = newItems

@@ -1086,13 +1086,10 @@ class MainActivity : AppCompatActivity() {
 // search screen
 // add play function
 // add playlist add button
-// decrease lags
 
 // metadata screen
-// underlines don't show up
 // save cover
 // add mp3 name
-// add lyric option
 // add remove cover button
 // add delete file button
 // add reset button

@@ -25,4 +25,6 @@
     <string name="save_button">Save</string>
     <string name="song_info">Song Info</string>
     <string name="path_label">Path:</string>
+    <string name="filename_label">File:</string>
+    <string name="lyrics_label">lyrics:</string>
 </resources>
