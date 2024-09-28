@@ -44,10 +44,13 @@
         <activity
                 android:name=".SearchActivity"
                 android:exported="false"
+                android:screenOrientation="portrait"
                 android:theme="@style/Theme.AudioFlow">
         </activity>
 
-        <activity android:name=".EditMetadataActivity" />
+        <activity
+                android:name=".EditMetadataActivity"
+                android:screenOrientation="portrait"/>
     </application>
 
 </manifest>

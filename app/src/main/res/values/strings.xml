@@ -24,4 +24,5 @@
     <string name="album_label">Album:</string>
     <string name="save_button">Save</string>
     <string name="song_info">Song Info</string>
+    <string name="path_label">Path:</string>
 </resources>

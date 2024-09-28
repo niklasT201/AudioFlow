@@ -1084,17 +1084,19 @@ class MainActivity : AppCompatActivity() {
 // holding song item for settings too
 
 // search screen
-// improving design
-// remove keyboard opening at start
 // add play function
+// add playlist add button
+// decrease lags
 
 // metadata screen
-// improve design
+// underlines dont show up
+// save cover
 // add mp3 name
 // add lyric option
 // add remove cover button
 // add delete file button
 // add reset button
+// maybe change button color change
 
 // info screen
 // sound changes

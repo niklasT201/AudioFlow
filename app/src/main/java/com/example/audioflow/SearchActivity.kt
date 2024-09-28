@@ -9,8 +9,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.provider.MediaStore
 import android.content.Intent
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.widget.*
-import androidx.appcompat.widget.SearchView  // Change this import
+import androidx.appcompat.widget.SearchView
+import androidx.core.content.ContextCompat
 import java.io.File
 
 class SearchActivity : AppCompatActivity() {
@@ -31,6 +34,9 @@ class SearchActivity : AppCompatActivity() {
         allSongs = getAllSongs()
         adapter = SearchResultsAdapter(this, allSongs.map { SearchResultItem.Song(it) })
         searchResultsList.adapter = adapter
+
+        searchResultsList.divider = ContextCompat.getDrawable(this, R.drawable.list_divider)
+        searchResultsList.dividerHeight = 1
 
         setupSearchView()
         setupModeRadioGroup()
@@ -198,9 +204,31 @@ class SearchResultsAdapter(
     private fun getSongView(song: SearchResultItem.Song, convertView: View?, parent: ViewGroup?): View {
         val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.search_song_item, parent, false)
         view.findViewById<TextView>(R.id.songTitle).text = song.songItem.title
-        view.findViewById<TextView>(R.id.artistName).text = song.songItem.artist
-        view.findViewById<TextView>(R.id.albumName).text = song.songItem.album
+        view.findViewById<TextView>(R.id.artistAlbum).text = "${song.songItem.artist} - ${song.songItem.album}"
+
+        val albumCover = view.findViewById<ImageView>(R.id.albumCover)
+        loadAlbumArt(song.songItem.file.absolutePath, albumCover)
+
         return view
+    }
+
+    private fun loadAlbumArt(filePath: String, imageView: ImageView) {
+        val mediaMetadataRetriever = MediaMetadataRetriever()
+        try {
+            mediaMetadataRetriever.setDataSource(filePath)
+            val albumArt = mediaMetadataRetriever.embeddedPicture
+            if (albumArt != null) {
+                val bitmap = BitmapFactory.decodeByteArray(albumArt, 0, albumArt.size)
+                imageView.setImageBitmap(bitmap)
+            } else {
+                imageView.setImageResource(R.drawable.cover_art) // Set a default album art
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            imageView.setImageResource(R.drawable.cover_art) // Set a default album art
+        } finally {
+            mediaMetadataRetriever.release()
+        }
     }
 
     fun updateData(newItems: List<SearchResultItem>) {

@@ -46,7 +46,7 @@ class EditMetadataActivity : AppCompatActivity() {
         titleEditText.setText(intent.getStringExtra("songTitle"))
         artistEditText.setText(intent.getStringExtra("songArtist"))
         albumEditText.setText(intent.getStringExtra("songAlbum"))
-        songPathTextView.text = "Path: $songPath"
+        songPathTextView.setText(intent.getStringExtra("songPath"))
 
         findViewById<ImageView>(R.id.saveButton).setOnClickListener {
             saveSongMetadata()
@@ -54,6 +54,10 @@ class EditMetadataActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.changeCoverButton).setOnClickListener {
             openGallery()
+        }
+
+        findViewById<ImageView>(R.id.back_btn).setOnClickListener {
+            onBackPressed()
         }
 
         loadCoverArt()
