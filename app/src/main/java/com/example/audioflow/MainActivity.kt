@@ -1089,7 +1089,7 @@ class MainActivity : AppCompatActivity() {
 // decrease lags
 
 // metadata screen
-// underlines dont show up
+// underlines don't show up
 // save cover
 // add mp3 name
 // add lyric option
