@@ -242,6 +242,12 @@
     </FrameLayout>
 
     <include
+            android:id="@+id/player_options_overlay"
+            layout="@layout/player_options_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    <include
             android:id="@+id/footer"
             layout="@layout/footer"
             android:layout_width="match_parent"

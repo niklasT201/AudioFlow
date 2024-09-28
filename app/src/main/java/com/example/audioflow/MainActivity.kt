@@ -8,6 +8,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.Manifest
+import android.app.AlertDialog
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
@@ -18,6 +19,7 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.*
 import android.media.MediaMetadataRetriever
+import android.media.PlaybackParams
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -42,6 +44,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var totalTimeTextView: TextView
     private lateinit var playSettingsButton: ImageView
     private lateinit var playerSettingsButton: ImageView
+
+    private lateinit var playerOptionsOverlay: View
+    private lateinit var playbackSpeedSeekBar: SeekBar
+    private lateinit var playbackSpeedText: TextView
+
     private var currentPlayMode: PlayMode = PlayMode.NORMAL
     private var isShuffleMode = false
     private var originalPlaylist: List<SongItem> = emptyList()
@@ -97,6 +104,13 @@ class MainActivity : AppCompatActivity() {
         setupPlaySettings()
 
         restorePlayMode()
+
+        playerOptionsOverlay = findViewById(R.id.player_options_overlay)
+        playbackSpeedSeekBar = findViewById(R.id.playback_speed_seekbar)
+        playbackSpeedText = findViewById(R.id.playback_speed_text)
+        playerSettingsButton = findViewById(R.id.btn_player_settings)
+
+        setupPlayerOptionsOverlay()
 
         // Show home screen by default
         showScreen(homeScreen)
@@ -235,6 +249,100 @@ class MainActivity : AppCompatActivity() {
         if (screen == playerScreen) {
             playerScreen.visibility = View.VISIBLE
         }
+    }
+
+    private fun setupPlayerOptionsOverlay() {
+        playerSettingsButton.setOnClickListener {
+            playerOptionsOverlay.visibility = View.VISIBLE
+        }
+
+        findViewById<Button>(R.id.btn_close_overlay).setOnClickListener {
+            playerOptionsOverlay.visibility = View.GONE
+        }
+
+        playbackSpeedSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val speed = progress / 100f
+                playbackSpeedText.text = String.format("%.1fx", speed)
+                mediaPlayer?.playbackParams = mediaPlayer?.playbackParams?.setSpeed(speed) ?: PlaybackParams().setSpeed(speed)
+                updatePlayPauseButton()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        findViewById<Button>(R.id.btn_rename_file).setOnClickListener {
+            // Implement rename file functionality
+            showRenameDialog()
+        }
+
+        findViewById<Button>(R.id.btn_delete_file).setOnClickListener {
+            // Implement delete file functionality
+            showDeleteConfirmationDialog()
+        }
+
+        findViewById<Button>(R.id.btn_edit_metadata).setOnClickListener {
+            // Navigate to EditMetadataActivity
+            val intent = Intent(this, EditMetadataActivity::class.java)
+            intent.putExtra("filePath", currentPlaylist[currentSongIndex].file.absolutePath)
+            startActivity(intent)
+        }
+    }
+
+    private fun showRenameDialog() {
+        val currentSong = currentPlaylist[currentSongIndex]
+        val editText = EditText(this).apply {
+            setText(currentSong.file.nameWithoutExtension)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Rename File")
+            .setView(editText)
+            .setPositiveButton("Rename") { _, _ ->
+                val newName = editText.text.toString()
+                if (newName.isNotBlank()) {
+                    val newFile = File(currentSong.file.parent, "$newName.mp3")
+                    if (currentSong.file.renameTo(newFile)) {
+                        // Update the current playlist and UI
+                        currentPlaylist = currentPlaylist.toMutableList().apply {
+                            set(currentSongIndex, currentSong.copy(file = newFile, title = newName))
+                        }
+                        updatePlayerUI(currentPlaylist[currentSongIndex])
+                        Toast.makeText(this, "File renamed successfully", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "Failed to rename file", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showDeleteConfirmationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Delete File")
+            .setMessage("Are you sure you want to delete this file? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                val currentSong = currentPlaylist[currentSongIndex]
+                if (currentSong.file.delete()) {
+                    // Remove the song from the playlist and update UI
+                    currentPlaylist = currentPlaylist.filterIndexed { index, _ -> index != currentSongIndex }
+                    if (currentPlaylist.isEmpty()) {
+                        // No more songs, close player
+                        finish()
+                    } else {
+                        // Play next song
+                        currentSongIndex = currentSongIndex.coerceAtMost(currentPlaylist.size - 1)
+                        playSong(currentSongIndex)
+                    }
+                    Toast.makeText(this, "File deleted successfully", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Failed to delete file", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private val scrollListener = object : AbsListView.OnScrollListener {
@@ -1078,7 +1186,6 @@ class MainActivity : AppCompatActivity() {
 // Add Playlist Create
 // Add/search Folder to List
 // Add Play Song next button
-// Search Function for Album, Artists, Songs
 // add smoother animations to app
 // song list settings for one song
 // holding song item for settings too
@@ -1088,20 +1195,18 @@ class MainActivity : AppCompatActivity() {
 // add playlist add button
 
 // metadata screen
-// save cover
-// add mp3 name
 // add remove cover button
 // add delete file button
 // add reset button
-// maybe change button color change
 
 // info screen
+// closing back to player screen
+// improve Design
 // sound changes
 // color changing
 // cover changing
 // maybe driver mode
 // timer to close app
-// delete/rename file
 // Songs metadata changing
 
 // settings screen

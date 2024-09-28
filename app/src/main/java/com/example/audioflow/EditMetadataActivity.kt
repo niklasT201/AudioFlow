@@ -1,7 +1,9 @@
 package com.example.audioflow
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -12,7 +14,10 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.Tag
@@ -29,8 +34,21 @@ class EditMetadataActivity : AppCompatActivity() {
     private var songPath: String? = null
     private var newCoverUri: Uri? = null
 
-    companion object {
-        private const val PICK_IMAGE_REQUEST = 1
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                loadMetadata()
+            } else {
+                Toast.makeText(this, "Permission denied. Cannot edit metadata.", Toast.LENGTH_LONG).show()
+                finish()
+            }
+        }
+
+    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            newCoverUri = it
+            coverImageView.setImageURI(it)
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,45 +62,55 @@ class EditMetadataActivity : AppCompatActivity() {
         songPathTextView = findViewById(R.id.songPathTextView)
 
         songPath = intent.getStringExtra("songPath")
-        titleEditText.setText(intent.getStringExtra("songTitle"))
-        artistEditText.setText(intent.getStringExtra("songArtist"))
-        albumEditText.setText(intent.getStringExtra("songAlbum"))
-        songPathTextView.text = intent.getStringExtra("songPath")
+        songPathTextView.text = songPath
 
         findViewById<ImageView>(R.id.saveButton).setOnClickListener {
             saveSongMetadata()
         }
 
         findViewById<Button>(R.id.changeCoverButton).setOnClickListener {
-            openGallery()
+            pickImage.launch("image/*")
         }
 
         findViewById<ImageView>(R.id.back_btn).setOnClickListener {
             onBackPressed()
         }
 
-        loadCoverArt()
+        checkPermissionAndLoadMetadata()
     }
 
-    private fun openGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-        startActivityForResult(intent, PICK_IMAGE_REQUEST)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null) {
-            newCoverUri = data.data
-            coverImageView.setImageURI(newCoverUri)
+    private fun checkPermissionAndLoadMetadata() {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                loadMetadata()
+            }
+            ActivityCompat.shouldShowRequestPermissionRationale(
+                this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) -> {
+                // Show an explanation to the user
+                Toast.makeText(this, "Storage permission is needed to edit metadata", Toast.LENGTH_LONG).show()
+                requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+            else -> {
+                requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
         }
     }
 
-    private fun loadCoverArt() {
+    private fun loadMetadata() {
         songPath?.let { path ->
             try {
                 val file = File(path)
                 val audioFile = AudioFileIO.read(file)
                 val tag: Tag = audioFile.tag
+
+                titleEditText.setText(tag.getFirst(FieldKey.TITLE))
+                artistEditText.setText(tag.getFirst(FieldKey.ARTIST))
+                albumEditText.setText(tag.getFirst(FieldKey.ALBUM))
 
                 val artworkBinaryData = tag.firstArtwork?.binaryData
                 if (artworkBinaryData != null) {
@@ -93,10 +121,11 @@ class EditMetadataActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                coverImageView.setImageResource(R.drawable.cover_art)
+                Toast.makeText(this, "Error loading metadata: ${e.message}", Toast.LENGTH_LONG).show()
             }
         } ?: run {
-            coverImageView.setImageResource(R.drawable.cover_art)
+            Toast.makeText(this, "Song path is missing", Toast.LENGTH_SHORT).show()
+            finish()
         }
     }
 
@@ -113,21 +142,20 @@ class EditMetadataActivity : AppCompatActivity() {
 
                 // Save new cover art if selected
                 newCoverUri?.let { uri ->
-                    val inputStream = contentResolver.openInputStream(uri)
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
-                    val baos = ByteArrayOutputStream()
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
-                    val imageData = baos.toByteArray()
+                    contentResolver.openInputStream(uri)?.use { inputStream ->
+                        val bitmap = BitmapFactory.decodeStream(inputStream)
+                        val baos = ByteArrayOutputStream()
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+                        val imageData = baos.toByteArray()
 
-                    // Create artwork manually
-                    val artwork = ArtworkFactory.getNew()
-                    artwork.binaryData = imageData
-                    artwork.mimeType = "image/jpeg"
+                        val artwork = ArtworkFactory.getNew()
+                        artwork.binaryData = imageData
+                        artwork.mimeType = "image/jpeg"
 
-                    tag.deleteArtworkField()
-                    tag.setField(artwork)
+                        tag.deleteArtworkField()
+                        tag.setField(artwork)
+                    }
                 }
-
 
                 audioFile.commit()
 
@@ -142,5 +170,4 @@ class EditMetadataActivity : AppCompatActivity() {
             Toast.makeText(this, "Song path is missing", Toast.LENGTH_SHORT).show()
         }
     }
-
 }

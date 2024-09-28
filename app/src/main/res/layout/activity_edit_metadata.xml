@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:fillViewport="true">
 
@@ -48,24 +49,30 @@
 
         </LinearLayout>
 
+        <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="16dp">
+
         <ImageView
                 android:id="@+id/coverImageView"
                 android:layout_width="200dp"
                 android:layout_height="200dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="16dp"
                 android:scaleType="centerCrop"
                 android:src="@drawable/cover_art"
                 android:contentDescription="@string/my_image_description" />
 
         <Button
                 android:id="@+id/changeCoverButton"
-                android:layout_width="wrap_content"
+                android:layout_width="200dp"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:text="@string/cover"
-                android:layout_marginBottom="16dp" />
+                android:layout_gravity="bottom"
+                android:alpha="0.7"
+                android:text="@string/cover" />
+
+        </FrameLayout>
 
         <LinearLayout
                 android:layout_width="match_parent"
@@ -174,37 +181,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="16dp" />
-            </com.google.android.material.textfield.TextInputLayout>
-        </LinearLayout>
-
-        <!-- Lyrics Section -->
-        <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="10dp"
-                android:layout_marginStart="10dp"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
-
-            <TextView
-                    android:layout_width="60dp"
-                    android:layout_height="wrap_content"
-                    android:text="@string/lyrics_label"
-                    android:textColor="@color/secondary_text"
-                    android:layout_marginEnd="8dp" />
-
-            <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                <EditText
-                        android:id="@+id/lyricsEditText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textMultiLine"
-                        android:lines="5"
-                        android:gravity="top"
-                        android:autofillHints="Lyrics" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
