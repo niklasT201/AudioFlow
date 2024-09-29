@@ -19,13 +19,18 @@ import android.media.MediaScannerConnection
 import android.os.AsyncTask
 import android.os.Handler
 import android.os.Looper
+import android.util.LruCache
 import android.widget.*
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 class SearchActivity : AppCompatActivity() {
@@ -42,12 +47,20 @@ class SearchActivity : AppCompatActivity() {
     private lateinit var artistAdapter: ArtistAdapter
     private lateinit var albumAdapter: AlbumAdapter
     private lateinit var songAdapter: SongAdapter
+    private lateinit var artistsHeader: TextView
+    private lateinit var albumsHeader: TextView
+    private lateinit var songsHeader: TextView
+    private lateinit var albumArtCache: LruCache<String, Bitmap>
     private val songsLiveData = MutableLiveData<List<SongItem>>()
     private lateinit var contentObserver: ContentObserver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.search_screen)
+
+        val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
+        val cacheSize = maxMemory / 8
+        albumArtCache = LruCache(cacheSize)
 
         searchView = findViewById(R.id.searchView)
         modeRadioGroup = findViewById(R.id.modeRadioGroup)
@@ -59,6 +72,9 @@ class SearchActivity : AppCompatActivity() {
         songsRecyclerView = findViewById(R.id.songsRecyclerView)
         showAllArtistsButton = findViewById(R.id.showAllArtistsButton)
         showAllAlbumsButton = findViewById(R.id.showAllAlbumsButton)
+        artistsHeader = findViewById(R.id.artistsHeader)
+        albumsHeader = findViewById(R.id.albumsHeader)
+        songsHeader = findViewById(R.id.songsHeader)
         showAllSongsButton = findViewById(R.id.showAllSongsButton)
 
         setupSearchView()
@@ -70,7 +86,8 @@ class SearchActivity : AppCompatActivity() {
         songAdapter = SongAdapter(
             emptyList(),
             { song -> handleSongClick(song) },
-            { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio }
+            { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
+            albumArtCache
         )
 
         artistsRecyclerView.layoutManager = LinearLayoutManager(this)
@@ -81,17 +98,54 @@ class SearchActivity : AppCompatActivity() {
         albumsRecyclerView.adapter = albumAdapter
         songsRecyclerView.adapter = songAdapter
 
-        showAllSongs()
-
+        setupRecyclerViews()
         setupSearchView()
         setupModeRadioGroup()
         setupShowAllButtons()
         setupContentObserver()
 
-        songsLiveData.observe(this, Observer { songs ->
-            allSongs = songs.toMutableList()
-            performSearch(searchView.query.toString())
-        })
+        // Load all songs immediately
+        loadAllSongs()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Reload songs when the activity is resumed
+        loadAllSongs()
+    }
+
+    private fun setupRecyclerViews() {
+        artistsRecyclerView = findViewById(R.id.artistsRecyclerView)
+        albumsRecyclerView = findViewById(R.id.albumsRecyclerView)
+        songsRecyclerView = findViewById(R.id.songsRecyclerView)
+
+        artistAdapter = ArtistAdapter(emptyList()) { artist -> showArtistDetails(artist) }
+        albumAdapter = AlbumAdapter(emptyList()) { album -> showAlbumDetails(album) }
+        songAdapter = SongAdapter(
+            emptyList(),
+            { song -> handleSongClick(song) },
+            { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
+            albumArtCache
+        )
+
+        artistsRecyclerView.layoutManager = LinearLayoutManager(this)
+        albumsRecyclerView.layoutManager = LinearLayoutManager(this)
+        songsRecyclerView.layoutManager = LinearLayoutManager(this)
+
+        artistsRecyclerView.adapter = artistAdapter
+        albumsRecyclerView.adapter = albumAdapter
+        songsRecyclerView.adapter = songAdapter
+    }
+
+
+    private fun loadAllSongs() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val songs = getAllSongs()
+            withContext(Dispatchers.Main) {
+                allSongs = songs.toMutableList()
+                showAllSongsWithoutHeaders()
+            }
+        }
     }
 
     private fun setupContentObserver() {
@@ -122,10 +176,8 @@ class SearchActivity : AppCompatActivity() {
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 if (newText.isNullOrBlank()) {
-                    searchResultsContainer.visibility = View.GONE
-                    showAllSongs()
+                    showAllSongsWithoutHeaders()
                 } else {
-                    searchResultsContainer.visibility = View.VISIBLE
                     performSearch(newText)
                 }
                 return true
@@ -144,8 +196,7 @@ class SearchActivity : AppCompatActivity() {
 
     private fun performSearch(query: String?) {
         if (query.isNullOrBlank()) {
-            searchResultsContainer.visibility = View.GONE
-            showAllSongs()
+            showAllSongsWithoutHeaders()
             return
         }
 
@@ -161,10 +212,16 @@ class SearchActivity : AppCompatActivity() {
                     song.album.lowercase().contains(lowercaseQuery)
         }
 
+        // Show headers
+        artistsHeader.visibility = View.VISIBLE
+        albumsHeader.visibility = View.VISIBLE
+        songsHeader.visibility = View.VISIBLE
+
         updateArtistsList(matchingArtists)
         updateAlbumsList(matchingAlbums)
         updateSongsList(matchingSongs)
     }
+
 
 
     private fun updateArtistsList(artists: List<String>) {
@@ -178,16 +235,38 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun updateSongsList(songs: List<SongItem>) {
-        songAdapter.updateData(songs.take(5))
+        songAdapter.updateData(songs)
         showAllSongsButton.visibility = if (songs.size > 5) View.VISIBLE else View.GONE
     }
 
     private fun showAllSongs() {
-        artistAdapter.updateData(emptyList())
-        albumAdapter.updateData(emptyList())
+        searchResultsContainer.visibility = View.VISIBLE
+        artistsRecyclerView.visibility = View.GONE
+        albumsRecyclerView.visibility = View.GONE
+        songsRecyclerView.visibility = View.VISIBLE
         songAdapter.updateData(allSongs)
         showAllArtistsButton.visibility = View.GONE
         showAllAlbumsButton.visibility = View.GONE
+        showAllSongsButton.visibility = View.GONE
+    }
+
+    private fun showAllSongsWithoutHeaders() {
+        searchResultsContainer.visibility = View.VISIBLE
+
+        // Hide headers
+        artistsHeader.visibility = View.GONE
+        albumsHeader.visibility = View.GONE
+        songsHeader.visibility = View.GONE
+
+        // Hide artists and albums sections
+        artistsRecyclerView.visibility = View.GONE
+        albumsRecyclerView.visibility = View.GONE
+        showAllArtistsButton.visibility = View.GONE
+        showAllAlbumsButton.visibility = View.GONE
+
+        // Show all songs
+        songsRecyclerView.visibility = View.VISIBLE
+        updateSongsList(allSongs)
         showAllSongsButton.visibility = View.GONE
     }
 
@@ -333,6 +412,38 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
+    private fun loadAlbumArt(filePath: String, imageView: ImageView) {
+        lifecycleScope.launch {
+            val bitmap = withContext(Dispatchers.IO) {
+                albumArtCache.get(filePath) ?: run {
+                    val mediaMetadataRetriever = MediaMetadataRetriever()
+                    try {
+                        mediaMetadataRetriever.setDataSource(filePath)
+                        val albumArt = mediaMetadataRetriever.embeddedPicture
+                        if (albumArt != null) {
+                            val bitmap = BitmapFactory.decodeByteArray(albumArt, 0, albumArt.size)
+                            albumArtCache.put(filePath, bitmap)
+                            bitmap
+                        } else {
+                            null
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    } finally {
+                        mediaMetadataRetriever.release()
+                    }
+                }
+            }
+
+            if (bitmap != null) {
+                imageView.setImageBitmap(bitmap)
+            } else {
+                imageView.setImageResource(R.drawable.cover_art)
+            }
+        }
+    }
+
     private fun updateMediaStore(path: String, title: String?, artist: String?, album: String?) {
         val resolver: ContentResolver = contentResolver
         val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
@@ -364,85 +475,6 @@ class SearchActivity : AppCompatActivity() {
 
     companion object {
         const val EDIT_METADATA_REQUEST = 1
-    }
-}
-
-class SearchResultsAdapter(
-    private val context: Context,
-    private var items: List<SearchResultItem>
-) : BaseAdapter() {
-
-    override fun getCount(): Int = items.size
-    override fun getItem(position: Int): SearchResultItem = items[position]
-    override fun getItemId(position: Int): Long = position.toLong()
-
-    override fun getViewTypeCount(): Int = 2
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        return when (val item = getItem(position)) {
-            is SearchResultItem.Header -> getHeaderView(item, convertView, parent)
-            is SearchResultItem.Song -> getSongView(item, convertView, parent)
-        }
-    }
-
-    override fun getItemViewType(position: Int): Int = when (items[position]) {
-        is SearchResultItem.Header -> 0
-        is SearchResultItem.Song -> 1
-    }
-
-    private fun getHeaderView(header: SearchResultItem.Header, convertView: View?, parent: ViewGroup?): View {
-        val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.search_header_item, parent, false)
-        view.findViewById<TextView>(R.id.headerText).text = header.title
-        return view
-    }
-
-    private fun getSongView(song: SearchResultItem.Song, convertView: View?, parent: ViewGroup?): View {
-        val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.search_song_item, parent, false)
-        view.findViewById<TextView>(R.id.songTitle).text = song.songItem.title
-        view.findViewById<TextView>(R.id.artistAlbum).text = "${song.songItem.artist} - ${song.songItem.album}"
-
-        val albumCover = view.findViewById<ImageView>(R.id.albumCover)
-
-        // Set default placeholder immediately
-        albumCover.setImageResource(R.drawable.cover_art)
-
-        // Load album art in the background
-        LoadAlbumArtTask(albumCover).execute(song.songItem.file.absolutePath)
-
-        return view
-    }
-
-    // AsyncTask to load the album art in the background
-    private class LoadAlbumArtTask(val imageView: ImageView) : AsyncTask<String, Void, Bitmap?>() {
-        override fun doInBackground(vararg params: String): Bitmap? {
-            val filePath = params[0]
-            val mediaMetadataRetriever = MediaMetadataRetriever()
-            try {
-                mediaMetadataRetriever.setDataSource(filePath)
-                val albumArt = mediaMetadataRetriever.embeddedPicture
-                if (albumArt != null) {
-                    return BitmapFactory.decodeByteArray(albumArt, 0, albumArt.size)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                mediaMetadataRetriever.release()
-            }
-            return null
-        }
-
-        override fun onPostExecute(result: Bitmap?) {
-            if (result != null) {
-                imageView.setImageBitmap(result)
-            } else {
-                imageView.setImageResource(R.drawable.cover_art)  // Set default if no album art
-            }
-        }
-    }
-
-
-    fun updateData(newItems: List<SearchResultItem>) {
-        items = newItems
-        notifyDataSetChanged()
     }
 }
 
@@ -507,7 +539,8 @@ class AlbumAdapter(
 class SongAdapter(
     private var songs: List<SongItem>,
     private val onSongClick: (SongItem) -> Unit,
-    private val getPlayMode: () -> Boolean
+    private val getPlayMode: () -> Boolean,
+    private val albumArtCache: LruCache<String, Bitmap>
 ) : RecyclerView.Adapter<SongAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -528,8 +561,11 @@ class SongAdapter(
         holder.titleTextView.text = song.title
         holder.artistAlbumTextView.text = "${song.artist} - ${song.album}"
 
-        // Set album cover (you may want to use a library like Glide or Picasso for efficient image loading)
+        // Set default placeholder
         holder.albumCover.setImageResource(R.drawable.cover_art)
+
+        // Load album art
+        LoadAlbumArtTask(holder.albumCover, albumArtCache).execute(song.file.absolutePath)
 
         val isPlayMode = getPlayMode()
         holder.actionButton.setImageResource(
@@ -538,8 +574,6 @@ class SongAdapter(
         )
 
         holder.actionButton.setOnClickListener { onSongClick(song) }
-
-        // Optionally, you can set a click listener for the entire item
         holder.itemView.setOnClickListener { onSongClick(song) }
     }
 
