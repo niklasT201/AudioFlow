@@ -1,6 +1,8 @@
 package com.example.audioflow
 
 import android.app.Activity
+import android.content.ContentResolver
+import android.content.ContentValues
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.content.Context
@@ -9,21 +11,29 @@ import android.view.View
 import android.view.ViewGroup
 import android.provider.MediaStore
 import android.content.Intent
+import android.database.ContentObserver
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
+import android.media.MediaScannerConnection
 import android.os.AsyncTask
+import android.os.Handler
+import android.os.Looper
 import android.widget.*
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import java.io.File
 
 class SearchActivity : AppCompatActivity() {
     private lateinit var searchView: SearchView
     private lateinit var modeRadioGroup: RadioGroup
     private lateinit var searchResultsList: ListView
-    private lateinit var allSongs: List<SongItem>
+    private lateinit var allSongs: MutableList<SongItem>
     private lateinit var adapter: SearchResultsAdapter
+    private val songsLiveData = MutableLiveData<List<SongItem>>()
+    private lateinit var contentObserver: ContentObserver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,7 +43,7 @@ class SearchActivity : AppCompatActivity() {
         modeRadioGroup = findViewById(R.id.modeRadioGroup)
         searchResultsList = findViewById(R.id.searchResultsList)
 
-        allSongs = getAllSongs()
+        allSongs = getAllSongs().toMutableList()
         adapter = SearchResultsAdapter(this, allSongs.map { SearchResultItem.Song(it) })
         searchResultsList.adapter = adapter
 
@@ -43,7 +53,32 @@ class SearchActivity : AppCompatActivity() {
         setupSearchView()
         setupModeRadioGroup()
         setupListViewClickListener()
+        setupContentObserver()
+
+        songsLiveData.observe(this, Observer { songs ->
+            allSongs = songs.toMutableList()
+            performSearch(searchView.query.toString())
+        })
     }
+
+    private fun setupContentObserver() {
+        contentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                songsLiveData.postValue(getAllSongs())
+            }
+        }
+        contentResolver.registerContentObserver(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            true,
+            contentObserver
+        )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        contentResolver.unregisterContentObserver(contentObserver)
+    }
+
 
     private fun setupSearchView() {
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -163,16 +198,66 @@ class SearchActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == EDIT_METADATA_REQUEST && resultCode == Activity.RESULT_OK) {
-            // Refresh the song list after metadata edit
-            allSongs = getAllSongs()
-            performSearch(searchView.query.toString())
+            data?.let { intent ->
+                val updatedSongPath = intent.getStringExtra("updatedSongPath")
+                val updatedTitle = intent.getStringExtra("updatedTitle")
+                val updatedArtist = intent.getStringExtra("updatedArtist")
+                val updatedAlbum = intent.getStringExtra("updatedAlbum")
+
+                updatedSongPath?.let { path ->
+                    updateLocalSongData(path, updatedTitle, updatedArtist, updatedAlbum)
+                    updateMediaStore(path, updatedTitle, updatedArtist, updatedAlbum)
+                    refreshMediaStore(path)
+                }
+            }
+        }
+    }
+
+    private fun updateLocalSongData(path: String, title: String?, artist: String?, album: String?) {
+        val index = allSongs.indexOfFirst { it.file.absolutePath == path }
+        if (index != -1) {
+            val updatedSong = allSongs[index].copy(
+                title = title ?: allSongs[index].title,
+                artist = artist ?: allSongs[index].artist,
+                album = album ?: allSongs[index].album
+            )
+            allSongs[index] = updatedSong
+            adapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun updateMediaStore(path: String, title: String?, artist: String?, album: String?) {
+        val resolver: ContentResolver = contentResolver
+        val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        val selection = "${MediaStore.Audio.Media.DATA} = ?"
+        val selectionArgs = arrayOf(path)
+
+        val values = ContentValues().apply {
+            title?.let { put(MediaStore.Audio.Media.TITLE, it) }
+            artist?.let { put(MediaStore.Audio.Media.ARTIST, it) }
+            album?.let { put(MediaStore.Audio.Media.ALBUM, it) }
+        }
+
+        resolver.update(uri, values, selection, selectionArgs)
+    }
+
+    private fun refreshMediaStore(path: String) {
+        MediaScannerConnection.scanFile(
+            this,
+            arrayOf(path),
+            null
+        ) { _, uri ->
+            runOnUiThread {
+                uri?.let {
+                    contentResolver.notifyChange(it, null)
+                }
+            }
         }
     }
 
     companion object {
         const val EDIT_METADATA_REQUEST = 1
     }
-
 }
 
 class SearchResultsAdapter(

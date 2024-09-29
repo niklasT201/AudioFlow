@@ -33,4 +33,8 @@
     <string name="delete_file">Delete File</string>
     <string name="edit_metadata">Edit Metadata</string>
     <string name="close">Close</string>
+    <string name="change_color">Change Color</string>
+    <string name="add_timer">Add Timer</string>
+    <string name="customize_player">Customize Player</string>
+    <string name="car_mode">Car Mode</string>
 </resources>

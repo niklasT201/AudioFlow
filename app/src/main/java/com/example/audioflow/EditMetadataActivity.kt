@@ -169,8 +169,14 @@ class EditMetadataActivity : AppCompatActivity() {
 
                 audioFile.commit()
 
-                Toast.makeText(this, "Metadata and cover art saved successfully", Toast.LENGTH_SHORT).show()
-                setResult(Activity.RESULT_OK)
+                // After successfully saving, set the result
+                val resultIntent = Intent().apply {
+                    putExtra("updatedSongPath", path)
+                    putExtra("updatedTitle", titleEditText.text.toString())
+                    putExtra("updatedArtist", artistEditText.text.toString())
+                    putExtra("updatedAlbum", albumEditText.text.toString())
+                }
+                setResult(Activity.RESULT_OK, resultIntent)
                 finish()
             } catch (e: Exception) {
                 e.printStackTrace()

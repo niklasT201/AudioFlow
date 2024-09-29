@@ -1273,8 +1273,7 @@ class MainActivity : AppCompatActivity() {
 // search screen
 // add play function
 // add playlist add button
-// maybe more space between search bar and top
-// improve updating metadata
+// improve search/edit list view
 
 // metadata screen
 // add remove cover button

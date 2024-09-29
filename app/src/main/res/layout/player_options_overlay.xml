@@ -162,6 +162,130 @@
                         android:gravity="center_vertical" />
             </LinearLayout>
 
+            <!-- Divider -->
+            <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#444444"
+                    android:layout_marginStart="40dp" />
+
+            <!-- Color Changing Option -->
+            <LinearLayout
+                    android:id="@+id/item_change_color"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="12dp">
+
+                <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/color_palette_icon"
+                        android:layout_marginEnd="16dp"
+                        android:contentDescription="@string/my_image_description"/>
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/change_color"
+                        android:textColor="#FFFFFF"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical" />
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#444444"
+                    android:layout_marginStart="40dp" />
+
+            <!-- Timer Option -->
+            <LinearLayout
+                    android:id="@+id/item_add_timer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="12dp">
+
+                <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/timer_icon"
+                        android:layout_marginEnd="16dp"
+                        android:contentDescription="@string/my_image_description"/>
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/add_timer"
+                        android:textColor="#FFFFFF"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical" />
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#444444"
+                    android:layout_marginStart="40dp" />
+
+            <!-- Customize Player Option -->
+            <LinearLayout
+                    android:id="@+id/item_customize_player"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="12dp">
+
+                <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/customize_icon"
+                        android:layout_marginEnd="16dp"
+                        android:contentDescription="@string/my_image_description"/>
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/customize_player"
+                        android:textColor="#FFFFFF"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical" />
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#444444"
+                    android:layout_marginStart="40dp" />
+
+            <!-- Car Mode Option -->
+            <LinearLayout
+                    android:id="@+id/item_car_mode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingVertical="12dp">
+
+                <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/car_icon"
+                        android:layout_marginEnd="16dp"
+                        android:contentDescription="@string/my_image_description"/>
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/car_mode"
+                        android:textColor="#FFFFFF"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical" />
+            </LinearLayout>
+
         </LinearLayout>
 
         <!-- Close Button as Footer -->
@@ -172,7 +296,10 @@
                     android:text="@string/close"
                     android:textColor="#FFFFFF"
                     android:backgroundTint="#2C2C2C"
-                    android:layout_marginTop="16dp" />
+                    android:layout_marginTop="0dp"
+                    android:layout_marginBottom="0dp"
+                    android:layout_marginLeft="0dp"
+                    android:layout_marginRight="0dp" />
 
         </LinearLayout>
 
