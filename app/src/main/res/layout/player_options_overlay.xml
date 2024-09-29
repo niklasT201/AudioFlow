@@ -14,7 +14,7 @@
             android:layout_margin="16dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="8dp"
-            app:cardBackgroundColor="#2C2C2C"
+            app:cardBackgroundColor="#212121"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -64,8 +64,8 @@
                         android:layout_weight="1"
                         android:max="200"
                         android:progress="100"
-                        android:progressTint="#4CAF50"
-                        android:thumbTint="#4CAF50" />
+                        android:progressTint="#B749CA"
+                        android:thumbTint="#B749CA" />
 
                 <TextView
                         android:id="@+id/playback_speed_text"
@@ -171,7 +171,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/close"
                     android:textColor="#FFFFFF"
-                    android:backgroundTint="#555555"
+                    android:backgroundTint="#2C2C2C"
                     android:layout_marginTop="16dp" />
 
         </LinearLayout>

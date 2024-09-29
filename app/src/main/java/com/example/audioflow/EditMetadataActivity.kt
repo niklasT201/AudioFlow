@@ -112,6 +112,11 @@ class EditMetadataActivity : AppCompatActivity() {
                 artistEditText.setText(tag.getFirst(FieldKey.ARTIST))
                 albumEditText.setText(tag.getFirst(FieldKey.ALBUM))
 
+                // Set default values if metadata is empty or null
+                titleEditText.setText(tag.getFirst(FieldKey.TITLE).takeIf { it.isNotBlank() } ?: file.nameWithoutExtension)
+                artistEditText.setText(tag.getFirst(FieldKey.ARTIST).takeIf { it.isNotBlank() } ?: "Unknown Artist")
+                albumEditText.setText(tag.getFirst(FieldKey.ALBUM).takeIf { it.isNotBlank() } ?: "Unknown Album")
+
                 val artworkBinaryData = tag.firstArtwork?.binaryData
                 if (artworkBinaryData != null) {
                     val bitmap = BitmapFactory.decodeByteArray(artworkBinaryData, 0, artworkBinaryData.size)
@@ -136,9 +141,14 @@ class EditMetadataActivity : AppCompatActivity() {
                 val audioFile = AudioFileIO.read(file)
                 val tag = audioFile.tagOrCreateAndSetDefault
 
-                tag.setField(FieldKey.TITLE, titleEditText.text.toString())
-                tag.setField(FieldKey.ARTIST, artistEditText.text.toString())
-                tag.setField(FieldKey.ALBUM, albumEditText.text.toString())
+                // Ensure we're not saving empty values
+                val title = titleEditText.text.toString().takeIf { it.isNotBlank() } ?: file.nameWithoutExtension
+                val artist = artistEditText.text.toString().takeIf { it.isNotBlank() } ?: "Unknown Artist"
+                val album = albumEditText.text.toString().takeIf { it.isNotBlank() } ?: "Unknown Album"
+
+                tag.setField(FieldKey.TITLE, title)
+                tag.setField(FieldKey.ARTIST, artist)
+                tag.setField(FieldKey.ALBUM, album)
 
                 // Save new cover art if selected
                 newCoverUri?.let { uri ->

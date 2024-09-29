@@ -287,11 +287,18 @@ class MainActivity : AppCompatActivity() {
             showDeleteConfirmationDialog()
         }
 
-        findViewById<LinearLayout>(R.id.item_edit_metadata).setOnClickListener {
-            // Navigate to EditMetadataActivity
-            val intent = Intent(this, EditMetadataActivity::class.java)
-            intent.putExtra("filePath", currentPlaylist[currentSongIndex].file.absolutePath)
-            startActivity(intent)
+        findViewById<LinearLayout>(R.id.item_edit_metadata)?.setOnClickListener {
+            try {
+                // Navigate to EditMetadataActivity
+                val intent = Intent(this, EditMetadataActivity::class.java)
+                intent.putExtra("songPath", currentPlaylist[currentSongIndex].file.absolutePath)
+                startActivity(intent)
+            } catch (e: Exception) {
+                Log.e("EditMetadata", "Error launching EditMetadataActivity: ${e.message}")
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        } ?: run {
+            Log.e("EditMetadata", "LinearLayout with ID 'item_edit_metadata' not found")
         }
     }
 
@@ -1213,10 +1220,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        when (contentFrame.getChildAt(0)) {
-            songsScreen -> showScreen(homeScreen)
-            playerScreen -> showScreen(songsScreen)
-            settingsScreen -> showScreen(homeScreen)
+        when {
+            playerOptionsOverlay.visibility == View.VISIBLE -> {
+                // If the player options overlay is visible, hide it
+                playerOptionsOverlay.visibility = View.GONE
+            }
+            contentFrame.getChildAt(0) == songsScreen -> showScreen(homeScreen)
+            contentFrame.getChildAt(0) == playerScreen -> showScreen(songsScreen)
+            contentFrame.getChildAt(0) == settingsScreen -> showScreen(homeScreen)
             else -> super.onBackPressed()
         }
     }
@@ -1258,12 +1269,12 @@ class MainActivity : AppCompatActivity() {
 // add smoother animations to app
 // song list settings for one song
 // holding song item for settings to
-// fix edit metadata issue
 
 // search screen
 // add play function
 // add playlist add button
 // maybe more space between search bar and top
+// improve updating metadata
 
 // metadata screen
 // add remove cover button
@@ -1274,13 +1285,11 @@ class MainActivity : AppCompatActivity() {
 // show current song title
 // improve rename/delete design screen
 // remove space from close button
-// closing back to player screen
 // sound changes
 // color changing
 // cover changing
 // maybe driver mode
 // timer to close app
-// Songs metadata changing
 
 // settings screen
 // allow song previous button to set time back to 0
@@ -1288,6 +1297,6 @@ class MainActivity : AppCompatActivity() {
 // show cover optional in search screen
 // Timer also available
 // About App
-// Maybe add small infos about a song
+// Maybe add small infos about a song (where you found it, who told you of it)
 
 //can you help me with my kotlin android app? I would like to have a special feature. I want that when you hold down the play/pause button of the player screen, for maybe like 2 seconds, then a number in like a small round container appears and this number gets higher how longer you hold down on this button. for example when I don't hold down the button for 2 seconds or longer, then this container will not appear and the value will be like 0, that means that the current playing song will not repeat itself, it will once finish, go to the next song in the playlist, but when the value is over 0, so for example 4, then the current song will repeat itself 4 times after finishing. Song finishes, repeats, number in container gets down to 3, song finishes, repeats, number gets down to 2 and so on. Once the value is 0, the container disappears and the song will when finished go to the next song. hope you get what I mean :) and WITHOUT a library when possible
