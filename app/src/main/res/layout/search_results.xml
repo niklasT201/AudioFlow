@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:orientation="vertical">
+
+    <TextView
+            android:id="@+id/artistsHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Artists"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="@color/primary_text"
+            android:textColor="@color/background_color" />
+
+    <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/artistsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    <Button
+            android:id="@+id/showAllArtistsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show All Artists"
+            android:visibility="gone" />
+
+    <TextView
+            android:id="@+id/albumsHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Albums"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="@color/primary_text"
+            android:textColor="@color/background_color" />
+
+    <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/albumsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    <Button
+            android:id="@+id/showAllAlbumsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show All Albums"
+            android:visibility="gone" />
+
+    <TextView
+            android:id="@+id/songsHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Songs"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:background="@color/primary_text"
+            android:textColor="@color/background_color" />
+
+    <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/songsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    <Button
+            android:id="@+id/showAllSongsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show All Songs"
+            android:visibility="gone" />
+
+</LinearLayout>
