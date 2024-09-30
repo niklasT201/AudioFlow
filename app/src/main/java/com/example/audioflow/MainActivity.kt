@@ -1273,7 +1273,6 @@ class MainActivity : AppCompatActivity() {
 // search screen
 // add play function
 // add playlist add button
-// improve search/edit list view
 
 // metadata screen
 // add remove cover button

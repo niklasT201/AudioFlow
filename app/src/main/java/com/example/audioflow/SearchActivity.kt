@@ -207,46 +207,48 @@ class SearchActivity : AppCompatActivity() {
         val matchingArtists = allSongs.map { it.artist }.distinct().filter { it.lowercase().contains(lowercaseQuery) }
         val matchingAlbums = allSongs.map { it.album }.distinct().filter { it.lowercase().contains(lowercaseQuery) }
         val matchingSongs = allSongs.filter { song ->
-            song.title.lowercase().contains(lowercaseQuery) ||
-                    song.artist.lowercase().contains(lowercaseQuery) ||
-                    song.album.lowercase().contains(lowercaseQuery)
+            song.title.lowercase().contains(lowercaseQuery)
         }
+
+        updateArtistsList(matchingArtists)
+        updateAlbumsList(matchingAlbums)
+        updateSongsList(matchingSongs)
 
         // Show headers
         artistsHeader.visibility = View.VISIBLE
         albumsHeader.visibility = View.VISIBLE
         songsHeader.visibility = View.VISIBLE
 
-        updateArtistsList(matchingArtists)
-        updateAlbumsList(matchingAlbums)
-        updateSongsList(matchingSongs)
+        // Show/hide sections based on search results
+        artistsRecyclerView.visibility = if (matchingArtists.isNotEmpty()) View.VISIBLE else View.GONE
+        albumsRecyclerView.visibility = if (matchingAlbums.isNotEmpty()) View.VISIBLE else View.GONE
+        songsRecyclerView.visibility = if (matchingSongs.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
-
-
     private fun updateArtistsList(artists: List<String>) {
+        artistsRecyclerView.visibility = if (artists.isNotEmpty()) View.VISIBLE else View.GONE
         artistAdapter.updateData(artists.take(5))
         showAllArtistsButton.visibility = if (artists.size > 5) View.VISIBLE else View.GONE
     }
 
     private fun updateAlbumsList(albums: List<String>) {
+        albumsRecyclerView.visibility = if (albums.isNotEmpty()) View.VISIBLE else View.GONE
         albumAdapter.updateData(albums.take(5))
         showAllAlbumsButton.visibility = if (albums.size > 5) View.VISIBLE else View.GONE
     }
 
     private fun updateSongsList(songs: List<SongItem>) {
-        songAdapter.updateData(songs)
+        songsRecyclerView.visibility = if (songs.isNotEmpty()) View.VISIBLE else View.GONE
+        songAdapter.updateData(songs.take(5))
         showAllSongsButton.visibility = if (songs.size > 5) View.VISIBLE else View.GONE
     }
 
     private fun showAllSongs() {
-        searchResultsContainer.visibility = View.VISIBLE
-        artistsRecyclerView.visibility = View.GONE
-        albumsRecyclerView.visibility = View.GONE
-        songsRecyclerView.visibility = View.VISIBLE
-        songAdapter.updateData(allSongs)
-        showAllArtistsButton.visibility = View.GONE
-        showAllAlbumsButton.visibility = View.GONE
+        val query = searchView.query.toString()
+        val allMatchingSongs = allSongs.filter { song ->
+            song.title.lowercase().contains(query.lowercase())
+        }
+        songAdapter.updateData(allMatchingSongs)
         showAllSongsButton.visibility = View.GONE
     }
 
@@ -266,7 +268,7 @@ class SearchActivity : AppCompatActivity() {
 
         // Show all songs
         songsRecyclerView.visibility = View.VISIBLE
-        updateSongsList(allSongs)
+        songAdapter.updateData(allSongs)
         showAllSongsButton.visibility = View.GONE
     }
 
@@ -278,20 +280,33 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun showAllArtists() {
-        val allArtists = allSongs.map { it.artist }.distinct()
-        artistAdapter.updateData(allArtists)
+        val query = searchView.query.toString()
+        val allMatchingArtists = allSongs.map { it.artist }.distinct().filter { it.lowercase().contains(query.lowercase()) }
+        artistAdapter.updateData(allMatchingArtists)
         showAllArtistsButton.visibility = View.GONE
     }
 
     private fun showAllAlbums() {
-        val allAlbums = allSongs.map { it.album }.distinct()
-        albumAdapter.updateData(allAlbums)
+        val query = searchView.query.toString()
+        val allMatchingAlbums = allSongs.map { it.album }.distinct().filter { it.lowercase().contains(query.lowercase()) }
+        albumAdapter.updateData(allMatchingAlbums)
         showAllAlbumsButton.visibility = View.GONE
     }
 
     private fun showArtistDetails(artist: String) {
         val artistSongs = allSongs.filter { it.artist == artist }
         val artistAlbums = artistSongs.map { it.album }.distinct()
+
+        // Hide other sections
+        artistsHeader.visibility = View.GONE
+        artistsRecyclerView.visibility = View.GONE
+        showAllArtistsButton.visibility = View.GONE
+
+        // Show albums and songs for the selected artist
+        albumsHeader.visibility = View.VISIBLE
+        albumsRecyclerView.visibility = View.VISIBLE
+        songsHeader.visibility = View.VISIBLE
+        songsRecyclerView.visibility = View.VISIBLE
 
         albumAdapter.updateData(artistAlbums)
         songAdapter.updateData(artistSongs)
@@ -302,6 +317,18 @@ class SearchActivity : AppCompatActivity() {
 
     private fun showAlbumDetails(album: String) {
         val albumSongs = allSongs.filter { it.album == album }
+
+        // Hide other sections
+        artistsHeader.visibility = View.GONE
+        artistsRecyclerView.visibility = View.GONE
+        showAllArtistsButton.visibility = View.GONE
+        albumsHeader.visibility = View.GONE
+        albumsRecyclerView.visibility = View.GONE
+        showAllAlbumsButton.visibility = View.GONE
+
+        // Show songs for the selected album
+        songsHeader.visibility = View.VISIBLE
+        songsRecyclerView.visibility = View.VISIBLE
 
         songAdapter.updateData(albumSongs)
 
