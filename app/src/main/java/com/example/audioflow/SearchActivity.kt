@@ -19,6 +19,7 @@ import android.media.MediaScannerConnection
 import android.os.AsyncTask
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.util.LruCache
 import android.widget.*
 import androidx.appcompat.widget.SearchView
@@ -53,6 +54,10 @@ class SearchActivity : AppCompatActivity() {
     private lateinit var albumArtCache: LruCache<String, Bitmap>
     private val songsLiveData = MutableLiveData<List<SongItem>>()
     private lateinit var contentObserver: ContentObserver
+    private var lastSearchQuery: String = ""
+
+    private lateinit var searchResultsList: RecyclerView
+  //  private var allSongs: List<SongItem> = listOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +70,7 @@ class SearchActivity : AppCompatActivity() {
         searchView = findViewById(R.id.searchView)
         modeRadioGroup = findViewById(R.id.modeRadioGroup)
         searchResultsContainer = findViewById(R.id.searchResultsContainer)
+        searchResultsList = findViewById(R.id.searchResultsList)
 
         // Initialize views from the included layout
         artistsRecyclerView = findViewById(R.id.artistsRecyclerView)
@@ -98,20 +104,46 @@ class SearchActivity : AppCompatActivity() {
         albumsRecyclerView.adapter = albumAdapter
         songsRecyclerView.adapter = songAdapter
 
-        setupRecyclerViews()
+
+        setupRecyclerView()
         setupSearchView()
         setupModeRadioGroup()
         setupShowAllButtons()
         setupContentObserver()
 
+        // Restore last search query if it exists
+        savedInstanceState?.let {
+            lastSearchQuery = it.getString("lastSearchQuery", "")
+            searchView.setQuery(lastSearchQuery, false)
+        }
+
         // Load all songs immediately
         loadAllSongs()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("lastSearchQuery", lastSearchQuery)
+    }
+
     override fun onResume() {
         super.onResume()
-        // Reload songs when the activity is resumed
-        loadAllSongs()
+        // Reapply the last search when returning to this activity
+        if (lastSearchQuery.isNotEmpty()) {
+            performSearch(lastSearchQuery)
+        }
+    }
+
+    private fun setupRecyclerView() {
+        searchResultsList.layoutManager = LinearLayoutManager(this)
+        songAdapter = SongAdapter(
+            emptyList(),
+            { song -> handleSongClick(song) },
+            { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
+            albumArtCache
+        )
+        searchResultsList.adapter = songAdapter
+        Log.d("SearchActivity", "RecyclerView setup complete")
     }
 
     private fun setupRecyclerViews() {
@@ -140,10 +172,10 @@ class SearchActivity : AppCompatActivity() {
 
     private fun loadAllSongs() {
         lifecycleScope.launch(Dispatchers.IO) {
-            val songs = getAllSongs()
+            allSongs = getAllSongs()
+            Log.d("SearchActivity", "Loaded ${allSongs.size} songs")
             withContext(Dispatchers.Main) {
-                allSongs = songs.toMutableList()
-                showAllSongsWithoutHeaders()
+                showAllSongs()
             }
         }
     }
@@ -175,8 +207,9 @@ class SearchActivity : AppCompatActivity() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
+                lastSearchQuery = newText ?: ""
                 if (newText.isNullOrBlank()) {
-                    showAllSongsWithoutHeaders()
+                    showAllSongs()
                 } else {
                     performSearch(newText)
                 }
@@ -196,10 +229,13 @@ class SearchActivity : AppCompatActivity() {
 
     private fun performSearch(query: String?) {
         if (query.isNullOrBlank()) {
-            showAllSongsWithoutHeaders()
+            showAllSongs()
             return
         }
 
+        lastSearchQuery = query
+
+        searchResultsList.visibility = View.GONE
         searchResultsContainer.visibility = View.VISIBLE
 
         val lowercaseQuery = query.lowercase()
@@ -207,7 +243,9 @@ class SearchActivity : AppCompatActivity() {
         val matchingArtists = allSongs.map { it.artist }.distinct().filter { it.lowercase().contains(lowercaseQuery) }
         val matchingAlbums = allSongs.map { it.album }.distinct().filter { it.lowercase().contains(lowercaseQuery) }
         val matchingSongs = allSongs.filter { song ->
-            song.title.lowercase().contains(lowercaseQuery)
+            song.title.lowercase().contains(lowercaseQuery) ||
+                    song.artist.lowercase().contains(lowercaseQuery) ||
+                    song.album.lowercase().contains(lowercaseQuery)
         }
 
         updateArtistsList(matchingArtists)
@@ -244,6 +282,15 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun showAllSongs() {
+        Log.d("SearchActivity", "Showing all songs")
+        searchResultsList.visibility = View.VISIBLE
+        searchResultsContainer.visibility = View.GONE
+        songAdapter.updateData(allSongs)
+        Log.d("SearchActivity", "Updated adapter with ${allSongs.size} songs")
+        showAllSongsButton.visibility = View.GONE
+    }
+
+    private fun showAllSongsResults() {
         val query = searchView.query.toString()
         val allMatchingSongs = allSongs.filter { song ->
             song.title.lowercase().contains(query.lowercase())
@@ -276,7 +323,7 @@ class SearchActivity : AppCompatActivity() {
     private fun setupShowAllButtons() {
         showAllArtistsButton.setOnClickListener { showAllArtists() }
         showAllAlbumsButton.setOnClickListener { showAllAlbums() }
-        showAllSongsButton.setOnClickListener { showAllSongs() }
+        showAllSongsButton.setOnClickListener { showAllSongsResults() }
     }
 
     private fun showAllArtists() {
@@ -343,7 +390,7 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
-    private fun getAllSongs(): List<SongItem> {
+    private fun getAllSongs(): MutableList<SongItem> {
         val songs = mutableListOf<SongItem>()
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
@@ -411,17 +458,17 @@ class SearchActivity : AppCompatActivity() {
                     refreshMediaStore(path)
                 }
             }
-            // Refresh the entire song list after editing metadata
+            // Refresh the song list and reapply the last search
             refreshSongList()
         }
     }
 
     private fun refreshSongList() {
-        AsyncTask.execute {
+        lifecycleScope.launch(Dispatchers.IO) {
             val updatedSongs = getAllSongs()
-            runOnUiThread {
+            withContext(Dispatchers.Main) {
                 allSongs = updatedSongs.toMutableList()
-                performSearch(searchView.query.toString())
+                performSearch(lastSearchQuery)
             }
         }
     }
@@ -436,38 +483,6 @@ class SearchActivity : AppCompatActivity() {
             )
             allSongs[index] = updatedSong
             performSearch(searchView.query.toString())
-        }
-    }
-
-    private fun loadAlbumArt(filePath: String, imageView: ImageView) {
-        lifecycleScope.launch {
-            val bitmap = withContext(Dispatchers.IO) {
-                albumArtCache.get(filePath) ?: run {
-                    val mediaMetadataRetriever = MediaMetadataRetriever()
-                    try {
-                        mediaMetadataRetriever.setDataSource(filePath)
-                        val albumArt = mediaMetadataRetriever.embeddedPicture
-                        if (albumArt != null) {
-                            val bitmap = BitmapFactory.decodeByteArray(albumArt, 0, albumArt.size)
-                            albumArtCache.put(filePath, bitmap)
-                            bitmap
-                        } else {
-                            null
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        null
-                    } finally {
-                        mediaMetadataRetriever.release()
-                    }
-                }
-            }
-
-            if (bitmap != null) {
-                imageView.setImageBitmap(bitmap)
-            } else {
-                imageView.setImageResource(R.drawable.cover_art)
-            }
         }
     }
 
@@ -607,6 +622,7 @@ class SongAdapter(
     override fun getItemCount() = songs.size
 
     fun updateData(newSongs: List<SongItem>) {
+        Log.d("SongAdapter", "Updating data with ${newSongs.size} songs")
         songs = newSongs
         notifyDataSetChanged()
     }

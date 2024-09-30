@@ -258,7 +258,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupPlayerOptionsOverlay() {
         playerSettingsButton.setOnClickListener {
             playerOptionsOverlay.visibility = View.VISIBLE
-            currentsongtitle.text = "Unknown Title"
+            currentsongtitle.text = currentPlaylist[currentSongIndex].title
         }
 
         findViewById<Button>(R.id.btn_close_overlay).setOnClickListener {
@@ -1273,6 +1273,7 @@ class MainActivity : AppCompatActivity() {
 // search screen
 // add play function
 // add playlist add button
+// fix show all songs button
 
 // metadata screen
 // add remove cover button
