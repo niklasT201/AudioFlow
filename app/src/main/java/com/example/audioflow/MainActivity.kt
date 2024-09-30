@@ -76,6 +76,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settingsScreen: View
     private var folderItems: List<FolderItem> = emptyList()
 
+    private lateinit var colorManager: ColorManager
     private lateinit var contentFrame: FrameLayout
     private lateinit var btnHome: Button
     private lateinit var btnSearch: Button
@@ -113,6 +114,11 @@ class MainActivity : AppCompatActivity() {
         playbackSpeedSeekBar = findViewById(R.id.playback_speed_seekbar)
         playbackSpeedText = findViewById(R.id.playback_speed_text)
         playerSettingsButton = findViewById(R.id.btn_player_settings)
+
+        colorManager = ColorManager(this)
+
+        // Apply saved color on app start
+        colorManager.applyColorToActivity(this)
 
         setupPlayerOptionsOverlay()
 
@@ -278,18 +284,19 @@ class MainActivity : AppCompatActivity() {
         })
 
         findViewById<LinearLayout>(R.id.item_rename_file).setOnClickListener {
-            // Implement rename file functionality
             showRenameDialog()
         }
 
         findViewById<LinearLayout>(R.id.item_delete_file).setOnClickListener {
-            // Implement delete file functionality
             showDeleteConfirmationDialog()
         }
 
+            findViewById<LinearLayout>(R.id.item_change_color).setOnClickListener {
+                colorManager.showColorSelectionDialog()
+            }
+
         findViewById<LinearLayout>(R.id.item_edit_metadata)?.setOnClickListener {
             try {
-                // Navigate to EditMetadataActivity
                 val intent = Intent(this, EditMetadataActivity::class.java)
                 intent.putExtra("songPath", currentPlaylist[currentSongIndex].file.absolutePath)
                 startActivity(intent)
@@ -1234,6 +1241,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        colorManager.applyColorToActivity(this)
         loadMusicFolders()
         // If you have a current song playing, update the UI
         lastPlayedSong?.let { updateMiniPlayer(it) }
@@ -1281,14 +1289,13 @@ class MainActivity : AppCompatActivity() {
 // add reset button
 
 // info screen
-// show current song title
 // improve rename/delete design screen
 // remove space from close button
 // sound changes
-// color changing
 // cover changing
 // maybe driver mode
 // timer to close app
+// maybe live updating colors
 
 // settings screen
 // allow song previous button to set time back to 0
