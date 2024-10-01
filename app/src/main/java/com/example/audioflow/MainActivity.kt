@@ -1281,7 +1281,7 @@ class MainActivity : AppCompatActivity() {
 // search screen
 // add play function
 // add playlist add button
-// fix show all songs button
+// right song elements
 
 // metadata screen
 // add remove cover button
@@ -1290,6 +1290,7 @@ class MainActivity : AppCompatActivity() {
 
 // info screen
 // improve rename/delete design screen
+// App theme will break elements
 // remove space from close button
 // sound changes
 // cover changing
