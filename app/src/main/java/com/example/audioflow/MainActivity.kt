@@ -8,7 +8,6 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.Manifest
-import android.app.AlertDialog
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
@@ -20,10 +19,14 @@ import java.io.File
 import java.util.*
 import android.media.MediaMetadataRetriever
 import android.media.PlaybackParams
+import androidx.appcompat.view.ContextThemeWrapper
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.core.content.FileProvider
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputLayout
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.text.Collator
@@ -311,19 +314,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun showRenameDialog() {
         val currentSong = currentPlaylist[currentSongIndex]
-        val editText = EditText(this).apply {
-            setText(currentSong.file.nameWithoutExtension)
-        }
+        val themedContext = ContextThemeWrapper(this, R.style.CustomMaterialDialogTheme)
+        val dialogView = LayoutInflater.from(themedContext).inflate(R.layout.dialog_rename, null)
+        val textInputLayout = dialogView.findViewById<TextInputLayout>(R.id.textInputLayout)
+        val editText = textInputLayout.editText!!
 
-        AlertDialog.Builder(this)
+        editText.setText(currentSong.file.nameWithoutExtension)
+
+        MaterialAlertDialogBuilder(themedContext)
             .setTitle("Rename File")
-            .setView(editText)
+            .setView(dialogView)
             .setPositiveButton("Rename") { _, _ ->
                 val newName = editText.text.toString()
                 if (newName.isNotBlank()) {
                     val newFile = File(currentSong.file.parent, "$newName.mp3")
                     if (currentSong.file.renameTo(newFile)) {
-                        // Update the current playlist and UI
                         currentPlaylist = currentPlaylist.toMutableList().apply {
                             set(currentSongIndex, currentSong.copy(file = newFile, title = newName))
                         }
@@ -339,19 +344,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showDeleteConfirmationDialog() {
-        AlertDialog.Builder(this)
+        val themedContext = ContextThemeWrapper(this, R.style.CustomMaterialDialogTheme)
+        MaterialAlertDialogBuilder(themedContext)
             .setTitle("Delete File")
             .setMessage("Are you sure you want to delete this file? This action cannot be undone.")
             .setPositiveButton("Delete") { _, _ ->
                 val currentSong = currentPlaylist[currentSongIndex]
                 if (currentSong.file.delete()) {
-                    // Remove the song from the playlist and update UI
                     currentPlaylist = currentPlaylist.filterIndexed { index, _ -> index != currentSongIndex }
                     if (currentPlaylist.isEmpty()) {
-                        // No more songs, close player
                         finish()
                     } else {
-                        // Play next song
                         currentSongIndex = currentSongIndex.coerceAtMost(currentPlaylist.size - 1)
                         playSong(currentSongIndex)
                     }
@@ -1289,9 +1292,6 @@ class MainActivity : AppCompatActivity() {
 // add reset button
 
 // info screen
-// improve rename/delete design screen
-// App theme will break elements
-// remove space from close button
 // sound changes
 // cover changing
 // maybe driver mode

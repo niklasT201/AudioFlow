@@ -297,9 +297,9 @@
                     android:textColor="#FFFFFF"
                     android:backgroundTint="#2C2C2C"
                     android:layout_marginTop="0dp"
-                    android:layout_marginBottom="0dp"
-                    android:layout_marginLeft="0dp"
-                    android:layout_marginRight="0dp"
+                    android:layout_marginBottom="-5dp"
+                    android:layout_marginLeft="-5dp"
+                    android:layout_marginRight="-5dp"
                     android:layout_gravity="bottom" />
 
         </LinearLayout>

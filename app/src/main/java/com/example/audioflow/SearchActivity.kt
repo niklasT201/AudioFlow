@@ -5,7 +5,6 @@ import android.content.ContentResolver
 import android.content.ContentValues
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,19 +12,14 @@ import android.provider.MediaStore
 import android.content.Intent
 import android.database.ContentObserver
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.media.MediaMetadataRetriever
 import android.media.MediaScannerConnection
-import android.os.AsyncTask
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.util.LruCache
 import android.widget.*
 import androidx.appcompat.widget.SearchView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -270,8 +264,6 @@ class SearchActivity : AppCompatActivity() {
         val query = searchView.query.toString()
         val allMatchingSongs = allSongs.filter { song ->
             song.title.lowercase().contains(query.lowercase())
-      //              song.artist.lowercase().contains(query.lowercase()) ||
-       //             song.album.lowercase().contains(query.lowercase())
         }
         Log.d("SearchActivity", "Showing all songs. Found ${allMatchingSongs.size} matching songs")
 
@@ -320,13 +312,24 @@ class SearchActivity : AppCompatActivity() {
         songsHeader.visibility = View.VISIBLE
         songsRecyclerView.visibility = View.VISIBLE
 
-        // Update adapters
+        // Update adapters with all songs and albums for this artist
         albumAdapter.updateData(artistAlbums)
         songAdapter.updateData(artistSongs)
 
         // Update "Show All" buttons
         showAllAlbumsButton.visibility = if (artistAlbums.size > 5) View.VISIBLE else View.GONE
         showAllSongsButton.visibility = if (artistSongs.size > 5) View.VISIBLE else View.GONE
+
+        // Update searchResultsList
+        searchResultsList.adapter = songAdapter
+        searchResultsList.layoutManager = LinearLayoutManager(this)
+        searchResultsList.visibility = View.VISIBLE
+        searchResultsContainer.visibility = View.GONE
+
+        val allArtistAlbums = allSongs.filter { it.artist == artist }.map { it.album }.distinct()
+        albumAdapter.updateData(allArtistAlbums)
+
+        Log.d("SearchActivity", "Showing details for artist: $artist. Found ${artistSongs.size} songs and ${artistAlbums.size} albums.")
     }
 
     private fun showAlbumDetails(album: String) {
@@ -343,11 +346,19 @@ class SearchActivity : AppCompatActivity() {
         songsHeader.visibility = View.VISIBLE
         songsRecyclerView.visibility = View.VISIBLE
 
-        // Update adapter
+        // Update adapter with all songs from this album
         songAdapter.updateData(albumSongs)
 
         // Hide "Show All Songs" button as we're already showing all songs for this album
         showAllSongsButton.visibility = View.GONE
+
+        // Update searchResultsList
+        searchResultsList.adapter = songAdapter
+        searchResultsList.layoutManager = LinearLayoutManager(this)
+        searchResultsList.visibility = View.VISIBLE
+        searchResultsContainer.visibility = View.GONE
+
+        Log.d("SearchActivity", "Showing details for album: $album. Found ${albumSongs.size} songs.")
     }
 
     private fun handleSongClick(song: SongItem) {
@@ -506,7 +517,9 @@ class ArtistAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val artist = artists[position]
         holder.textView.text = artist
-        holder.itemView.setOnClickListener { onArtistClick(artist) }
+        holder.itemView.setOnClickListener {
+            onArtistClick(artist)
+        }
     }
 
     override fun getItemCount() = artists.size
@@ -535,7 +548,9 @@ class AlbumAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val album = albums[position]
         holder.textView.text = album
-        holder.itemView.setOnClickListener { onAlbumClick(album) }
+        holder.itemView.setOnClickListener {
+            onAlbumClick(album)
+        }
     }
 
     override fun getItemCount() = albums.size
@@ -594,11 +609,6 @@ class SongAdapter(
         songs = newSongs
         notifyDataSetChanged()
     }
-}
-
-sealed class SearchResultItem {
-    data class Header(val title: String) : SearchResultItem()
-    data class Song(val songItem: SongItem) : SearchResultItem()
 }
 
 // Make sure this SongItem data class matches the one you're using in your MainActivity

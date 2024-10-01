@@ -16,4 +16,23 @@
         <item name="android:editTextColor">@color/background_color</item>
         <item name="android:textColorHint">@color/secondary_text</item>
     </style>
+
+    <style name="CustomMaterialDialogTheme" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+        <!-- Dialog background -->
+        <item name="colorSurface">@color/list_divider</item>
+
+        <!-- Text Colors -->
+        <item name="android:textColorPrimary">@color/primary_text</item>
+        <item name="android:textColorSecondary">@color/secondary_text</item>
+
+        <!-- Button Colors (OK, Cancel, etc.) -->
+        <item name="colorPrimary">@color/accent_color</item>
+        <item name="colorOnPrimary">@color/primary_text</item>
+
+        <!-- Icon Colors (if any) -->
+        <item name="colorOnSurface">@color/primary_text</item>
+
+        <item name="android:textSize">16sp</item> <!-- Increase text size -->
+    </style>
+
 </resources>
