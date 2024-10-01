@@ -57,7 +57,6 @@ class SearchActivity : AppCompatActivity() {
     private var lastSearchQuery: String = ""
 
     private lateinit var searchResultsList: RecyclerView
-  //  private var allSongs: List<SongItem> = listOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -145,30 +144,6 @@ class SearchActivity : AppCompatActivity() {
         searchResultsList.adapter = songAdapter
         Log.d("SearchActivity", "RecyclerView setup complete")
     }
-
-    private fun setupRecyclerViews() {
-        artistsRecyclerView = findViewById(R.id.artistsRecyclerView)
-        albumsRecyclerView = findViewById(R.id.albumsRecyclerView)
-        songsRecyclerView = findViewById(R.id.songsRecyclerView)
-
-        artistAdapter = ArtistAdapter(emptyList()) { artist -> showArtistDetails(artist) }
-        albumAdapter = AlbumAdapter(emptyList()) { album -> showAlbumDetails(album) }
-        songAdapter = SongAdapter(
-            emptyList(),
-            { song -> handleSongClick(song) },
-            { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
-            albumArtCache
-        )
-
-        artistsRecyclerView.layoutManager = LinearLayoutManager(this)
-        albumsRecyclerView.layoutManager = LinearLayoutManager(this)
-        songsRecyclerView.layoutManager = LinearLayoutManager(this)
-
-        artistsRecyclerView.adapter = artistAdapter
-        albumsRecyclerView.adapter = albumAdapter
-        songsRecyclerView.adapter = songAdapter
-    }
-
 
     private fun loadAllSongs() {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -261,6 +236,8 @@ class SearchActivity : AppCompatActivity() {
         artistsRecyclerView.visibility = if (matchingArtists.isNotEmpty()) View.VISIBLE else View.GONE
         albumsRecyclerView.visibility = if (matchingAlbums.isNotEmpty()) View.VISIBLE else View.GONE
         songsRecyclerView.visibility = if (matchingSongs.isNotEmpty()) View.VISIBLE else View.GONE
+
+        Log.d("SearchActivity", "Search performed. Artists: ${matchingArtists.size}, Albums: ${matchingAlbums.size}, Songs: ${matchingSongs.size}")
     }
 
     private fun updateArtistsList(artists: List<String>) {
@@ -277,8 +254,9 @@ class SearchActivity : AppCompatActivity() {
 
     private fun updateSongsList(songs: List<SongItem>) {
         songsRecyclerView.visibility = if (songs.isNotEmpty()) View.VISIBLE else View.GONE
-        songAdapter.updateData(songs.take(5))
+        (songsRecyclerView.adapter as? SongAdapter)?.updateData(songs.take(5))
         showAllSongsButton.visibility = if (songs.size > 5) View.VISIBLE else View.GONE
+        Log.d("SearchActivity", "Updated songs list. Showing ${songs.take(5).size} out of ${songs.size} songs")
     }
 
     private fun showAllSongs() {
@@ -293,32 +271,22 @@ class SearchActivity : AppCompatActivity() {
     private fun showAllSongsResults() {
         val query = searchView.query.toString()
         val allMatchingSongs = allSongs.filter { song ->
-            song.title.lowercase().contains(query.lowercase())
+            song.title.lowercase().contains(query.lowercase()) ||
+                    song.artist.lowercase().contains(query.lowercase()) ||
+                    song.album.lowercase().contains(query.lowercase())
         }
-        songAdapter.updateData(allMatchingSongs)
-        showAllSongsButton.visibility = View.GONE
-    }
+        Log.d("SearchActivity", "Showing all songs. Found ${allMatchingSongs.size} matching songs")
 
-    private fun showAllSongsWithoutHeaders() {
-        searchResultsContainer.visibility = View.VISIBLE
-
-        // Hide headers
-        artistsHeader.visibility = View.GONE
-        albumsHeader.visibility = View.GONE
-        songsHeader.visibility = View.GONE
-
-        // Hide artists and albums sections
-        artistsRecyclerView.visibility = View.GONE
-        albumsRecyclerView.visibility = View.GONE
-        showAllArtistsButton.visibility = View.GONE
-        showAllAlbumsButton.visibility = View.GONE
-
-        // Show all songs
+        // Update the songsRecyclerView
         songsRecyclerView.visibility = View.VISIBLE
-        songAdapter.updateData(allSongs)
-        showAllSongsButton.visibility = View.GONE
-    }
+        (songsRecyclerView.adapter as? SongAdapter)?.updateData(allMatchingSongs)
 
+        // Hide the "Show All Songs" button
+        showAllSongsButton.visibility = View.GONE
+
+        // Ensure the songs section is visible
+        songsHeader.visibility = View.VISIBLE
+    }
 
     private fun setupShowAllButtons() {
         showAllArtistsButton.setOnClickListener { showAllArtists() }
