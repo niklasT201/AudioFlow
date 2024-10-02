@@ -249,12 +249,7 @@ class SearchActivity : AppCompatActivity() {
         artistsRecyclerView.adapter = artistAdapter
         albumsRecyclerView.adapter = albumAdapter
         songsRecyclerView.adapter = songAdapter
-
-        // Set up "Show All" buttons
-        showAllArtistsButton.setOnClickListener { showAllArtists() }
-        showAllAlbumsButton.setOnClickListener { showAllAlbums() }
-        showAllSongsButton.setOnClickListener { showAllSongsResults() }
-
+        
         // Show/hide sections based on search results
         searchResultsView.findViewById<TextView>(R.id.artistsHeader).visibility = if (matchingArtists.isNotEmpty()) View.VISIBLE else View.GONE
         artistsRecyclerView.visibility = if (matchingArtists.isNotEmpty()) View.VISIBLE else View.GONE
