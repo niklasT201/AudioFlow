@@ -8,7 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
@@ -33,6 +33,10 @@ class EditMetadataActivity : AppCompatActivity() {
     private lateinit var songPathTextView: TextView
     private var songPath: String? = null
     private var newCoverUri: Uri? = null
+
+    private lateinit var saveButton: ImageView
+    private lateinit var changeCoverButton: Button
+    private var isEditMode = false
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -60,15 +64,21 @@ class EditMetadataActivity : AppCompatActivity() {
         albumEditText = findViewById(R.id.albumEditText)
         coverImageView = findViewById(R.id.coverImageView)
         songPathTextView = findViewById(R.id.songPathTextView)
+        saveButton = findViewById(R.id.saveButton)
+        changeCoverButton = findViewById(R.id.changeCoverButton)
 
         songPath = intent.getStringExtra("songPath")
         songPathTextView.text = songPath
 
-        findViewById<ImageView>(R.id.saveButton).setOnClickListener {
-            saveSongMetadata()
+        saveButton.setOnClickListener {
+            if (isEditMode) {
+                saveSongMetadata()
+            } else {
+                enableEditMode()
+            }
         }
 
-        findViewById<Button>(R.id.changeCoverButton).setOnClickListener {
+        changeCoverButton.setOnClickListener {
             pickImage.launch("image/*")
         }
 
@@ -77,6 +87,7 @@ class EditMetadataActivity : AppCompatActivity() {
         }
 
         checkPermissionAndLoadMetadata()
+        disableEditMode() // Start in view mode
     }
 
     private fun checkPermissionAndLoadMetadata() {
@@ -101,6 +112,26 @@ class EditMetadataActivity : AppCompatActivity() {
         }
     }
 
+    private fun enableEditMode() {
+        isEditMode = true
+        saveButton.setImageResource(R.drawable.save_icon)
+        changeCoverButton.visibility = View.VISIBLE
+        setEditTextsEditable(true)
+    }
+
+    private fun disableEditMode() {
+        isEditMode = false
+        saveButton.setImageResource(R.drawable.edit_button)
+        changeCoverButton.visibility = View.GONE
+        setEditTextsEditable(false)
+    }
+
+    private fun setEditTextsEditable(editable: Boolean) {
+        titleEditText.isEnabled = editable
+        artistEditText.isEnabled = editable
+        albumEditText.isEnabled = editable
+    }
+
     private fun loadMetadata() {
         songPath?.let { path ->
             try {
@@ -116,6 +147,8 @@ class EditMetadataActivity : AppCompatActivity() {
                 titleEditText.setText(tag.getFirst(FieldKey.TITLE).takeIf { it.isNotBlank() } ?: file.nameWithoutExtension)
                 artistEditText.setText(tag.getFirst(FieldKey.ARTIST).takeIf { it.isNotBlank() } ?: "Unknown Artist")
                 albumEditText.setText(tag.getFirst(FieldKey.ALBUM).takeIf { it.isNotBlank() } ?: "Unknown Album")
+
+                disableEditMode()
 
                 val artworkBinaryData = tag.firstArtwork?.binaryData
                 if (artworkBinaryData != null) {
@@ -177,6 +210,7 @@ class EditMetadataActivity : AppCompatActivity() {
                     putExtra("updatedAlbum", albumEditText.text.toString())
                 }
                 setResult(Activity.RESULT_OK, resultIntent)
+                disableEditMode()
                 finish()
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -1282,9 +1282,9 @@ class MainActivity : AppCompatActivity() {
 // holding song item for settings to
 
 // search screen
+// back feature for list
 // add play function
 // add playlist add button
-// right song elements
 
 // metadata screen
 // add remove cover button

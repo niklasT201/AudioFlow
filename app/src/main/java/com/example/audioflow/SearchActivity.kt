@@ -49,6 +49,7 @@ class SearchActivity : AppCompatActivity() {
     private val songsLiveData = MutableLiveData<List<SongItem>>()
     private lateinit var contentObserver: ContentObserver
     private var lastSearchQuery: String = ""
+    private val navigationStack = mutableListOf<() -> Unit>()
 
     private lateinit var searchResultsList: RecyclerView
 
@@ -112,6 +113,14 @@ class SearchActivity : AppCompatActivity() {
 
         // Load all songs immediately
         loadAllSongs()
+    }
+
+    override fun onBackPressed() {
+        if (navigationStack.isNotEmpty()) {
+            navigationStack.removeAt(navigationStack.size - 1).invoke()
+        } else {
+            super.onBackPressed()
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -215,40 +224,58 @@ class SearchActivity : AppCompatActivity() {
             song.title.lowercase().contains(lowercaseQuery)
         }
 
-        updateArtistsList(matchingArtists)
-        updateAlbumsList(matchingAlbums)
-        updateSongsList(matchingSongs)
+        // Inflate the search_results layout
+        val searchResultsView = layoutInflater.inflate(R.layout.search_results, null)
 
-        // Show headers
-        artistsHeader.visibility = if (matchingArtists.isNotEmpty()) View.VISIBLE else View.GONE
-        albumsHeader.visibility = if (matchingAlbums.isNotEmpty()) View.VISIBLE else View.GONE
-        songsHeader.visibility = if (matchingSongs.isNotEmpty()) View.VISIBLE else View.GONE
+        // Set up the RecyclerViews
+        val artistsRecyclerView = searchResultsView.findViewById<RecyclerView>(R.id.artistsRecyclerView)
+        val albumsRecyclerView = searchResultsView.findViewById<RecyclerView>(R.id.albumsRecyclerView)
+        val songsRecyclerView = searchResultsView.findViewById<RecyclerView>(R.id.songsRecyclerView)
+
+        artistsRecyclerView.layoutManager = LinearLayoutManager(this)
+        albumsRecyclerView.layoutManager = LinearLayoutManager(this)
+        songsRecyclerView.layoutManager = LinearLayoutManager(this)
+
+        // Set up the adapters
+        val artistAdapter = ArtistAdapter(matchingArtists.take(5)) { artist -> showArtistDetails(artist) }
+        val albumAdapter = AlbumAdapter(matchingAlbums.take(5)) { album -> showAlbumDetails(album) }
+        val songAdapter = SongAdapter(
+            matchingSongs.take(5),
+            { song -> handleSongClick(song) },
+            { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
+            albumArtCache
+        )
+
+        artistsRecyclerView.adapter = artistAdapter
+        albumsRecyclerView.adapter = albumAdapter
+        songsRecyclerView.adapter = songAdapter
+
+        // Set up "Show All" buttons
+        showAllArtistsButton.setOnClickListener { showAllArtists() }
+        showAllAlbumsButton.setOnClickListener { showAllAlbums() }
+        showAllSongsButton.setOnClickListener { showAllSongsResults() }
 
         // Show/hide sections based on search results
+        searchResultsView.findViewById<TextView>(R.id.artistsHeader).visibility = if (matchingArtists.isNotEmpty()) View.VISIBLE else View.GONE
         artistsRecyclerView.visibility = if (matchingArtists.isNotEmpty()) View.VISIBLE else View.GONE
+        searchResultsView.findViewById<Button>(R.id.showAllArtistsButton).visibility = if (matchingArtists.size > 5) View.VISIBLE else View.GONE
+
+        searchResultsView.findViewById<TextView>(R.id.albumsHeader).visibility = if (matchingAlbums.isNotEmpty()) View.VISIBLE else View.GONE
         albumsRecyclerView.visibility = if (matchingAlbums.isNotEmpty()) View.VISIBLE else View.GONE
+        searchResultsView.findViewById<Button>(R.id.showAllAlbumsButton).visibility = if (matchingAlbums.size > 5) View.VISIBLE else View.GONE
+
+        searchResultsView.findViewById<TextView>(R.id.songsHeader).visibility = if (matchingSongs.isNotEmpty()) View.VISIBLE else View.GONE
         songsRecyclerView.visibility = if (matchingSongs.isNotEmpty()) View.VISIBLE else View.GONE
+        searchResultsView.findViewById<Button>(R.id.showAllSongsButton).visibility = if (matchingSongs.size > 5) View.VISIBLE else View.GONE
+
+        // Update the searchResultsContainer
+        searchResultsContainer.removeAllViews()
+        searchResultsContainer.addView(searchResultsView)
+
+        navigationStack.clear()
+        navigationStack.add { performSearch(query) }
 
         Log.d("SearchActivity", "Search performed. Artists: ${matchingArtists.size}, Albums: ${matchingAlbums.size}, Songs: ${matchingSongs.size}")
-    }
-
-    private fun updateArtistsList(artists: List<String>) {
-        artistsRecyclerView.visibility = if (artists.isNotEmpty()) View.VISIBLE else View.GONE
-        artistAdapter.updateData(artists.take(5))
-        showAllArtistsButton.visibility = if (artists.size > 5) View.VISIBLE else View.GONE
-    }
-
-    private fun updateAlbumsList(albums: List<String>) {
-        albumsRecyclerView.visibility = if (albums.isNotEmpty()) View.VISIBLE else View.GONE
-        albumAdapter.updateData(albums.take(5))
-        showAllAlbumsButton.visibility = if (albums.size > 5) View.VISIBLE else View.GONE
-    }
-
-    private fun updateSongsList(songs: List<SongItem>) {
-        songsRecyclerView.visibility = if (songs.isNotEmpty()) View.VISIBLE else View.GONE
-        (songsRecyclerView.adapter as? SongAdapter)?.updateData(songs.take(5))
-        showAllSongsButton.visibility = if (songs.size > 5) View.VISIBLE else View.GONE
-        Log.d("SearchActivity", "Updated songs list. Showing ${songs.take(5).size} out of ${songs.size} songs")
     }
 
     private fun showAllSongs() {
@@ -258,6 +285,47 @@ class SearchActivity : AppCompatActivity() {
         songAdapter.updateData(allSongs)
         Log.d("SearchActivity", "Updated adapter with ${allSongs.size} songs")
         showAllSongsButton.visibility = View.GONE
+    }
+
+    private fun setupShowAllButtons() {
+        showAllArtistsButton.setOnClickListener {
+            Log.d("SearchActivity", "Show All Artists button clicked")
+            showAllArtists()
+        }
+        showAllAlbumsButton.setOnClickListener {
+            Log.d("SearchActivity", "Show All Albums button clicked")
+            showAllAlbums()
+        }
+        showAllSongsButton.setOnClickListener {
+            Log.d("SearchActivity", "Show All Songs button clicked")
+            showAllSongsResults()
+        }
+    }
+
+    private fun showAllArtists() {
+        val query = searchView.query.toString()
+        val allMatchingArtists = allSongs.map { it.artist }.distinct().filter { it.lowercase().contains(query.lowercase()) }
+        artistAdapter.updateData(allMatchingArtists)
+        showAllArtistsButton.visibility = View.GONE
+
+        // Make sure the artists section is visible
+        artistsHeader.visibility = View.VISIBLE
+        artistsRecyclerView.visibility = View.VISIBLE
+
+        navigationStack.add { showAllArtists() }
+    }
+
+    private fun showAllAlbums() {
+        val query = searchView.query.toString()
+        val allMatchingAlbums = allSongs.map { it.album }.distinct().filter { it.lowercase().contains(query.lowercase()) }
+        albumAdapter.updateData(allMatchingAlbums)
+        showAllAlbumsButton.visibility = View.GONE
+
+        // Make sure the albums section is visible
+        albumsHeader.visibility = View.VISIBLE
+        albumsRecyclerView.visibility = View.VISIBLE
+
+        navigationStack.add { showAllAlbums() }
     }
 
     private fun showAllSongsResults() {
@@ -276,58 +344,47 @@ class SearchActivity : AppCompatActivity() {
 
         // Ensure the songs section is visible
         songsHeader.visibility = View.VISIBLE
-    }
 
-    private fun setupShowAllButtons() {
-        showAllArtistsButton.setOnClickListener { showAllArtists() }
-        showAllAlbumsButton.setOnClickListener { showAllAlbums() }
-        showAllSongsButton.setOnClickListener { showAllSongsResults() }
-    }
-
-    private fun showAllArtists() {
-        val query = searchView.query.toString()
-        val allMatchingArtists = allSongs.map { it.artist }.distinct().filter { it.lowercase().contains(query.lowercase()) }
-        artistAdapter.updateData(allMatchingArtists)
-        showAllArtistsButton.visibility = View.GONE
-    }
-
-    private fun showAllAlbums() {
-        val query = searchView.query.toString()
-        val allMatchingAlbums = allSongs.map { it.album }.distinct().filter { it.lowercase().contains(query.lowercase()) }
-        albumAdapter.updateData(allMatchingAlbums)
-        showAllAlbumsButton.visibility = View.GONE
+        navigationStack.add { showAllSongsResults() }
     }
 
     private fun showArtistDetails(artist: String) {
         val artistSongs = allSongs.filter { it.artist == artist }
         val artistAlbums = artistSongs.map { it.album }.distinct()
 
-        // Update UI visibility
-        artistsHeader.visibility = View.GONE
-        artistsRecyclerView.visibility = View.GONE
-        showAllArtistsButton.visibility = View.GONE
+        // Inflate the artist_detail layout
+        val artistDetailView = layoutInflater.inflate(R.layout.artist_detail, null)
 
-        albumsHeader.visibility = View.VISIBLE
-        albumsRecyclerView.visibility = View.VISIBLE
-        songsHeader.visibility = View.VISIBLE
-        songsRecyclerView.visibility = View.VISIBLE
+        // Set up the RecyclerViews
+        val albumsRecyclerView = artistDetailView.findViewById<RecyclerView>(R.id.artistAlbumsRecyclerView)
+        val songsRecyclerView = artistDetailView.findViewById<RecyclerView>(R.id.artistSongsRecyclerView)
 
-        // Update adapters with all songs and albums for this artist
-        albumAdapter.updateData(artistAlbums)
-        songAdapter.updateData(artistSongs)
+        albumsRecyclerView.layoutManager = LinearLayoutManager(this)
+        songsRecyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Update "Show All" buttons
-        showAllAlbumsButton.visibility = if (artistAlbums.size > 5) View.VISIBLE else View.GONE
-        showAllSongsButton.visibility = if (artistSongs.size > 5) View.VISIBLE else View.GONE
+        // Set up the adapters
+        val albumAdapter = AlbumAdapter(artistAlbums) { album -> showAlbumDetails(album) }
+        val songAdapter = SongAdapter(
+            artistSongs,
+            { song -> handleSongClick(song) },
+            { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
+            albumArtCache
+        )
 
-        // Update searchResultsList
-        searchResultsList.adapter = songAdapter
-        searchResultsList.layoutManager = LinearLayoutManager(this)
-        searchResultsList.visibility = View.VISIBLE
-        searchResultsContainer.visibility = View.GONE
+        albumsRecyclerView.adapter = albumAdapter
+        songsRecyclerView.adapter = songAdapter
 
-        val allArtistAlbums = allSongs.filter { it.artist == artist }.map { it.album }.distinct()
-        albumAdapter.updateData(allArtistAlbums)
+        // Set the artist name
+        artistDetailView.findViewById<TextView>(R.id.artistNameTextView).text = artist
+
+        // Update the searchResultsList
+        searchResultsList.adapter = null
+        searchResultsContainer.removeAllViews()
+        searchResultsContainer.addView(artistDetailView)
+        searchResultsContainer.visibility = View.VISIBLE
+        searchResultsList.visibility = View.GONE
+
+        navigationStack.add { showArtistDetails(artist) }
 
         Log.d("SearchActivity", "Showing details for artist: $artist. Found ${artistSongs.size} songs and ${artistAlbums.size} albums.")
     }
@@ -335,28 +392,35 @@ class SearchActivity : AppCompatActivity() {
     private fun showAlbumDetails(album: String) {
         val albumSongs = allSongs.filter { it.album == album }
 
-        // Update UI visibility
-        artistsHeader.visibility = View.GONE
-        artistsRecyclerView.visibility = View.GONE
-        showAllArtistsButton.visibility = View.GONE
-        albumsHeader.visibility = View.GONE
-        albumsRecyclerView.visibility = View.GONE
-        showAllAlbumsButton.visibility = View.GONE
+        // Inflate the search_results layout
+        val albumDetailView = layoutInflater.inflate(R.layout.album_detail, null)
 
-        songsHeader.visibility = View.VISIBLE
-        songsRecyclerView.visibility = View.VISIBLE
+        // Set up the RecyclerView
+        val songsRecyclerView = albumDetailView.findViewById<RecyclerView>(R.id.albumSongsRecyclerView)
+        songsRecyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Update adapter with all songs from this album
-        songAdapter.updateData(albumSongs)
+        // Set up the adapter
+        val songAdapter = SongAdapter(
+            albumSongs,
+            { song -> handleSongClick(song) },
+            { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
+            albumArtCache
+        )
 
-        // Hide "Show All Songs" button as we're already showing all songs for this album
-        showAllSongsButton.visibility = View.GONE
+        songsRecyclerView.adapter = songAdapter
 
-        // Update searchResultsList
-        searchResultsList.adapter = songAdapter
-        searchResultsList.layoutManager = LinearLayoutManager(this)
-        searchResultsList.visibility = View.VISIBLE
-        searchResultsContainer.visibility = View.GONE
+        // Set the album name
+        albumDetailView.findViewById<TextView>(R.id.albumNameTextView).text = album
+        albumDetailView.findViewById<TextView>(R.id.songsHeader).text = "Songs in $album"
+
+        // Update the searchResultsList
+        searchResultsList.adapter = null
+        searchResultsContainer.removeAllViews()
+        searchResultsContainer.addView(albumDetailView)
+        searchResultsContainer.visibility = View.VISIBLE
+        searchResultsList.visibility = View.GONE
+
+        navigationStack.add { showAlbumDetails(album) }
 
         Log.d("SearchActivity", "Showing details for album: $album. Found ${albumSongs.size} songs.")
     }

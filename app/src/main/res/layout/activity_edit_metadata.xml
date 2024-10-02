@@ -70,7 +70,8 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
                 android:alpha="0.7"
-                android:text="@string/cover" />
+                android:text="@string/cover"
+                android:visibility="gone" />
 
         </FrameLayout>
 
