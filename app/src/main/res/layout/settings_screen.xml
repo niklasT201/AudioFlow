@@ -1,16 +1,173 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical"
-              android:padding="16dp">
+<androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/background_color">
 
-    <TextView
-            android:layout_width="wrap_content"
+    <!-- Card for the Settings -->
+    <androidx.cardview.widget.CardView
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/settings"
-            android:textSize="24sp"
-            android:textColor="@color/primary_text"
-            android:layout_marginBottom="16dp" />
+            android:layout_margin="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="@color/player_color"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.9">
 
-</LinearLayout>
+        <!-- Settings List -->
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+            <!-- Song Previous Button Setting -->
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Reset Current Song on Previous"
+                        android:textColor="@color/primary_text" />
+
+                <Switch
+                        android:id="@+id/switch_reset_song"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:thumbTint="@color/accent_color" />
+
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/list_divider" />
+
+            <!-- Display Always On Setting -->
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Keep Display Always On"
+                        android:textColor="@color/primary_text" />
+
+                <Switch
+                        android:id="@+id/switch_display_on"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:thumbTint="@color/accent_color" />
+
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/list_divider" />
+
+            <!-- Show Cover in Search -->
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Show Cover in Search Screen"
+                        android:textColor="@color/primary_text" />
+
+                <Switch
+                        android:id="@+id/switch_show_cover"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:thumbTint="@color/accent_color" />
+
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/list_divider" />
+
+            <!-- Timer Option -->
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Timer"
+                        android:textColor="@color/primary_text" />
+
+                <Switch
+                        android:id="@+id/switch_timer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false"
+                        android:thumbTint="@color/accent_color" />
+
+            </LinearLayout>
+
+            <!-- Divider -->
+            <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/list_divider" />
+
+            <!-- About App -->
+            <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:onClick="showAboutDialog">
+
+                <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="About App"
+                        android:textColor="@color/primary_text" />
+
+                <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/info"
+                        android:contentDescription="About Icon"
+                        app:tint="@color/accent_color"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

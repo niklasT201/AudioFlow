@@ -77,7 +77,15 @@ class ColorManager(private val context: Context) {
         val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
         playerViewContainer?.setBackgroundColor(color)
 
-        activity.window.statusBarColor = color
+        //activity.window.statusBarColor = color
+
+        if (playerViewContainer?.visibility == View.VISIBLE) {
+           // Change the status bar color only when the player screen is visible
+            activity.window.statusBarColor = color
+        } else {
+            // Optionally, you can reset the status bar color to a default value when player screen is not visible
+            activity.window.statusBarColor = ContextCompat.getColor(activity, R.color.background_color)
+        }
     }
 
 }
