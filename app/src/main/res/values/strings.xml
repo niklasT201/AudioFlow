@@ -37,4 +37,5 @@
     <string name="add_timer">Add Timer</string>
     <string name="customize_player">Customize Player</string>
     <string name="car_mode">Car Mode</string>
+    <string name="version_info">Version %1$s\nLast updated: %2$s</string>
 </resources>
