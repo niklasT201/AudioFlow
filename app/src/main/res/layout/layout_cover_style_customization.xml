@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#212121"
+        android:layout_margin="16dp">
+
+    <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Customize Album Cover"
+                android:textSize="20sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp"/>
+
+        <!-- Cover Style Selection -->
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cover Style"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="12dp"/>
+
+        <RadioGroup
+                android:id="@+id/coverStyleGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="16dp">
+
+            <RadioButton
+                    android:id="@+id/styleDefault"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Default (Square)"
+                    android:textColor="#CCCCCC"
+                    android:buttonTint="#B749CA"
+                    android:padding="8dp"/>
+
+            <RadioButton
+                    android:id="@+id/styleCircle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Circular"
+                    android:textColor="#CCCCCC"
+                    android:buttonTint="#B749CA"
+                    android:padding="8dp"/>
+
+            <RadioButton
+                    android:id="@+id/styleFullWidth"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Full Width"
+                    android:textColor="#CCCCCC"
+                    android:buttonTint="#B749CA"
+                    android:padding="8dp"/>
+
+            <RadioButton
+                    android:id="@+id/styleExpandedTop"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Expanded Top"
+                    android:textColor="#CCCCCC"
+                    android:buttonTint="#B749CA"
+                    android:padding="8dp"/>
+        </RadioGroup>
+
+        <!-- Corner Radius (for non-circular styles) -->
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Corner Radius"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="8dp"/>
+
+        <SeekBar
+                android:id="@+id/cornerRadiusSeekBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="40"
+                android:progress="16"
+                android:progressTint="#B749CA"
+                android:thumbTint="#B749CA"
+                android:layout_marginBottom="16dp"/>
+
+        <!-- Cover Size -->
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cover Size"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="8dp"/>
+
+        <SeekBar
+                android:id="@+id/coverSizeSeekBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="85"
+                android:progressTint="#B749CA"
+                android:thumbTint="#B749CA"
+                android:layout_marginBottom="24dp"/>
+
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+            <!-- Reset Button -->
+            <Button
+                    android:id="@+id/btnResetStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Reset"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#666666"
+                    android:layout_marginEnd="8dp"/>
+
+            <!-- Apply Button -->
+            <Button
+                    android:id="@+id/btnApplyStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Apply"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#B749CA"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

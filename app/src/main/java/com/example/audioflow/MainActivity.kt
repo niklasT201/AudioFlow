@@ -299,9 +299,13 @@ class MainActivity : AppCompatActivity() {
             showDeleteConfirmationDialog()
         }
 
-            findViewById<LinearLayout>(R.id.item_change_color).setOnClickListener {
-                colorManager.showColorSelectionDialog()
-            }
+        findViewById<LinearLayout>(R.id.item_change_color).setOnClickListener {
+            colorManager.showColorSelectionDialog()
+        }
+
+        findViewById<LinearLayout>(R.id.item_customize_player).setOnClickListener {
+            showCoverStyleCustomization()
+        }
 
         findViewById<LinearLayout>(R.id.item_edit_metadata)?.setOnClickListener {
             try {
@@ -1177,7 +1181,7 @@ class MainActivity : AppCompatActivity() {
             showScreen(aboutScreen)
         }
 
-        aboutScreen.findViewById<Button>(R.id.btn_back).setOnClickListener {
+        aboutScreen.findViewById<ImageView>(R.id.btn_back).setOnClickListener {
             showScreen(settingsScreen)
         }
 
@@ -1345,7 +1349,6 @@ class MainActivity : AppCompatActivity() {
 // Getting Not Player
 // Get Playback for songs
 // Options song
-// Player Design Options
 // Add Playlist Create
 // Add/search Folder to List
 // Add Play Song next button
@@ -1364,6 +1367,7 @@ class MainActivity : AppCompatActivity() {
 // add reset button
 
 // info screen
+// Player Design Options
 // sound changes
 // cover changing
 // maybe driver mode

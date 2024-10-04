@@ -7,7 +7,9 @@ import android.graphics.drawable.ColorDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.SeekBar
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 
@@ -58,7 +60,6 @@ class ColorManager(private val context: Context) {
             dialog.dismiss()
         }
 
-
         dialog.show()
     }
 
@@ -66,7 +67,7 @@ class ColorManager(private val context: Context) {
         prefs.edit().putInt("backgroundColor", color).apply()
     }
 
-    fun getSavedColor(): Int {
+    private fun getSavedColor(): Int {
         return prefs.getInt("backgroundColor", ContextCompat.getColor(context, R.color.background_color))
     }
 
@@ -77,7 +78,45 @@ class ColorManager(private val context: Context) {
         val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
         playerViewContainer?.setBackgroundColor(color)
 
-        //activity.window.statusBarColor = color
+        // Change text color based on background color (white button or black button)
+        val textColor = if (color == Color.WHITE) {
+            Color.BLACK // If background is white, text should be black
+        } else if (color == Color.BLACK) {
+            Color.WHITE // If background is black, text should be white
+        } else {
+            ContextCompat.getColor(activity, R.color.primary_text) // Default text color
+        }
+
+        // Apply the text color to the relevant views in the player screen
+        val songTitleTextView = activity.findViewById<TextView>(R.id.tv_player_song_title)
+        val artistNameTextView = activity.findViewById<TextView>(R.id.tv_artist_name)
+        val currentTimeTextView = activity.findViewById<TextView>(R.id.tv_current_time)
+        val totalTimeTextView = activity.findViewById<TextView>(R.id.tv_total_time)
+
+        songTitleTextView?.setTextColor(textColor)
+        artistNameTextView?.setTextColor(textColor)
+        currentTimeTextView?.setTextColor(textColor)
+        totalTimeTextView?.setTextColor(textColor)
+
+        // Change button colors if the background is white
+        val buttonIconColor = if (color == Color.WHITE) {
+            Color.BLACK // Change button icons to black when the background is white
+        } else {
+            Color.WHITE // Default button icon color
+        }
+
+        // Update the play/pause, next, and previous buttons' icon colors
+        val playPauseButton = activity.findViewById<ImageView>(R.id.btn_play_pause)
+        val nextButton = activity.findViewById<ImageView>(R.id.btn_next)
+        val previousButton = activity.findViewById<ImageView>(R.id.btn_previous)
+        val playSettingsButton = activity.findViewById<ImageView>(R.id.btn_play_settings)
+        val playerSettingsButton = activity.findViewById<ImageView>(R.id.btn_player_settings)
+
+        playPauseButton?.setColorFilter(buttonIconColor)
+        nextButton?.setColorFilter(buttonIconColor)
+        previousButton?.setColorFilter(buttonIconColor)
+        playSettingsButton?.setColorFilter(buttonIconColor)
+        playerSettingsButton?.setColorFilter(buttonIconColor)
 
         if (playerViewContainer?.visibility == View.VISIBLE) {
            // Change the status bar color only when the player screen is visible
