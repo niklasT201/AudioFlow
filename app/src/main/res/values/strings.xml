@@ -28,6 +28,7 @@
     <string name="filename_label">File:</string>
     <string name="lyrics_label">lyrics:</string>
     <string name="playback_speed">Playback Speed:</string>
+    <string name="back_button">Back</string>
     <string name="default_speed">1.0x</string>
     <string name="rename_file">Rename File</string>
     <string name="delete_file">Delete File</string>

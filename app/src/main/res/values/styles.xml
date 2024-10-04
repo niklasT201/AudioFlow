@@ -35,4 +35,9 @@
         <item name="android:layout_marginBottom">16dp</item>
         <item name="android:background">?android:attr/selectableItemBackground</item>
     </style>
+
+    <style name="NumberPickerTheme" parent="Theme.AppCompat.DayNight">
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="colorControlNormal">#B749CA</item>
+    </style>
 </resources>

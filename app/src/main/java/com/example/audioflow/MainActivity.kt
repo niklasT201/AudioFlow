@@ -70,7 +70,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var selectedSongUri: Uri? = null
-    private var currentFolder: File? = null
     private var currentSongIndex: Int = -1
     private var currentSongs: List<SongItem> = emptyList()
     private var currentPlaylist: List<SongItem> = emptyList()
@@ -1146,7 +1145,11 @@ class MainActivity : AppCompatActivity() {
         val switchKeepScreenOn = settingsScreen.findViewById<Switch>(R.id.switch_keep_screen_on)
         val switchResetPrevious = settingsScreen.findViewById<Switch>(R.id.switch_reset_previous)
 
+        val versionText = aboutScreen.findViewById<TextView>(R.id.version_text)
+        val dateText = aboutScreen.findViewById<TextView>(R.id.date_text)
+
         // Load saved preference
+        val packageInfo = packageManager.getPackageInfo(packageName, 0)
         val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
         resetPreviousEnabled = sharedPreferences.getBoolean("reset_previous", false)
         val keepScreenOn = sharedPreferences.getBoolean("screen_on", false)
@@ -1177,6 +1180,9 @@ class MainActivity : AppCompatActivity() {
         aboutScreen.findViewById<Button>(R.id.btn_back).setOnClickListener {
             showScreen(settingsScreen)
         }
+
+        versionText?.text = "Version ${packageInfo.versionName}"
+        dateText?.text = "October 2024" // Or use dynamic date
     }
 
     private fun applyScreenTimeoutSetting(keepScreenOn: Boolean) {
@@ -1366,221 +1372,8 @@ class MainActivity : AppCompatActivity() {
 
 // settings screen
 // allow song previous button to set time back to 0
-// allow app to display being always on
 // show cover optional in search screen
 // Timer also available
-// About App
 // Maybe add small infos about a song (where you found it, who told you of it)
 
 //can you help me with my kotlin android app? I would like to have a special feature. I want that when you hold down the play/pause button of the player screen, for maybe like 2 seconds, then a number in like a small round container appears and this number gets higher how longer you hold down on this button. for example when I don't hold down the button for 2 seconds or longer, then this container will not appear and the value will be like 0, that means that the current playing song will not repeat itself, it will once finish, go to the next song in the playlist, but when the value is over 0, so for example 4, then the current song will repeat itself 4 times after finishing. Song finishes, repeats, number in container gets down to 3, song finishes, repeats, number gets down to 2 and so on. Once the value is 0, the container disappears and the song will when finished go to the next song. hope you get what I mean :) and WITHOUT a library when possible
-
-
-//<?xml version="1.0" encoding="utf-8"?>
-//<androidx.constraintlayout.widget.ConstraintLayout
-//        xmlns:android="http://schemas.android.com/apk/res/android"
-//        xmlns:app="http://schemas.android.com/apk/res-auto"
-//        android:layout_width="match_parent"
-//        android:layout_height="match_parent"
-//        android:background="@color/background_color">
-//
-//    <androidx.cardview.widget.CardView
-//            android:layout_width="match_parent"
-//            android:layout_height="wrap_content"
-//            android:layout_marginHorizontal="8dp"
-//            android:layout_marginVertical="8dp"
-//            app:cardCornerRadius="12dp"
-//            app:cardElevation="8dp"
-//            app:cardBackgroundColor="#212121"
-//            app:layout_constraintTop_toTopOf="parent"
-//            app:layout_constraintBottom_toBottomOf="parent"
-//            app:layout_constraintStart_toStartOf="parent"
-//            app:layout_constraintEnd_toEndOf="parent">
-//
-//        <LinearLayout
-//                android:layout_width="match_parent"
-//                android:layout_height="wrap_content"
-//                android:orientation="vertical">
-//
-//            <!-- Title -->
-//            <TextView
-//                    android:layout_width="match_parent"
-//                    android:layout_height="wrap_content"
-//                    android:text="Settings"
-//                    android:textColor="#FFFFFF"
-//                    android:textSize="18sp"
-//                    android:textStyle="bold"
-//                    android:gravity="center"
-//                    android:padding="24dp"/>
-//
-//            <LinearLayout
-//                    android:layout_width="match_parent"
-//                    android:layout_height="wrap_content"
-//                    android:orientation="vertical"
-//                    android:padding="24dp">
-//
-//                <!-- Reset Current Song Setting -->
-//                <LinearLayout
-//                        android:layout_width="match_parent"
-//                        android:layout_height="wrap_content"
-//                        android:orientation="horizontal"
-//                        android:paddingVertical="12dp">
-//
-//                    <ImageView
-//                            android:layout_width="24dp"
-//                            android:layout_height="24dp"
-//                            android:src="@drawable/repeat"
-//                            android:layout_marginEnd="16dp"
-//                            android:contentDescription="Reset icon"/>
-//
-//                    <TextView
-//                            android:layout_width="0dp"
-//                            android:layout_height="wrap_content"
-//                            android:layout_weight="1"
-//                            android:text="Reset Current Song on Previous"
-//                            android:textColor="#FFFFFF"/>
-//
-//                    <Switch
-//                            android:id="@+id/switch_reset_song"
-//                            android:layout_width="wrap_content"
-//                            android:layout_height="wrap_content"
-//                            android:trackTint="#60116D"
-//                            android:thumbTint="#B749CA"/>
-//                </LinearLayout>
-//
-//                <View
-//                        android:layout_width="match_parent"
-//                        android:layout_height="1dp"
-//                        android:background="#444444"
-//                        android:layout_marginStart="40dp"/>
-//
-//                <!-- Display Always On Setting -->
-//                <LinearLayout
-//                        android:layout_width="match_parent"
-//                        android:layout_height="wrap_content"
-//                        android:orientation="horizontal"
-//                        android:paddingVertical="12dp">
-//
-//                    <ImageView
-//                            android:layout_width="24dp"
-//                            android:layout_height="24dp"
-//                            android:src="@drawable/customize_icon"
-//                            android:layout_marginEnd="16dp"
-//                            android:contentDescription="Display icon"/>
-//
-//                    <TextView
-//                            android:layout_width="0dp"
-//                            android:layout_height="wrap_content"
-//                            android:layout_weight="1"
-//                            android:text="Keep Display Always On"
-//                            android:textColor="#FFFFFF"/>
-//
-//                    <Switch
-//                            android:id="@+id/switch_display_on"
-//                            android:layout_width="wrap_content"
-//                            android:layout_height="wrap_content"
-//                            android:trackTint="#60116D"
-//                            android:thumbTint="#B749CA"/>
-//                </LinearLayout>
-//
-//                <View
-//                        android:layout_width="match_parent"
-//                        android:layout_height="1dp"
-//                        android:background="#444444"
-//                        android:layout_marginStart="40dp"/>
-//
-//                <!-- Show Cover in Search -->
-//                <LinearLayout
-//                        android:layout_width="match_parent"
-//                        android:layout_height="wrap_content"
-//                        android:orientation="horizontal"
-//                        android:paddingVertical="12dp">
-//
-//                    <ImageView
-//                            android:layout_width="24dp"
-//                            android:layout_height="24dp"
-//                            android:src="@drawable/cover_art"
-//                            android:layout_marginEnd="16dp"
-//                            android:contentDescription="Cover icon"/>
-//
-//                    <TextView
-//                            android:layout_width="0dp"
-//                            android:layout_height="wrap_content"
-//                            android:layout_weight="1"
-//                            android:text="Show Cover in Search Screen"
-//                            android:textColor="#FFFFFF"/>
-//
-//                    <Switch
-//                            android:id="@+id/switch_show_cover"
-//                            android:layout_width="wrap_content"
-//                            android:layout_height="wrap_content"
-//                            android:trackTint="#60116D"
-//                            android:thumbTint="#B749CA"/>
-//                </LinearLayout>
-//
-//                <View
-//                        android:layout_width="match_parent"
-//                        android:layout_height="1dp"
-//                        android:background="#444444"
-//                        android:layout_marginStart="40dp"/>
-//
-//                <!-- Timer Option -->
-//                <LinearLayout
-//                        android:layout_width="match_parent"
-//                        android:layout_height="wrap_content"
-//                        android:orientation="horizontal"
-//                        android:paddingVertical="12dp">
-//
-//                    <ImageView
-//                            android:layout_width="24dp"
-//                            android:layout_height="24dp"
-//                            android:src="@drawable/timer_icon"
-//                            android:layout_marginEnd="16dp"
-//                            android:contentDescription="Timer icon"/>
-//
-//                    <TextView
-//                            android:layout_width="0dp"
-//                            android:layout_height="wrap_content"
-//                            android:layout_weight="1"
-//                            android:text="Timer"
-//                            android:textColor="#FFFFFF"/>
-//
-//                    <Switch
-//                            android:id="@+id/switch_timer"
-//                            android:layout_width="wrap_content"
-//                            android:layout_height="wrap_content"
-//                            android:trackTint="#60116D"
-//                            android:thumbTint="#B749CA"/>
-//                </LinearLayout>
-//
-//                <View
-//                        android:layout_width="match_parent"
-//                        android:layout_height="1dp"
-//                        android:background="#444444"
-//                        android:layout_marginStart="40dp"/>
-//
-//                <!-- About App -->
-//                <LinearLayout
-//                        android:id="@+id/about_app_container"
-//                        android:layout_width="match_parent"
-//                        android:layout_height="wrap_content"
-//                        android:orientation="horizontal"
-//                        android:paddingVertical="12dp">
-//
-//                    <ImageView
-//                            android:layout_width="24dp"
-//                            android:layout_height="24dp"
-//                            android:src="@drawable/info"
-//                            android:layout_marginEnd="16dp"
-//                            android:contentDescription="About icon"/>
-//
-//                    <TextView
-//                            android:id="@+id/about_app_text_view"
-//                            android:layout_width="match_parent"
-//                            android:layout_height="wrap_content"
-//                            android:text="About App"
-//                            android:textColor="#FFFFFF"/>
-//                </LinearLayout>
-//            </LinearLayout>
-//        </LinearLayout>
-//    </androidx.cardview.widget.CardView>
-//</androidx.constraintlayout.widget.ConstraintLayout>
