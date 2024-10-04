@@ -51,15 +51,6 @@
                     android:padding="8dp"/>
 
             <RadioButton
-                    android:id="@+id/styleSquare"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Square Cover"
-                    android:textColor="#CCCCCC"
-                    android:buttonTint="#B749CA"
-                    android:padding="8dp"/>
-
-            <RadioButton
                     android:id="@+id/styleCircle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

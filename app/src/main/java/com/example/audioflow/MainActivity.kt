@@ -1367,13 +1367,15 @@ class MainActivity : AppCompatActivity() {
 // add reset button
 
 // info screen
-// Player Design Options
+// fix width cover design
+// statusbar changing fix
+// maybe add color change to more screen
+// fix corner white
 // sound changes
 // maybe driver mode
 // timer to close app
 
 // settings screen
-// allow song previous button to set time back to 0
 // show cover optional in search screen
 // Timer also available
 // Maybe add small infos about a song (where you found it, who told you of it)

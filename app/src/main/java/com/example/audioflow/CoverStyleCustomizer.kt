@@ -9,6 +9,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import com.google.android.material.shape.ShapeAppearanceModel
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.content.SharedPreferences
+import android.util.TypedValue
 import android.widget.Button
 import android.widget.RadioGroup
 import android.widget.SeekBar
@@ -102,7 +103,14 @@ class CoverStyleCustomizer(private val context: Context) {
         params.topToBottom = R.id.btn_close_player
 
         albumArtCard.layoutParams = params
-        albumArtCard.radius = cornerRadius
+
+        // Convert cornerRadius from dp to pixels
+        val cornerRadiusInPixels = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            cornerRadius,
+            context.resources.displayMetrics
+        )
+        albumArtCard.radius = cornerRadiusInPixels
         albumArtImage.scaleType = ImageView.ScaleType.CENTER_CROP
     }
 
