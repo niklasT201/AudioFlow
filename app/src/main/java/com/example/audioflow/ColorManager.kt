@@ -78,13 +78,21 @@ class ColorManager(private val context: Context) {
         val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
         playerViewContainer?.setBackgroundColor(color)
 
-        // Change text color based on background color (white button or black button)
-        val textColor = if (color == Color.WHITE) {
-            Color.BLACK // If background is white, text should be black
+        // Text color based on background color
+        val primaryTextColor = if (color == Color.WHITE) {
+            Color.BLACK // Black text for white background
         } else if (color == Color.BLACK) {
-            Color.WHITE // If background is black, text should be white
+            Color.WHITE // White text for black background
         } else {
-            ContextCompat.getColor(activity, R.color.primary_text) // Default text color
+            ContextCompat.getColor(activity, R.color.primary_text) // Default primary text color
+        }
+
+        val secondaryTextColor = if (color == Color.WHITE) {
+            Color.BLACK // Black text for white background
+        } else if (color == Color.BLACK) {
+            Color.GRAY // Lighter gray for black background (instead of pure white)
+        } else {
+            ContextCompat.getColor(activity, R.color.secondary_text) // Default secondary text color
         }
 
         // Apply the text color to the relevant views in the player screen
@@ -93,16 +101,19 @@ class ColorManager(private val context: Context) {
         val currentTimeTextView = activity.findViewById<TextView>(R.id.tv_current_time)
         val totalTimeTextView = activity.findViewById<TextView>(R.id.tv_total_time)
 
-        songTitleTextView?.setTextColor(textColor)
-        artistNameTextView?.setTextColor(textColor)
-        currentTimeTextView?.setTextColor(textColor)
-        totalTimeTextView?.setTextColor(textColor)
+        // Set primary text color for song title
+        songTitleTextView?.setTextColor(primaryTextColor)
 
-        // Change button colors if the background is white
+        // Set secondary text color for artist name, current time, and total time
+        artistNameTextView?.setTextColor(secondaryTextColor)
+        currentTimeTextView?.setTextColor(secondaryTextColor)
+        totalTimeTextView?.setTextColor(secondaryTextColor)
+
+        // Button color logic when background is white
         val buttonIconColor = if (color == Color.WHITE) {
-            Color.BLACK // Change button icons to black when the background is white
+            Color.BLACK // Black buttons when background is white
         } else {
-            Color.WHITE // Default button icon color
+            Color.WHITE // Default white buttons
         }
 
         // Update the play/pause, next, and previous buttons' icon colors

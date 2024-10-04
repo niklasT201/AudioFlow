@@ -6,6 +6,7 @@
         android:layout_height="wrap_content"
         app:cardCornerRadius="16dp"
         app:cardElevation="8dp"
+        android:background="#00000000"
         app:cardBackgroundColor="#212121"
         android:layout_margin="16dp">
 
@@ -44,7 +45,16 @@
                     android:id="@+id/styleDefault"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Default (Square)"
+                    android:text="Use Player Layout"
+                    android:textColor="#CCCCCC"
+                    android:buttonTint="#B749CA"
+                    android:padding="8dp"/>
+
+            <RadioButton
+                    android:id="@+id/styleSquare"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Square Cover"
                     android:textColor="#CCCCCC"
                     android:buttonTint="#B749CA"
                     android:padding="8dp"/>

@@ -1369,10 +1369,8 @@ class MainActivity : AppCompatActivity() {
 // info screen
 // Player Design Options
 // sound changes
-// cover changing
 // maybe driver mode
 // timer to close app
-// maybe live updating colors
 
 // settings screen
 // allow song previous button to set time back to 0

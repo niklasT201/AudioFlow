@@ -45,7 +45,7 @@
             app:layout_constraintBottom_toTopOf="@id/bottom_info"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginBottom="32dp">
+            android:layout_marginBottom="52dp">
 
         <ImageView
                 android:id="@+id/app_icon"
