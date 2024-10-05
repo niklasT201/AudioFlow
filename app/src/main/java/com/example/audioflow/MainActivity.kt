@@ -129,6 +129,8 @@ class MainActivity : AppCompatActivity() {
 
         setupScreenTimeoutSetting()
 
+        initializePlayerStyles()
+
         // Show home screen by default
         showScreen(homeScreen)
 
@@ -200,6 +202,12 @@ class MainActivity : AppCompatActivity() {
                 // Permission denied, handle this case (e.g., show a message to the user)
             }
         }
+    }
+
+    fun initializePlayerStyles() {
+        val coverStyleCustomizer = CoverStyleCustomizer(this)
+        val playerView = findViewById<View>(R.id.player_view_container)
+        coverStyleCustomizer.initialize(playerView)
     }
 
     private fun setupNavigation() {
@@ -1011,12 +1019,6 @@ class MainActivity : AppCompatActivity() {
 
             updatePlayerUI(song)
 
-            val albumArtImageView = findViewById<ImageView>(R.id.iv_album_art)
-            // Wait for the album art to load
-            albumArtImageView.post {
-                colorManager.updateBackgroundWithAlbumArt(this, albumArtImageView)
-            }
-
             updateMiniPlayer(song)
             updateMiniPlayerProgress(0f)
 
@@ -1090,8 +1092,16 @@ class MainActivity : AppCompatActivity() {
         val albumArt = getAlbumArt(song.file.absolutePath)
         if (albumArt != null) {
             albumArtImageView.setImageBitmap(albumArt)
+            // Update background with album art
+            albumArtImageView.post {
+                colorManager.updateBackgroundWithAlbumArt(this, albumArtImageView)
+            }
         } else {
             albumArtImageView.setImageResource(R.drawable.cover_art)
+            // Update background with default album art
+            albumArtImageView.post {
+                colorManager.updateBackgroundWithAlbumArt(this, albumArtImageView)
+            }
         }
     }
 
@@ -1394,7 +1404,6 @@ class MainActivity : AppCompatActivity() {
 // holding song item for settings to
 
 // search screen
-// back feature for list
 // add play function
 // add playlist add button
 
@@ -1404,10 +1413,7 @@ class MainActivity : AppCompatActivity() {
 // add reset button
 
 // info screen
-// fix width cover design
-// statusbar changing fix
 // maybe add color change to more screen
-// fix corner white
 // sound changes
 // maybe driver mode
 // timer to close app

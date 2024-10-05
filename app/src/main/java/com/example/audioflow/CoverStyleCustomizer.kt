@@ -65,6 +65,7 @@ class CoverStyleCustomizer(private val context: Context) {
             CoverStyle.CIRCULAR -> applyCircularStyle(coverSize)
             CoverStyle.FULL_WIDTH -> applyFullWidthStyle(cornerRadius)
             CoverStyle.EXPANDED_TOP -> applyExpandedTopStyle(cornerRadius)
+            CoverStyle.SQUARE -> applySquareStyle(coverSize)
         }
 
         savePreferences(style, cornerRadius, coverSize)
@@ -111,6 +112,27 @@ class CoverStyleCustomizer(private val context: Context) {
             context.resources.displayMetrics
         )
         albumArtCard.radius = cornerRadiusInPixels
+        albumArtImage.scaleType = ImageView.ScaleType.CENTER_CROP
+    }
+
+    private fun applySquareStyle(coverSize: Int) {
+        val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
+        params.width = 0
+        params.height = 0
+        params.dimensionRatio = "1:1"
+        params.matchConstraintPercentWidth = coverSize / 100f
+
+        // Set margins from resources
+        val defaultMargin = context.resources.getDimensionPixelSize(R.dimen.default_cover_top)
+        params.setMargins(defaultMargin, defaultMargin, defaultMargin, 0)
+
+        // Set constraints
+        params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+        params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+        params.topToBottom = R.id.btn_close_player
+
+        albumArtCard.layoutParams = params
+        albumArtCard.radius = 0f  // No rounded corners
         albumArtImage.scaleType = ImageView.ScaleType.CENTER_CROP
     }
 
@@ -180,15 +202,23 @@ class CoverStyleCustomizer(private val context: Context) {
     }
 
     enum class CoverStyle {
-        DEFAULT, CIRCULAR, FULL_WIDTH, EXPANDED_TOP
+        DEFAULT, CIRCULAR, FULL_WIDTH, EXPANDED_TOP, SQUARE
     }
 }
 
 // Extension of Activity or Fragment to show the dialog
 fun Activity.showCoverStyleCustomization() {
-    val dialog = BottomSheetDialog(this)
+    val dialog = BottomSheetDialog(this, R.style.TransparentBottomSheetDialog)
     val view = layoutInflater.inflate(R.layout.layout_cover_style_customization, null)
     dialog.setContentView(view)
+
+    dialog.window?.apply {
+        setBackgroundDrawableResource(android.R.color.transparent)
+        decorView.setBackgroundResource(android.R.color.transparent)
+    }
+
+    val bottomSheet = dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+    bottomSheet?.setBackgroundResource(android.R.color.transparent)
 
     val coverStyleCustomizer = CoverStyleCustomizer(this)
     coverStyleCustomizer.initialize(findViewById(R.id.player_view_container))
@@ -225,6 +255,7 @@ fun Activity.showCoverStyleCustomization() {
             R.id.styleCircle -> CoverStyleCustomizer.CoverStyle.CIRCULAR
             R.id.styleFullWidth -> CoverStyleCustomizer.CoverStyle.FULL_WIDTH
             R.id.styleExpandedTop -> CoverStyleCustomizer.CoverStyle.EXPANDED_TOP
+            R.id.styleSquare -> CoverStyleCustomizer.CoverStyle.SQUARE
             else -> CoverStyleCustomizer.CoverStyle.DEFAULT
         }
 

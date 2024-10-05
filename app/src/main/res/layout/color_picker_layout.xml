@@ -141,6 +141,8 @@
                     android:id="@+id/rbSolidColor"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/primary_text"
+                    android:buttonTint="@color/primary_text"
                     android:text="Solid Color"
                     android:checked="true"
                     android:layout_marginEnd="16dp"/>
@@ -149,6 +151,8 @@
                     android:id="@+id/rbBlurBackground"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/primary_text"
+                    android:buttonTint="@color/primary_text"
                     android:text="Blur Album Art"/>
         </RadioGroup>
 

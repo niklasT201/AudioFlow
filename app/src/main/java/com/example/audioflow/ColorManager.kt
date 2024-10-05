@@ -17,15 +17,20 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import android.renderscript.Element
 import android.util.Log
-import android.view.WindowManager
+import androidx.cardview.widget.CardView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.WindowCompat
 
 class ColorManager(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("AppTheme", Context.MODE_PRIVATE)
+    private val statusBarHeight by lazy {
+        val resourceId = context.resources.getIdentifier("status_bar_height", "dimen", "android")
+        if (resourceId > 0) context.resources.getDimensionPixelSize(resourceId) else 0
+    }
 
     fun showColorSelectionDialog() {
         val dialogView = LayoutInflater.from(context).inflate(R.layout.color_picker_layout, null)
-        val dialog = AlertDialog.Builder(context)
+        val dialog = AlertDialog.Builder(context, R.style.TransparentAlertDialog)
             .setView(dialogView)
             .create()
 
@@ -91,12 +96,17 @@ class ColorManager(private val context: Context) {
     fun updateBackgroundWithAlbumArt(activity: MainActivity, albumArtImageView: ImageView) {
         try {
             val useBlurBackground = prefs.getBoolean("useBlurBackground", false)
-            if (!useBlurBackground) return
+            if (!useBlurBackground) {
+                applyColorToActivity(activity)
+                return
+            }
 
             val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
 
-            // Safely create bitmap only if drawable exists
             if (albumArtImageView.drawable != null) {
+                // Prevent status bar flicker by maintaining transparency
+                makeStatusBarTransparent(activity)
+
                 albumArtImageView.isDrawingCacheEnabled = true
                 val albumArtBitmap = if (albumArtImageView.drawingCache != null) {
                     Bitmap.createBitmap(albumArtImageView.drawingCache)
@@ -106,93 +116,92 @@ class ColorManager(private val context: Context) {
                 albumArtImageView.isDrawingCacheEnabled = false
 
                 if (albumArtBitmap != null) {
-                    // Update background image and status bar color simultaneously
                     Thread {
                         val blurredBackground = createBlurredBackground(albumArtBitmap)
                         activity.runOnUiThread {
                             playerViewContainer?.background = BitmapDrawable(activity.resources, blurredBackground)
-                            makeStatusBarTransparent(activity)
-                            // Update status bar text color to white
-                            val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-                            windowInsetsController.isAppearanceLightStatusBars = true
+                            // Ensure layout stays consistent
+                            applyConsistentLayout(activity)
                         }
                         albumArtBitmap.recycle()
                     }.start()
-                } else {
-                    // Fall back to solid color if bitmap creation fails
-                    playerViewContainer?.setBackgroundColor(getSavedColor())
-                    resetStatusBar(activity)
-                    // Reset status bar text color to white
-                    val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-                    windowInsetsController.isAppearanceLightStatusBars = false
                 }
-            } else {
-                // Fall back to solid color if no drawable
-                playerViewContainer?.setBackgroundColor(getSavedColor())
-                resetStatusBar(activity)
-                // Reset status bar text color to white
-                val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-                windowInsetsController.isAppearanceLightStatusBars = false
             }
         } catch (e: Exception) {
-            // Log error and fall back to solid color
             Log.e("ColorManager", "Error updating background: ${e.message}")
-            activity.findViewById<View>(R.id.player_view_container)?.setBackgroundColor(getSavedColor())
-            resetStatusBar(activity)
-            // Reset status bar text color to white
-            val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-            windowInsetsController.isAppearanceLightStatusBars = false
+            applyColorToActivity(activity)
+        }
+    }
+
+    private fun applySolidColorMode(activity: MainActivity, color: Int) {
+        activity.window.apply {
+            statusBarColor = color
+            decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        }
+        activity.findViewById<View>(R.id.player_view_container)?.setBackgroundColor(color)
+    }
+
+    private fun applyConsistentLayout(activity: MainActivity) {
+        // Get references to views that need consistent positioning
+        val closeButton = activity.findViewById<ImageButton>(R.id.btn_close_player)
+        val albumArtCard = activity.findViewById<CardView>(R.id.cv_album_art)
+
+        // Apply consistent padding to maintain positions
+        closeButton?.apply {
+            (layoutParams as ConstraintLayout.LayoutParams).topMargin =
+                statusBarHeight + resources.getDimensionPixelSize(R.dimen.default_padding)
+        }
+
+        albumArtCard?.apply {
+            (layoutParams as ConstraintLayout.LayoutParams).topMargin =
+                resources.getDimensionPixelSize(R.dimen.album_art_top_margin)
         }
     }
 
     private fun makeStatusBarTransparent(activity: MainActivity) {
         activity.window.apply {
-            clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
-            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-            decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
             statusBarColor = Color.TRANSPARENT
+            decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
         }
-
-        val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-        windowInsetsController.isAppearanceLightStatusBars = false
     }
 
     private fun resetStatusBar(activity: MainActivity) {
+        val defaultColor = ContextCompat.getColor(context, R.color.background_color)
         activity.window.apply {
-            clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
-            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            statusBarColor = defaultColor
             decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
-            statusBarColor = ContextCompat.getColor(context, R.color.background_color)
         }
-
-        val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-        windowInsetsController.isAppearanceLightStatusBars = true // or false depending on your theme
+        WindowCompat.setDecorFitsSystemWindows(activity.window, true)
     }
 
     // Add this method to handle visibility changes
     fun handlePlayerVisibilityChange(activity: MainActivity, isPlayerVisible: Boolean) {
         if (isPlayerVisible) {
-            makeStatusBarTransparent(activity)
-            // Try to update background only if blur is enabled
-            if (prefs.getBoolean("useBlurBackground", false)) {
+            // Always set the layout to handle insets consistently
+            WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+
+            val useBlurBackground = prefs.getBoolean("useBlurBackground", false)
+            if (useBlurBackground) {
+                makeStatusBarTransparent(activity)
                 val albumArtImageView = activity.findViewById<ImageView>(R.id.iv_album_art)
                 if (albumArtImageView?.drawable != null) {
                     updateBackgroundWithAlbumArt(activity, albumArtImageView)
-                } else {
-                    // If no album art, fall back to solid color
-                    val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
-                    playerViewContainer?.setBackgroundColor(getSavedColor())
                 }
+            } else {
+                // For solid color mode
+                val color = getSavedColor()
+                applySolidColorMode(activity, color)
             }
+
+            // Apply consistent padding for both modes
+            applyConsistentLayout(activity)
         } else {
             resetStatusBar(activity)
-            // Reset status bar color to black
-            activity.window.statusBarColor = ContextCompat.getColor(activity, R.color.background_color)
-            // Reset status bar text color to white
-            val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-            windowInsetsController.isAppearanceLightStatusBars = false
         }
     }
+
 
     private fun createBlurredBackground(bitmap: Bitmap): Bitmap {
         // Scale down the bitmap for better performance
@@ -231,8 +240,15 @@ class ColorManager(private val context: Context) {
     fun applyColorToActivity(activity: MainActivity) {
         val color = getSavedColor()
         val useBlurBackground = prefs.getBoolean("useBlurBackground", false)
-
         val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
+
+        if (!useBlurBackground) {
+            applySolidColorMode(activity, color)
+        }
+
+        // Always maintain consistent layout
+        applyConsistentLayout(activity)
+
         val albumArtImageView = activity.findViewById<ImageView>(R.id.iv_album_art)
 
         if (useBlurBackground && albumArtImageView?.drawable != null && playerViewContainer?.visibility == View.VISIBLE) {
