@@ -16,6 +16,9 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import android.renderscript.Element
+import android.util.Log
+import android.view.WindowManager
+import androidx.core.view.WindowCompat
 
 class ColorManager(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("AppTheme", Context.MODE_PRIVATE)
@@ -85,6 +88,90 @@ class ColorManager(private val context: Context) {
         return prefs.getInt("backgroundColor", ContextCompat.getColor(context, R.color.background_color))
     }
 
+    fun updateBackgroundWithAlbumArt(activity: MainActivity, albumArtImageView: ImageView) {
+        try {
+            val useBlurBackground = prefs.getBoolean("useBlurBackground", false)
+            if (!useBlurBackground) return
+
+            val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
+
+            if (playerViewContainer?.visibility == View.VISIBLE) {
+                makeStatusBarTransparent(activity)
+            }
+
+            // Safely create bitmap only if drawable exists
+            if (albumArtImageView.drawable != null) {
+                albumArtImageView.isDrawingCacheEnabled = true
+                val albumArtBitmap = if (albumArtImageView.drawingCache != null) {
+                    Bitmap.createBitmap(albumArtImageView.drawingCache)
+                } else {
+                    null
+                }
+                albumArtImageView.isDrawingCacheEnabled = false
+
+                if (albumArtBitmap != null) {
+                    val blurredBackground = createBlurredBackground(albumArtBitmap)
+                    playerViewContainer?.background = BitmapDrawable(context.resources, blurredBackground)
+                    albumArtBitmap.recycle()
+                } else {
+                    // Fall back to solid color if bitmap creation fails
+                    playerViewContainer?.setBackgroundColor(getSavedColor())
+                }
+            } else {
+                // Fall back to solid color if no drawable
+                playerViewContainer?.setBackgroundColor(getSavedColor())
+            }
+        } catch (e: Exception) {
+            // Log error and fall back to solid color
+            Log.e("ColorManager", "Error updating background: ${e.message}")
+            activity.findViewById<View>(R.id.player_view_container)?.setBackgroundColor(getSavedColor())
+        }
+    }
+
+    private fun makeStatusBarTransparent(activity: MainActivity) {
+        activity.window.apply {
+            clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
+            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            statusBarColor = Color.TRANSPARENT
+        }
+
+        val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+        windowInsetsController.isAppearanceLightStatusBars = false
+    }
+
+    private fun resetStatusBar(activity: MainActivity) {
+        activity.window.apply {
+            clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
+            addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            statusBarColor = ContextCompat.getColor(context, R.color.background_color)
+        }
+
+        val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+        windowInsetsController.isAppearanceLightStatusBars = true // or false depending on your theme
+    }
+
+    // Add this method to handle visibility changes
+    fun handlePlayerVisibilityChange(activity: MainActivity, isPlayerVisible: Boolean) {
+        if (isPlayerVisible) {
+            makeStatusBarTransparent(activity)
+            // Try to update background only if blur is enabled
+            if (prefs.getBoolean("useBlurBackground", false)) {
+                val albumArtImageView = activity.findViewById<ImageView>(R.id.iv_album_art)
+                if (albumArtImageView?.drawable != null) {
+                    updateBackgroundWithAlbumArt(activity, albumArtImageView)
+                } else {
+                    // If no album art, fall back to solid color
+                    val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
+                    playerViewContainer?.setBackgroundColor(getSavedColor())
+                }
+            }
+        } else {
+            resetStatusBar(activity)
+        }
+    }
+
     private fun createBlurredBackground(bitmap: Bitmap): Bitmap {
         // Scale down the bitmap for better performance
         val scaledBitmap = Bitmap.createScaledBitmap(bitmap, bitmap.width / 4, bitmap.height / 4, true)
@@ -106,8 +193,8 @@ class ColorManager(private val context: Context) {
         // Scale back up to original size
         val finalBitmap = Bitmap.createScaledBitmap(blurredBitmap, bitmap.width, bitmap.height, true)
 
-        // Apply color overlay for better text visibility
-        val overlay = Color.argb(120, 0, 0, 0)
+        // Apply darker overlay for better text visibility
+        val overlay = Color.argb(160, 0, 0, 0) // Increased alpha for better text contrast
         val canvas = Canvas(finalBitmap)
         canvas.drawColor(overlay)
 
@@ -123,20 +210,18 @@ class ColorManager(private val context: Context) {
         val color = getSavedColor()
         val useBlurBackground = prefs.getBoolean("useBlurBackground", false)
 
-        // Apply color to the player screen's background if it's currently visible
         val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
         val albumArtImageView = activity.findViewById<ImageView>(R.id.iv_album_art)
 
-        if (useBlurBackground && albumArtImageView?.drawable != null) {
-            // Create blur background from album art
-            albumArtImageView.isDrawingCacheEnabled = true
-            val albumArtBitmap = Bitmap.createBitmap(albumArtImageView.drawingCache)
-            albumArtImageView.isDrawingCacheEnabled = false
-
-            val blurredBackground = createBlurredBackground(albumArtBitmap)
-            playerViewContainer?.background = BitmapDrawable(context.resources, blurredBackground)
+        if (useBlurBackground && albumArtImageView?.drawable != null && playerViewContainer?.visibility == View.VISIBLE) {
+            updateBackgroundWithAlbumArt(activity, albumArtImageView)
         } else {
             playerViewContainer?.setBackgroundColor(color)
+            if (playerViewContainer?.visibility == View.VISIBLE) {
+                makeStatusBarTransparent(activity)
+            } else {
+                resetStatusBar(activity)
+            }
         }
 
         // Text color based on background color

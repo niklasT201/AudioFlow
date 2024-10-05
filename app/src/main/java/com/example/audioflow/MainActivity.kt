@@ -216,6 +216,7 @@ class MainActivity : AppCompatActivity() {
         songsScreen.findViewById<ListView>(R.id.song_list_view).setOnItemClickListener { _, _, position, _ ->
             playSong(position)
             showScreen(playerScreen)
+            showPlayerScreen()
         }
 
         songsScreen.findViewById<ImageButton>(R.id.back_btn).setOnClickListener {
@@ -225,6 +226,7 @@ class MainActivity : AppCompatActivity() {
         // Set up close player button
         playerScreen.findViewById<ImageButton>(R.id.btn_close_player).setOnClickListener {
             showScreen(songsScreen)
+            hidePlayerScreen()
         }
 
         playerScreen.findViewById<ImageView>(R.id.btn_next).setOnClickListener {
@@ -266,6 +268,31 @@ class MainActivity : AppCompatActivity() {
         // Show player screen if it's the selected screen
         if (screen == playerScreen) {
             playerScreen.visibility = View.VISIBLE
+        }
+
+        colorManager.handlePlayerVisibilityChange(this, false)
+    }
+
+    private fun showPlayerScreen() {
+        try {
+            val playerContainer = findViewById<View>(R.id.player_view_container)
+            playerContainer.visibility = View.VISIBLE
+
+            // Delay the background update slightly to ensure views are properly laid out
+            playerContainer.post {
+                colorManager.handlePlayerVisibilityChange(this, true)
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error showing player screen: ${e.message}")
+        }
+    }
+
+    private fun hidePlayerScreen() {
+        try {
+            findViewById<View>(R.id.player_view_container).visibility = View.GONE
+            colorManager.handlePlayerVisibilityChange(this, false)
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error hiding player screen: ${e.message}")
         }
     }
 
@@ -704,6 +731,7 @@ class MainActivity : AppCompatActivity() {
             view.findViewById<ImageButton>(R.id.mini_player_next).setOnClickListener { playNextSong(false) }
             view.setOnClickListener {
                 showScreen(playerScreen)
+                showPlayerScreen()
                 updateSeekBar()
             }
         }
@@ -982,6 +1010,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             updatePlayerUI(song)
+
+            val albumArtImageView = findViewById<ImageView>(R.id.iv_album_art)
+            // Wait for the album art to load
+            albumArtImageView.post {
+                colorManager.updateBackgroundWithAlbumArt(this, albumArtImageView)
+            }
+
             updateMiniPlayer(song)
             updateMiniPlayerProgress(0f)
 
@@ -1311,7 +1346,9 @@ class MainActivity : AppCompatActivity() {
                 playerOptionsOverlay.visibility = View.GONE
             }
             contentFrame.getChildAt(0) == songsScreen -> showScreen(homeScreen)
-            contentFrame.getChildAt(0) == playerScreen -> showScreen(songsScreen)
+            contentFrame.getChildAt(0) == playerScreen -> {
+                showScreen(songsScreen)
+                hidePlayerScreen()}
             contentFrame.getChildAt(0) == settingsScreen -> showScreen(homeScreen)
             contentFrame.getChildAt(0) == aboutScreen -> showScreen(settingsScreen)
             else -> super.onBackPressed()
