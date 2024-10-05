@@ -95,10 +95,6 @@ class ColorManager(private val context: Context) {
 
             val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
 
-            if (playerViewContainer?.visibility == View.VISIBLE) {
-                makeStatusBarTransparent(activity)
-            }
-
             // Safely create bitmap only if drawable exists
             if (albumArtImageView.drawable != null) {
                 albumArtImageView.isDrawingCacheEnabled = true
@@ -110,21 +106,42 @@ class ColorManager(private val context: Context) {
                 albumArtImageView.isDrawingCacheEnabled = false
 
                 if (albumArtBitmap != null) {
-                    val blurredBackground = createBlurredBackground(albumArtBitmap)
-                    playerViewContainer?.background = BitmapDrawable(context.resources, blurredBackground)
-                    albumArtBitmap.recycle()
+                    // Update background image and status bar color simultaneously
+                    Thread {
+                        val blurredBackground = createBlurredBackground(albumArtBitmap)
+                        activity.runOnUiThread {
+                            playerViewContainer?.background = BitmapDrawable(activity.resources, blurredBackground)
+                            makeStatusBarTransparent(activity)
+                            // Update status bar text color to white
+                            val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+                            windowInsetsController.isAppearanceLightStatusBars = true
+                        }
+                        albumArtBitmap.recycle()
+                    }.start()
                 } else {
                     // Fall back to solid color if bitmap creation fails
                     playerViewContainer?.setBackgroundColor(getSavedColor())
+                    resetStatusBar(activity)
+                    // Reset status bar text color to white
+                    val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+                    windowInsetsController.isAppearanceLightStatusBars = false
                 }
             } else {
                 // Fall back to solid color if no drawable
                 playerViewContainer?.setBackgroundColor(getSavedColor())
+                resetStatusBar(activity)
+                // Reset status bar text color to white
+                val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+                windowInsetsController.isAppearanceLightStatusBars = false
             }
         } catch (e: Exception) {
             // Log error and fall back to solid color
             Log.e("ColorManager", "Error updating background: ${e.message}")
             activity.findViewById<View>(R.id.player_view_container)?.setBackgroundColor(getSavedColor())
+            resetStatusBar(activity)
+            // Reset status bar text color to white
+            val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+            windowInsetsController.isAppearanceLightStatusBars = false
         }
     }
 
@@ -169,6 +186,11 @@ class ColorManager(private val context: Context) {
             }
         } else {
             resetStatusBar(activity)
+            // Reset status bar color to black
+            activity.window.statusBarColor = ContextCompat.getColor(activity, R.color.background_color)
+            // Reset status bar text color to white
+            val windowInsetsController = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+            windowInsetsController.isAppearanceLightStatusBars = false
         }
     }
 
