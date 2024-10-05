@@ -2,16 +2,20 @@ package com.example.audioflow
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
+import android.renderscript.Allocation
+import android.renderscript.RenderScript
+import android.renderscript.ScriptIntrinsicBlur
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.SeekBar
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import android.renderscript.Element
 
 class ColorManager(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("AppTheme", Context.MODE_PRIVATE)
@@ -30,6 +34,13 @@ class ColorManager(private val context: Context) {
             R.id.btnColor5,
             R.id.btnColor6
         )
+
+        // Add radio group for background style
+        val radioGroup = dialogView.findViewById<RadioGroup>(R.id.rgBackgroundStyle)
+
+        // Set initial selection based on saved preference
+        val useBlurBackground = prefs.getBoolean("useBlurBackground", false)
+        radioGroup.check(if (useBlurBackground) R.id.rbBlurBackground else R.id.rbSolidColor)
 
         colorButtons.forEach { buttonId ->
             dialogView.findViewById<Button>(buttonId).setOnClickListener {
@@ -50,17 +61,20 @@ class ColorManager(private val context: Context) {
             val blue = seekBarBlue.progress
             val color = Color.rgb(red, green, blue)
 
-            // Save the custom color in SharedPreferences
+            // Save the background style preference
+            val useBlur = radioGroup.checkedRadioButtonId == R.id.rbBlurBackground
+            saveBackgroundPreference(useBlur)
+
             saveColor(color)
-
-            // Apply the color to the activity immediately
             applyColorToActivity(context as MainActivity)
-
-            // Dismiss the dialog
             dialog.dismiss()
         }
 
         dialog.show()
+    }
+
+    private fun saveBackgroundPreference(useBlur: Boolean) {
+        prefs.edit().putBoolean("useBlurBackground", useBlur).apply()
     }
 
     private fun saveColor(color: Int) {
@@ -71,12 +85,59 @@ class ColorManager(private val context: Context) {
         return prefs.getInt("backgroundColor", ContextCompat.getColor(context, R.color.background_color))
     }
 
+    private fun createBlurredBackground(bitmap: Bitmap): Bitmap {
+        // Scale down the bitmap for better performance
+        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, bitmap.width / 4, bitmap.height / 4, true)
+
+        val renderScript = RenderScript.create(context)
+        val input = Allocation.createFromBitmap(renderScript, scaledBitmap)
+        val output = Allocation.createTyped(renderScript, input.type)
+
+        // Create blur effect
+        val blurScript = ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript))
+        blurScript.setInput(input)
+        blurScript.setRadius(25f) // Adjust blur radius (1-25)
+        blurScript.forEach(output)
+
+        // Create output bitmap
+        val blurredBitmap = Bitmap.createBitmap(scaledBitmap.width, scaledBitmap.height, scaledBitmap.config)
+        output.copyTo(blurredBitmap)
+
+        // Scale back up to original size
+        val finalBitmap = Bitmap.createScaledBitmap(blurredBitmap, bitmap.width, bitmap.height, true)
+
+        // Apply color overlay for better text visibility
+        val overlay = Color.argb(120, 0, 0, 0)
+        val canvas = Canvas(finalBitmap)
+        canvas.drawColor(overlay)
+
+        // Clean up
+        renderScript.destroy()
+        scaledBitmap.recycle()
+        blurredBitmap.recycle()
+
+        return finalBitmap
+    }
+
     fun applyColorToActivity(activity: MainActivity) {
         val color = getSavedColor()
+        val useBlurBackground = prefs.getBoolean("useBlurBackground", false)
 
         // Apply color to the player screen's background if it's currently visible
         val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
-        playerViewContainer?.setBackgroundColor(color)
+        val albumArtImageView = activity.findViewById<ImageView>(R.id.iv_album_art)
+
+        if (useBlurBackground && albumArtImageView?.drawable != null) {
+            // Create blur background from album art
+            albumArtImageView.isDrawingCacheEnabled = true
+            val albumArtBitmap = Bitmap.createBitmap(albumArtImageView.drawingCache)
+            albumArtImageView.isDrawingCacheEnabled = false
+
+            val blurredBackground = createBlurredBackground(albumArtBitmap)
+            playerViewContainer?.background = BitmapDrawable(context.resources, blurredBackground)
+        } else {
+            playerViewContainer?.setBackgroundColor(color)
+        }
 
         // Text color based on background color
         val primaryTextColor = if (color == Color.WHITE) {

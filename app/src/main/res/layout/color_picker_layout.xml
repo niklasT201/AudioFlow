@@ -128,5 +128,29 @@
                 android:backgroundTint="#B749CA"
                 android:layout_marginTop="8dp"/>
 
+        <RadioGroup
+                android:id="@+id/rgBackgroundStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:gravity="center">
+
+            <RadioButton
+                    android:id="@+id/rbSolidColor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Solid Color"
+                    android:checked="true"
+                    android:layout_marginEnd="16dp"/>
+
+            <RadioButton
+                    android:id="@+id/rbBlurBackground"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Blur Album Art"/>
+        </RadioGroup>
+
     </LinearLayout>
 </androidx.cardview.widget.CardView>

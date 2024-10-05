@@ -16,6 +16,9 @@ android {
 
         vectorDrawables.useSupportLibrary = true
 
+        renderscriptTargetApi = 21
+        renderscriptSupportModeEnabled = true
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
