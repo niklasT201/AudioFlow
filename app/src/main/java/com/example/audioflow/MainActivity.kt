@@ -8,7 +8,9 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.Manifest
+import android.content.ComponentName
 import android.content.Context
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.provider.MediaStore
@@ -19,6 +21,7 @@ import java.io.File
 import java.util.*
 import android.media.MediaMetadataRetriever
 import android.media.PlaybackParams
+import android.os.IBinder
 import androidx.appcompat.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
@@ -50,6 +53,26 @@ class MainActivity : AppCompatActivity() {
     private lateinit var totalTimeTextView: TextView
     private lateinit var playSettingsButton: ImageView
     private lateinit var playerSettingsButton: ImageView
+
+    private var mediaPlayerService: MediaPlayerService? = null
+    private var bound = false
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as MediaPlayerService.LocalBinder
+            mediaPlayerService = binder.getService()
+            bound = true
+
+            // Initialize service with current MediaPlayer if it exists
+            mediaPlayer?.let { mediaPlayerService?.initializePlayer(it) }
+            lastPlayedSong?.let { mediaPlayerService?.updateMetadata(it) }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            mediaPlayerService = null
+            bound = false
+        }
+    }
 
     private lateinit var playerOptionsOverlay: View
     private lateinit var currentsongtitle: TextView
@@ -130,6 +153,11 @@ class MainActivity : AppCompatActivity() {
         setupScreenTimeoutSetting()
 
         initializePlayerStyles()
+
+        Intent(this, MediaPlayerService::class.java).also { intent ->
+            startService(intent)
+            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        }
 
         // Show home screen by default
         showScreen(homeScreen)
@@ -1042,6 +1070,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+        mediaPlayerService?.initializePlayer(mediaPlayer!!)
+        mediaPlayerService?.updateMetadata(song)
     }
 
     private fun removeCurrentSongAndPlayNext() {
@@ -1242,7 +1272,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun playPreviousSong() {
+    fun playPreviousSong() {
         if (currentPlaylist.isNotEmpty()) {
             val currentPosition = mediaPlayer?.currentPosition ?: 0
             val totalDuration = mediaPlayer?.duration ?: 0
@@ -1289,7 +1319,7 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(intent, PICK_AUDIO_REQUEST)
     }
 
-    private fun playNextSong(showPlayerScreen: Boolean = true) {
+    fun playNextSong(showPlayerScreen: Boolean = true) {
         if (currentPlaylist.isEmpty()) {
             // If there are no songs loaded, try to reload the current folder
             currentFolderPath?.let { path ->
@@ -1384,6 +1414,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (bound) {
+            unbindService(serviceConnection)
+            bound = false
+        }
         mediaPlayer?.release()
         lastPlayedSong?.let { saveLastPlayedSong(it) }
         savePlayMode()
