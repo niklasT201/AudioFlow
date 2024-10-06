@@ -1427,8 +1427,7 @@ class MainActivity : AppCompatActivity() {
     data class SongItem(val file: File, val title: String, val artist: String, val album: String)
 }
 
-// Getting Not Player
-// Get Playback for songs
+
 // Options song
 // Add Playlist Create
 // Add/search Folder to List
