@@ -17,8 +17,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import android.renderscript.Element
 import android.util.Log
-import android.util.TypedValue
-import android.view.Gravity
 import android.view.WindowManager
 import androidx.cardview.widget.CardView
 import androidx.constraintlayout.widget.ConstraintLayout

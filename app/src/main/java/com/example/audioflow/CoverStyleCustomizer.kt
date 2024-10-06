@@ -159,20 +159,57 @@ class CoverStyleCustomizer(private val context: Context) {
         val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
         params.width = ConstraintLayout.LayoutParams.MATCH_PARENT
         params.height = 0
-        params.dimensionRatio = "16:16"  // Fixed aspect ratio
 
-        params.setMargins(0, 0, 0, 0)  // No margins to ensure full width
+        // Clear constraints before setting new ones
+        params.clearAllConstraints()
 
-        // Set constraints
-        params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-        params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-        params.topToBottom = R.id.btn_close_player
+        // Remove horizontal margins only
+        params.setMargins(0, 0, 0, 0)
 
-        // Set margins
-        params.setMargins(0, context.resources.getDimensionPixelSize(R.dimen.default_cover_top), 0, 0)
+        // Temporarily modify parent container padding for full-width mode
+        val parentLayout = playerView as? ConstraintLayout
+        parentLayout?.apply {
+            setPadding(0, paddingTop, 0, paddingBottom)
+        }
 
-        albumArtCard.layoutParams = params
-        albumArtCard.radius = cornerRadius
+        // Get the close button for measurements
+        val closeButton = playerView.findViewById<View>(R.id.btn_close_player)
+
+        // Calculate the height to extend from the original position up to the top of the screen
+        playerView.post {
+            val distanceToTop = closeButton.top + closeButton.height
+            val desiredHeight = (albumArtCard.width * 1.0).toInt() // 1:1 ratio from the original width
+
+            params.height = desiredHeight
+
+            // Position the card with its bottom at the original position
+            params.bottomMargin = 0
+            params.topMargin = distanceToTop - desiredHeight
+
+            // Set constraints
+            params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            params.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+
+            albumArtCard.layoutParams = params
+        }
+
+        // Ensure the close button appears above the cover
+        closeButton.elevation = albumArtCard.elevation + 1f
+
+        // Apply corner radius only to bottom corners when in full-width mode
+        if (albumArtCard is MaterialCardView) {
+            (albumArtCard as MaterialCardView).shapeAppearanceModel = ShapeAppearanceModel.builder()
+                .setTopLeftCornerSize(0f)  // No radius at top
+                .setTopRightCornerSize(0f) // No radius at top
+                .setBottomLeftCornerSize(cornerRadius)
+                .setBottomRightCornerSize(cornerRadius)
+                .build()
+        } else {
+            // For regular CardView, we can't do different corners
+            albumArtCard.radius = cornerRadius
+        }
+
         albumArtImage.scaleType = ImageView.ScaleType.CENTER_CROP
     }
 

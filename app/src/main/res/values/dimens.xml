@@ -3,4 +3,5 @@
     <dimen name="default_cover_top">16dp</dimen>
     <dimen name="default_padding">1dp</dimen>
     <dimen name="album_art_top_margin">15dp</dimen>
+    <dimen name="default_horizontal_padding">20dp</dimen>
 </resources>

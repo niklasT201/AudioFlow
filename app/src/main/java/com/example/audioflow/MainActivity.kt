@@ -1413,7 +1413,7 @@ class MainActivity : AppCompatActivity() {
 // add reset button
 
 // info screen
-// fix width cover
+// save width cover
 // maybe add color change to more screen
 // sound changes
 // maybe driver mode
