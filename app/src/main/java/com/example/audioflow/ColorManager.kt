@@ -17,6 +17,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import android.renderscript.Element
 import android.util.Log
+import android.util.TypedValue
+import android.view.Gravity
+import android.view.WindowManager
 import androidx.cardview.widget.CardView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.WindowCompat
@@ -33,6 +36,15 @@ class ColorManager(private val context: Context) {
         val dialog = AlertDialog.Builder(context, R.style.TransparentAlertDialog)
             .setView(dialogView)
             .create()
+
+        // Simplified window setup
+        dialog.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+        }
 
         val colorButtons = listOf(
             R.id.btnColor1,

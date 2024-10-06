@@ -159,7 +159,9 @@ class CoverStyleCustomizer(private val context: Context) {
         val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
         params.width = ConstraintLayout.LayoutParams.MATCH_PARENT
         params.height = 0
-        params.dimensionRatio = "16:9"  // Fixed aspect ratio
+        params.dimensionRatio = "16:16"  // Fixed aspect ratio
+
+        params.setMargins(0, 0, 0, 0)  // No margins to ensure full width
 
         // Set constraints
         params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID

@@ -204,7 +204,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun initializePlayerStyles() {
+    private fun initializePlayerStyles() {
         val coverStyleCustomizer = CoverStyleCustomizer(this)
         val playerView = findViewById<View>(R.id.player_view_container)
         coverStyleCustomizer.initialize(playerView)
@@ -1413,6 +1413,7 @@ class MainActivity : AppCompatActivity() {
 // add reset button
 
 // info screen
+// fix width cover
 // maybe add color change to more screen
 // sound changes
 // maybe driver mode
