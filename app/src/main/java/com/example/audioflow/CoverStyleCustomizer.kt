@@ -22,8 +22,17 @@ class CoverStyleCustomizer(private val context: Context) {
     private lateinit var albumArtImage: ImageView
     private val prefs: SharedPreferences = context.getSharedPreferences("cover_style_prefs", Context.MODE_PRIVATE)
 
+    private var originalPadding: Padding? = null
+
+    data class Padding(
+        val left: Int,
+        val top: Int,
+        val right: Int,
+        val bottom: Int
+    )
+
     companion object {
-        const val DEFAULT_CORNER_RADIUS = 16f  // Matching the player screen's corner radius
+        const val DEFAULT_CORNER_RADIUS = 16f
         const val DEFAULT_COVER_SIZE = 85
         private const val PREF_STYLE = "cover_style"
         private const val PREF_CORNER_RADIUS = "corner_radius"
@@ -35,9 +44,68 @@ class CoverStyleCustomizer(private val context: Context) {
         albumArtCard = playerView.findViewById(R.id.cv_album_art)
         albumArtImage = playerView.findViewById(R.id.iv_album_art)
 
-        // Apply saved preferences on initialization
+        val parentLayout = playerView as? ConstraintLayout
+        parentLayout?.let {
+            originalPadding = Padding(
+                it.paddingLeft,
+                it.paddingTop,
+                it.paddingRight,
+                it.paddingBottom
+            )
+        }
+
         applySavedStyle()
     }
+
+    private fun restoreDefaultPadding() {
+        val parentLayout = playerView as? ConstraintLayout
+        originalPadding?.let { padding ->
+            parentLayout?.setPadding(
+                padding.left,
+                padding.top,
+                padding.right,
+                padding.bottom
+            )
+        }
+    }
+
+    private fun resetAllLayoutParameters() {
+        val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
+
+        // Clear all constraints
+        params.clearAllConstraints()
+
+        // Reset all margins
+        params.setMargins(0, 0, 0, 0)
+
+        // Reset all sizes
+        params.width = 0
+        params.height = 0
+
+        // Reset any dimension ratio
+        params.dimensionRatio = null
+
+        // Reset constraint dimension percentages
+        params.matchConstraintPercentWidth = 1f
+        params.matchConstraintPercentHeight = 1f
+
+        // Reset any bias
+        params.horizontalBias = 0.5f
+        params.verticalBias = 0.5f
+
+        // Reset the card appearance
+        if (albumArtCard is MaterialCardView) {
+            (albumArtCard as MaterialCardView).shapeAppearanceModel = ShapeAppearanceModel.builder()
+                .setAllCornerSizes(DEFAULT_CORNER_RADIUS)
+                .build()
+        } else {
+            albumArtCard.radius = DEFAULT_CORNER_RADIUS
+        }
+
+        // Apply the reset parameters
+        albumArtCard.layoutParams = params
+    }
+
 
     private fun applySavedStyle() {
         val savedStyle = CoverStyle.valueOf(prefs.getString(PREF_STYLE, CoverStyle.DEFAULT.name)!!)
@@ -56,9 +124,9 @@ class CoverStyleCustomizer(private val context: Context) {
     }
 
     fun applyCoverStyle(style: CoverStyle, cornerRadius: Float, coverSize: Int) {
-        // Reset all constraints and margins first
-        val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
-        params.clearAllConstraints()
+        // First reset everything to default state
+        resetAllLayoutParameters()
+        restoreDefaultPadding()
 
         when (style) {
             CoverStyle.DEFAULT -> applyDefaultStyle(cornerRadius, coverSize)
@@ -83,36 +151,51 @@ class CoverStyleCustomizer(private val context: Context) {
         // Clear preferences
         prefs.edit().clear().apply()
 
-        // Reset to default values
+        // Reset all layout parameters
+        resetAllLayoutParameters()
+
+        // Restore original padding
+        restoreDefaultPadding()
+
+        // Apply default style
         applyCoverStyle(CoverStyle.DEFAULT, DEFAULT_CORNER_RADIUS, DEFAULT_COVER_SIZE)
     }
 
     private fun applyDefaultStyle(cornerRadius: Float, coverSize: Int) {
         val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
+
+        // Set exact parameters for default style
         params.width = 0
         params.height = 0
         params.dimensionRatio = "1:1"
+
+        // Important: Set the exact percentage for width constraint
         params.matchConstraintPercentWidth = coverSize / 100f
 
-        // Set margins from resources
+        // Get the default margin from resources
         val defaultMargin = context.resources.getDimensionPixelSize(R.dimen.default_cover_top)
         params.setMargins(defaultMargin, defaultMargin, defaultMargin, 0)
 
-        // Set constraints
+        // Set the constraints explicitly
         params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
         params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
         params.topToBottom = R.id.btn_close_player
 
-        albumArtCard.layoutParams = params
-
-        // Convert cornerRadius from dp to pixels
+        // Convert corner radius from dp to pixels
         val cornerRadiusInPixels = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
             cornerRadius,
             context.resources.displayMetrics
         )
+
+        // Apply corner radius
         albumArtCard.radius = cornerRadiusInPixels
+
+        // Set the scale type
         albumArtImage.scaleType = ImageView.ScaleType.CENTER_CROP
+
+        // Apply the parameters
+        albumArtCard.layoutParams = params
     }
 
     private fun applySquareStyle(coverSize: Int) {
@@ -159,6 +242,7 @@ class CoverStyleCustomizer(private val context: Context) {
         val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
         params.width = ConstraintLayout.LayoutParams.MATCH_PARENT
         params.height = 0
+        params.dimensionRatio = null // Clear any previous ratio
 
         // Clear constraints before setting new ones
         params.clearAllConstraints()
@@ -166,27 +250,21 @@ class CoverStyleCustomizer(private val context: Context) {
         // Remove horizontal margins only
         params.setMargins(0, 0, 0, 0)
 
-        // Temporarily modify parent container padding for full-width mode
         val parentLayout = playerView as? ConstraintLayout
         parentLayout?.apply {
             setPadding(0, paddingTop, 0, paddingBottom)
         }
 
-        // Get the close button for measurements
         val closeButton = playerView.findViewById<View>(R.id.btn_close_player)
 
-        // Calculate the height to extend from the original position up to the top of the screen
         playerView.post {
             val distanceToTop = closeButton.top + closeButton.height
-            val desiredHeight = (albumArtCard.width * 1.0).toInt() // 1:1 ratio from the original width
+            val desiredHeight = (albumArtCard.width * 1.0).toInt()
 
             params.height = desiredHeight
-
-            // Position the card with its bottom at the original position
             params.bottomMargin = 0
             params.topMargin = distanceToTop - desiredHeight
 
-            // Set constraints
             params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
             params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
             params.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
@@ -194,19 +272,16 @@ class CoverStyleCustomizer(private val context: Context) {
             albumArtCard.layoutParams = params
         }
 
-        // Ensure the close button appears above the cover
         closeButton.elevation = albumArtCard.elevation + 1f
 
-        // Apply corner radius only to bottom corners when in full-width mode
         if (albumArtCard is MaterialCardView) {
             (albumArtCard as MaterialCardView).shapeAppearanceModel = ShapeAppearanceModel.builder()
-                .setTopLeftCornerSize(0f)  // No radius at top
-                .setTopRightCornerSize(0f) // No radius at top
+                .setTopLeftCornerSize(0f)
+                .setTopRightCornerSize(0f)
                 .setBottomLeftCornerSize(cornerRadius)
                 .setBottomRightCornerSize(cornerRadius)
                 .build()
         } else {
-            // For regular CardView, we can't do different corners
             albumArtCard.radius = cornerRadius
         }
 

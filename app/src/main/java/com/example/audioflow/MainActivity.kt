@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
             mediaPlayerService = binder.getService()
             bound = true
 
-            // Initialize service with current MediaPlayer if it exists
+            // Initialize the service with the current MediaPlayer if it exists
             mediaPlayer?.let { mediaPlayerService?.initializePlayer(it) }
             lastPlayedSong?.let { mediaPlayerService?.updateMetadata(it) }
         }
@@ -155,7 +155,6 @@ class MainActivity : AppCompatActivity() {
         initializePlayerStyles()
 
         Intent(this, MediaPlayerService::class.java).also { intent ->
-            startService(intent)
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
 
@@ -1436,6 +1435,10 @@ class MainActivity : AppCompatActivity() {
 // song list settings for one song
 // holding song item for settings to
 
+// improve noti player design
+// get working buttons :/
+// resetting right padding
+
 // search screen
 // add play function
 // add playlist add button
@@ -1446,7 +1449,6 @@ class MainActivity : AppCompatActivity() {
 // add reset button
 
 // info screen
-// save width cover
 // maybe add color change to more screen
 // sound changes
 // maybe driver mode

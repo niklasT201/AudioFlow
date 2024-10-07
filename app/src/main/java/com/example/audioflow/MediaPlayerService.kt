@@ -1,6 +1,7 @@
 package com.example.audioflow
 
 import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -12,10 +13,19 @@ import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
 import java.io.File
+import android.graphics.*
+import android.graphics.drawable.BitmapDrawable
+
+interface MediaPlayerCallback {
+    fun onNextTrack()
+    fun onPreviousTrack()
+}
 
 class MediaPlayerService : Service() {
     private var mediaPlayer: MediaPlayer? = null
@@ -23,14 +33,20 @@ class MediaPlayerService : Service() {
     private val binder = LocalBinder()
     private var currentSong: MainActivity.SongItem? = null
     private var isPlayerInitialized = false
+    private var callback: MediaPlayerCallback? = null
 
     companion object {
         private const val NOTIFICATION_ID = 1
-        private const val CHANNEL_ID = "MediaPlayerService"
+        private const val CHANNEL_ID = "AudioFlowMediaChannel"
+        private const val REQUEST_CODE = 100
     }
 
     inner class LocalBinder : Binder() {
         fun getService(): MediaPlayerService = this@MediaPlayerService
+    }
+
+    fun setCallback(callback: MediaPlayerCallback) {
+        this.callback = callback
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -44,20 +60,24 @@ class MediaPlayerService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Media Player",
+            "AudioFlow Media Player",
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Media player controls"
-            setShowBadge(false)
+            description = "Controls for AudioFlow media player"
+            setSound(null, null)
+            enableLights(false)
+            enableVibration(false)
         }
-        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
-            .createNotificationChannel(channel)
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
     private fun initializeMediaSession() {
         mediaSession = MediaSessionCompat(this, "AudioFlowSession").apply {
             setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
                     MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+
             setCallback(object : MediaSessionCompat.Callback() {
                 override fun onPlay() {
                     mediaPlayer?.start()
@@ -72,11 +92,11 @@ class MediaPlayerService : Service() {
                 }
 
                 override fun onSkipToNext() {
-                    (applicationContext as? MainActivity)?.playNextSong(false)
+                    callback?.onNextTrack()
                 }
 
                 override fun onSkipToPrevious() {
-                    (applicationContext as? MainActivity)?.playPreviousSong()
+                    callback?.onPreviousTrack()
                 }
             })
         }
@@ -99,7 +119,10 @@ class MediaPlayerService : Service() {
             retriever.setDataSource(song.file.absolutePath)
             val art = retriever.embeddedPicture
             val albumArt = if (art != null) {
-                BitmapFactory.decodeByteArray(art, 0, art.size)
+                val options = BitmapFactory.Options().apply {
+                    inSampleSize = 4  // Scale down the image more aggressively
+                }
+                BitmapFactory.decodeByteArray(art, 0, art.size, options)
             } else {
                 BitmapFactory.decodeResource(resources, R.drawable.cover_art)
             }
@@ -131,66 +154,95 @@ class MediaPlayerService : Service() {
         mediaSession.setPlaybackState(playbackState)
     }
 
+    private fun getRoundedBitmap(bitmap: Bitmap): Bitmap {
+        val output = Bitmap.createBitmap(
+            bitmap.width,
+            bitmap.height,
+            Bitmap.Config.ARGB_8888
+        )
+        val canvas = Canvas(output)
+        val paint = Paint().apply {
+            isAntiAlias = true
+            color = Color.BLACK
+        }
+        val rect = Rect(0, 0, bitmap.width, bitmap.height)
+        val rectF = RectF(rect)
+        val roundPx = 120f // Adjust this value to control the corner radius
+
+        canvas.drawRoundRect(rectF, roundPx, roundPx, paint)
+        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
+        canvas.drawBitmap(bitmap, rect, rect, paint)
+
+        return output
+    }
+
     private fun updateNotification() {
         if (!isPlayerInitialized || currentSong == null) return
 
-        val retriever = MediaMetadataRetriever()
-        var albumArt: Bitmap? = null
+        val remoteViews = RemoteViews(packageName, R.layout.custom_notification_layout)
 
+        // Set the album art
         try {
+            val retriever = MediaMetadataRetriever()
             retriever.setDataSource(currentSong?.file?.absolutePath)
             val art = retriever.embeddedPicture
-            albumArt = if (art != null) {
-                BitmapFactory.decodeByteArray(art, 0, art.size)
+            val albumArt = if (art != null) {
+                val originalBitmap = BitmapFactory.decodeByteArray(art, 0, art.size)
+                getRoundedBitmap(originalBitmap)
             } else {
-                BitmapFactory.decodeResource(resources, R.drawable.cover_art)
+                val originalBitmap = BitmapFactory.decodeResource(resources, R.drawable.cover_art)
+                getRoundedBitmap(originalBitmap)
             }
+            remoteViews.setImageViewBitmap(R.id.notification_icon, albumArt)
         } catch (e: Exception) {
-            albumArt = BitmapFactory.decodeResource(resources, R.drawable.cover_art)
-        } finally {
-            retriever.release()
+            val fallbackBitmap = BitmapFactory.decodeResource(resources, R.drawable.cover_art)
+            remoteViews.setImageViewBitmap(R.id.notification_icon, getRoundedBitmap(fallbackBitmap))
         }
 
-        val style = androidx.media.app.NotificationCompat.MediaStyle()
-            .setMediaSession(mediaSession.sessionToken)
-            .setShowActionsInCompactView(0, 1, 2)
+        // Rest of the notification setup remains the same
+        remoteViews.setTextViewText(R.id.notification_title, currentSong?.title)
+        remoteViews.setTextViewText(R.id.notification_text, currentSong?.artist)
 
+        // Set button images
+        remoteViews.setImageViewResource(R.id.previous_button, R.drawable.previous)
+        remoteViews.setImageViewResource(R.id.next_button, R.drawable.next)
+        remoteViews.setImageViewResource(
+            R.id.play_button,
+            if (mediaPlayer?.isPlaying == true) R.drawable.pause_button else R.drawable.play_button
+        )
+
+        // Create pending intents for buttons
+        val playPauseIntent = PendingIntent.getBroadcast(
+            this,
+            0,
+            Intent(if (mediaPlayer?.isPlaying == true) "com.example.audioflow.PAUSE" else "com.example.audioflow.PLAY"),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val nextIntent = PendingIntent.getBroadcast(
+            this,
+            1,
+            Intent("com.example.audioflow.NEXT"),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val previousIntent = PendingIntent.getBroadcast(
+            this,
+            2,
+            Intent("com.example.audioflow.PREVIOUS"),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Set click listeners
+        remoteViews.setOnClickPendingIntent(R.id.play_button, playPauseIntent)
+        remoteViews.setOnClickPendingIntent(R.id.next_button, nextIntent)
+        remoteViews.setOnClickPendingIntent(R.id.previous_button, previousIntent)
+
+        // Create the notification
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.cover_art)
-            .setLargeIcon(albumArt)
-            .setContentTitle(currentSong?.title)
-            .setContentText("${currentSong?.artist} - ${currentSong?.album}")
-            .setStyle(style)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .addAction(
-                R.drawable.previous,
-                "Previous",
-                MediaButtonReceiver.buildMediaButtonPendingIntent(
-                    this,
-                    PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-                )
-            )
-            .addAction(
-                if (mediaPlayer?.isPlaying == true) R.drawable.pause_button else R.drawable.play_button,
-                if (mediaPlayer?.isPlaying == true) "Pause" else "Play",
-                MediaButtonReceiver.buildMediaButtonPendingIntent(
-                    this,
-                    if (mediaPlayer?.isPlaying == true)
-                        PlaybackStateCompat.ACTION_PAUSE
-                    else
-                        PlaybackStateCompat.ACTION_PLAY
-                )
-            )
-            .addAction(
-                R.drawable.next,
-                "Next",
-                MediaButtonReceiver.buildMediaButtonPendingIntent(
-                    this,
-                    PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-                )
-            )
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setOnlyAlertOnce(true)
+            .setSmallIcon(R.drawable.notification_icon)
+            .setCustomContentView(remoteViews)
+            .setOngoing(true)
             .build()
 
         startForeground(NOTIFICATION_ID, notification)
