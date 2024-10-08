@@ -12,6 +12,7 @@ import android.provider.MediaStore
 import android.content.Intent
 import android.database.ContentObserver
 import android.graphics.Bitmap
+import android.media.MediaPlayer
 import android.media.MediaScannerConnection
 import android.os.Handler
 import android.os.Looper
@@ -52,6 +53,9 @@ class SearchActivity : AppCompatActivity() {
     private val navigationStack = mutableListOf<() -> Unit>()
 
     private lateinit var searchResultsList: RecyclerView
+
+    private var mediaPlayer: MediaPlayer? = null
+    private var currentlyPlayingSong: SongItem? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -175,6 +179,7 @@ class SearchActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopCurrentSong()
         contentResolver.unregisterContentObserver(contentObserver)
     }
 
@@ -249,7 +254,7 @@ class SearchActivity : AppCompatActivity() {
 
         // Set up the adapters
         artistAdapter = ArtistAdapter(allMatchingArtists) { artist -> showArtistDetails(artist) }
-        albumAdapter = AlbumAdapter(allMatchingAlbums.take(5)) { album -> showAlbumDetails(album) }
+        albumAdapter = AlbumAdapter(allMatchingAlbums) { album -> showAlbumDetails(album) }
         songAdapter = SongAdapter(
             allMatchingSongs.take(5),
             { song -> handleSongClick(song) },
@@ -396,7 +401,12 @@ class SearchActivity : AppCompatActivity() {
 
     private fun handleSongClick(song: SongItem) {
         if (modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio) {
-            playSong(song)
+            // If the same song is clicked again, stop it
+            if (currentlyPlayingSong?.file?.absolutePath == song.file.absolutePath) {
+                stopCurrentSong()
+            } else {
+                playSong(song)
+            }
         } else {
             editSongMetadata(song)
         }
@@ -442,9 +452,45 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun playSong(song: SongItem) {
-        // Implement this method to play the selected song
-        // You can use the existing code from MainActivity to play a song
+        try {
+            // Stop any currently playing song
+            stopCurrentSong()
+
+            // Create and prepare new MediaPlayer
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(song.file.absolutePath)
+                prepare()
+                start()
+            }
+
+            currentlyPlayingSong = song
+
+            // Show a toast to indicate which song is playing
+            Toast.makeText(this, "Now playing: ${song.title}", Toast.LENGTH_SHORT).show()
+
+            // Set up completion listener to clean up resources
+            mediaPlayer?.setOnCompletionListener {
+                stopCurrentSong()
+            }
+
+        } catch (e: Exception) {
+            Log.e("SearchActivity", "Error playing song: ${e.message}")
+            Toast.makeText(this, "Error playing song", Toast.LENGTH_SHORT).show()
+        }
     }
+
+    private fun stopCurrentSong() {
+        mediaPlayer?.let { player ->
+            if (player.isPlaying) {
+                player.stop()
+            }
+            player.release()
+            mediaPlayer = null
+            currentlyPlayingSong = null
+            Toast.makeText(this, "Playback stopped", Toast.LENGTH_SHORT).show()
+        }
+    }
+
 
     private fun editSongMetadata(song: SongItem) {
         val intent = Intent(this, EditMetadataActivity::class.java)

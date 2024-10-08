@@ -70,6 +70,41 @@
                     android:buttonTint="#B749CA"
                     android:padding="8dp"/>
 
+            <LinearLayout
+                    android:id="@+id/circularOptionsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:layout_marginStart="32dp">
+
+                <RadioGroup
+                        android:id="@+id/circularOptionsGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                    <RadioButton
+                            android:id="@+id/circularNormal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Normal"
+                            android:textColor="#CCCCCC"
+                            android:buttonTint="#B749CA"
+                            android:padding="8dp"
+                            android:checked="true"/>
+
+                    <RadioButton
+                            android:id="@+id/circularRotating"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Rotating"
+                            android:textColor="#CCCCCC"
+                            android:buttonTint="#B749CA"
+                            android:padding="8dp"/>
+                </RadioGroup>
+            </LinearLayout>
+
             <RadioButton
                     android:id="@+id/styleFullWidth"
                     android:layout_width="match_parent"

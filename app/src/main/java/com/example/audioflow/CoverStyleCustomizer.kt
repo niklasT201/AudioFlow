@@ -1,20 +1,20 @@
 package com.example.audioflow
 
+import android.animation.ObjectAnimator
 import android.app.Activity
 import android.content.Context
 import android.view.View
-import android.widget.ImageView
 import androidx.cardview.widget.CardView
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.google.android.material.shape.ShapeAppearanceModel
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.content.SharedPreferences
 import android.graphics.Color
+import android.util.Log
 import android.util.TypedValue
 import android.view.WindowManager
-import android.widget.Button
-import android.widget.RadioGroup
-import android.widget.SeekBar
+import android.view.animation.LinearInterpolator
+import android.widget.*
 import androidx.core.content.edit
 import com.google.android.material.card.MaterialCardView
 
@@ -27,6 +27,10 @@ class CoverStyleCustomizer(private val context: Context) {
     private var originalPadding: Padding? = null
     private lateinit var parentLayout: ConstraintLayout
     private var isFullWidthMode = false
+
+    private var rotationAnimator: ObjectAnimator? = null
+    private var lastRotation = 0f
+    private var isRotating = false
 
     data class Padding(
         val left: Int,
@@ -41,9 +45,11 @@ class CoverStyleCustomizer(private val context: Context) {
         private const val PREF_STYLE = "cover_style"
         private const val PREF_CORNER_RADIUS = "corner_radius"
         private const val PREF_COVER_SIZE = "cover_size"
+        private const val PREF_IS_ROTATING = "is_rotating"
+        private const val PREF_LAST_ROTATION = "last_rotation"
 
         // Add default padding values from your layout
-        private const val DEFAULT_PADDING = 20 // Match your layout's padding (20dp from your XML)
+        private const val DEFAULT_PADDING = 20
     }
 
     fun initialize(playerView: View) {
@@ -68,6 +74,10 @@ class CoverStyleCustomizer(private val context: Context) {
             defaultPaddingPx,
             defaultPaddingPx
         )
+
+        // Load rotation state
+        isRotating = prefs.getBoolean(PREF_IS_ROTATING, false)
+        lastRotation = prefs.getFloat(PREF_LAST_ROTATION, 0f)
 
         applySavedStyle()
     }
@@ -137,11 +147,55 @@ class CoverStyleCustomizer(private val context: Context) {
             putString(PREF_STYLE, style.name)
             putFloat(PREF_CORNER_RADIUS, cornerRadius)
             putInt(PREF_COVER_SIZE, coverSize)
+            putBoolean(PREF_IS_ROTATING, isRotating)
+            putFloat(PREF_LAST_ROTATION, lastRotation)
         }
     }
 
+    private fun startRotation() {
+        // Cancel any existing animation first
+        stopRotation()
+
+        if (!isRotating) return  // Don't start if rotation is disabled
+
+        rotationAnimator = ObjectAnimator.ofFloat(albumArtCard, View.ROTATION, lastRotation, lastRotation + 360f).apply {
+            duration = 5000 // 3 seconds per rotation
+            interpolator = LinearInterpolator()
+            repeatCount = ObjectAnimator.INFINITE
+            addUpdateListener { animation ->
+                lastRotation = (animation.animatedValue as Float) % 360f
+            }
+        }
+        rotationAnimator?.start()
+    }
+
+    private fun stopRotation() {
+        Log.d("CoverStyleCustomizer", "Stopping rotation")
+        rotationAnimator?.apply {
+            Log.d("CoverStyleCustomizer", "Canceling rotation animator")
+            cancel()
+            removeAllListeners()
+            removeAllUpdateListeners()
+        }
+        rotationAnimator = null
+
+        // If we're stopping rotation completely (not just for style change), reset the card rotation
+        if (!isRotating) {
+            Log.d("CoverStyleCustomizer", "Resetting card rotation")
+            albumArtCard.rotation = 0f
+            lastRotation = 0f
+        }
+    }
+
+
     fun applyCoverStyle(style: CoverStyle, cornerRadius: Float, coverSize: Int) {
-        // First reset everything to default state
+        // First stop any existing rotation
+        if (style != CoverStyle.CIRCULAR && isRotating) {
+            isRotating = false
+            stopRotation()
+        }
+
+        // Reset everything to default state
         resetAllLayoutParameters()
         isFullWidthMode = false
 
@@ -167,6 +221,9 @@ class CoverStyleCustomizer(private val context: Context) {
 
     fun resetToDefault() {
         isFullWidthMode = false
+        isRotating = false
+        stopRotation()
+
         // Clear preferences
         prefs.edit().clear().apply()
 
@@ -181,6 +238,9 @@ class CoverStyleCustomizer(private val context: Context) {
     private fun applyDefaultStyle(cornerRadius: Float, coverSize: Int) {
         // First restore default padding
         restoreDefaultPadding()
+
+        isRotating = false
+        stopRotation()
 
         val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
 
@@ -247,8 +307,26 @@ class CoverStyleCustomizer(private val context: Context) {
         albumArtCard.layoutParams = params
         albumArtCard.post {
             albumArtCard.radius = albumArtCard.width / 2f
+            // Only start rotation after the layout is complete
+            if (isRotating) {
+                startRotation()
+            }
         }
         albumArtImage.scaleType = ImageView.ScaleType.CENTER_CROP
+    }
+
+    fun setRotating(rotating: Boolean) {
+        isRotating = rotating
+        if (isRotating) {
+            startRotation()
+        } else {
+            stopRotation()
+        }
+        // Save the rotation state
+        prefs.edit {
+            putBoolean(PREF_IS_ROTATING, isRotating)
+            putFloat(PREF_LAST_ROTATION, lastRotation)
+        }
     }
 
     private fun updateWindowDecorations(style: CoverStyle) {
@@ -362,6 +440,10 @@ class CoverStyleCustomizer(private val context: Context) {
     enum class CoverStyle {
         DEFAULT, CIRCULAR, FULL_WIDTH, EXPANDED_TOP, SQUARE
     }
+
+    fun cleanup() {
+        stopRotation()
+    }
 }
 
 // Extension of Activity or Fragment to show the dialog
@@ -386,11 +468,27 @@ fun Activity.showCoverStyleCustomization() {
     val savedStyle = prefs.getString("cover_style", CoverStyleCustomizer.CoverStyle.DEFAULT.name)
     val savedCornerRadius = prefs.getFloat("corner_radius", CoverStyleCustomizer.DEFAULT_CORNER_RADIUS)
     val savedCoverSize = prefs.getInt("cover_size", CoverStyleCustomizer.DEFAULT_COVER_SIZE)
+    val isRotating = prefs.getBoolean("is_rotating", false)
 
     // Set initial values in UI
     val radioGroup = view.findViewById<RadioGroup>(R.id.coverStyleGroup)
     val cornerRadiusSeekBar = view.findViewById<SeekBar>(R.id.cornerRadiusSeekBar)
     val coverSizeSeekBar = view.findViewById<SeekBar>(R.id.coverSizeSeekBar)
+    val circularOptionsContainer = view.findViewById<LinearLayout>(R.id.circularOptionsContainer)
+    val circularOptionsGroup = view.findViewById<RadioGroup>(R.id.circularOptionsGroup)
+    val circularRotating = view.findViewById<RadioButton>(R.id.circularRotating)
+
+    radioGroup.setOnCheckedChangeListener { _, checkedId ->
+        circularOptionsContainer.visibility = if (checkedId == R.id.styleCircle) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+    }
+
+    if (savedStyle == CoverStyleCustomizer.CoverStyle.CIRCULAR.name && isRotating) {
+        circularRotating.isChecked = true
+    }
 
     // Set the radio button based on saved style
     val radioButtonId = when (savedStyle) {
@@ -415,6 +513,12 @@ fun Activity.showCoverStyleCustomization() {
             R.id.styleExpandedTop -> CoverStyleCustomizer.CoverStyle.EXPANDED_TOP
             R.id.styleSquare -> CoverStyleCustomizer.CoverStyle.SQUARE
             else -> CoverStyleCustomizer.CoverStyle.DEFAULT
+        }
+
+        if (selectedStyle == CoverStyleCustomizer.CoverStyle.CIRCULAR) {
+            coverStyleCustomizer.setRotating(circularRotating.isChecked)
+        } else {
+            coverStyleCustomizer.setRotating(false)
         }
 
         coverStyleCustomizer.applyCoverStyle(

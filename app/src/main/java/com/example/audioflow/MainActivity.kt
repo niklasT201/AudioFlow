@@ -51,6 +51,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var playSettingsButton: ImageView
     private lateinit var playerSettingsButton: ImageView
 
+    private var coverStyleCustomizer: CoverStyleCustomizer? = null
+
     private var mediaPlayerService: MediaPlayerService? = null
     private var bound = false
 
@@ -153,6 +155,7 @@ class MainActivity : AppCompatActivity() {
 
         // Apply saved color on app start
         colorManager.applyColorToActivity(this)
+        coverStyleCustomizer = CoverStyleCustomizer(this)
 
         setupPlayerOptionsOverlay()
 
@@ -1423,6 +1426,7 @@ class MainActivity : AppCompatActivity() {
             unbindService(serviceConnection)
             bound = false
         }
+        coverStyleCustomizer!!.cleanup()
         mediaPlayer?.release()
         lastPlayedSong?.let { saveLastPlayedSong(it) }
         savePlayMode()
@@ -1443,7 +1447,6 @@ class MainActivity : AppCompatActivity() {
 
 // Full width/expand width bugging when cover customizer open
 // making cover bottom blurry maybe
-// rotate feature when round
 // update play/pause button
 
 // search screen
