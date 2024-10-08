@@ -5,12 +5,9 @@ import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.app.Activity
-import android.content.Intent
 import android.net.Uri
 import android.Manifest
-import android.content.ComponentName
-import android.content.Context
-import android.content.ServiceConnection
+import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.provider.MediaStore
@@ -66,6 +63,15 @@ class MainActivity : AppCompatActivity() {
             // Initialize the service with the current MediaPlayer if it exists
             mediaPlayer?.let { mediaPlayerService?.initializePlayer(it) }
             lastPlayedSong?.let { mediaPlayerService?.updateMetadata(it) }
+
+            mediaPlayerService?.setCallback(object : MediaPlayerCallback {
+                override fun onNextTrack() {
+                    playNextSong()
+                }
+                override fun onPreviousTrack() {
+                    playPreviousSong()
+                }
+            })
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -1435,9 +1441,10 @@ class MainActivity : AppCompatActivity() {
 // song list settings for one song
 // holding song item for settings to
 
-// improve noti player design
-// get working buttons :/
-// resetting right padding
+// Full width/expand width bugging when cover customizer open
+// making cover bottom blurry maybe
+// rotate feature when round
+// update play/pause button
 
 // search screen
 // add play function

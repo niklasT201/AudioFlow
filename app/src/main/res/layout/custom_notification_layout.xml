@@ -16,6 +16,18 @@
             android:scaleType="centerCrop"
             android:contentDescription="@string/my_image_description"/>
 
+    <!-- Favorite Button -->
+    <ImageButton
+            android:id="@+id/favorite_button"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_below="@id/notification_icon"
+            android:layout_alignStart="@id/notification_icon"
+            android:layout_marginTop="2dp"
+            android:background="@null"
+            android:scaleType="fitCenter"
+            android:padding="2dp"
+            android:contentDescription="@string/my_image_description"/>
 
     <!-- Song Info Container -->
     <TextView
@@ -49,6 +61,7 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/notification_icon"
             android:layout_marginTop="4dp"
+            android:layout_toEndOf="@id/favorite_button"
             android:gravity="center"
             android:orientation="horizontal">
 

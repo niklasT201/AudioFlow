@@ -1,8 +1,10 @@
 package com.example.audioflow
 
 import android.app.*
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
@@ -16,11 +18,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
-import androidx.media.session.MediaButtonReceiver
-import java.io.File
 import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
 
 interface MediaPlayerCallback {
     fun onNextTrack()
@@ -49,11 +47,38 @@ class MediaPlayerService : Service() {
         this.callback = callback
     }
 
+    private val mediaControlReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                "com.example.audioflow.PLAY" -> {
+                    mediaPlayer?.start()
+                    updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+                    updateNotification()
+                }
+                "com.example.audioflow.PAUSE" -> {
+                    mediaPlayer?.pause()
+                    updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+                    updateNotification()
+                }
+                "com.example.audioflow.NEXT" -> callback?.onNextTrack()
+                "com.example.audioflow.PREVIOUS" -> callback?.onPreviousTrack()
+            }
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         initializeMediaSession()
+
+        val intentFilter = IntentFilter().apply {
+            addAction("com.example.audioflow.PLAY")
+            addAction("com.example.audioflow.PAUSE")
+            addAction("com.example.audioflow.NEXT")
+            addAction("com.example.audioflow.PREVIOUS")
+        }
+        registerReceiver(mediaControlReceiver, intentFilter)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -167,7 +192,7 @@ class MediaPlayerService : Service() {
         }
         val rect = Rect(0, 0, bitmap.width, bitmap.height)
         val rectF = RectF(rect)
-        val roundPx = 120f // Adjust this value to control the corner radius
+        val roundPx = 160f // Round Corners, Higher Value, rounder corners
 
         canvas.drawRoundRect(rectF, roundPx, roundPx, paint)
         paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_IN)
@@ -202,13 +227,16 @@ class MediaPlayerService : Service() {
         // Rest of the notification setup remains the same
         remoteViews.setTextViewText(R.id.notification_title, currentSong?.title)
         remoteViews.setTextViewText(R.id.notification_text, currentSong?.artist)
+    //    remoteViews.setImageViewResource(R.id.favorite_button,
+     //       if (isSongFavorite) R.drawable.favorite
+    //        else R.drawable.no_favorite)
 
         // Set button images
         remoteViews.setImageViewResource(R.id.previous_button, R.drawable.previous)
         remoteViews.setImageViewResource(R.id.next_button, R.drawable.next)
         remoteViews.setImageViewResource(
             R.id.play_button,
-            if (mediaPlayer?.isPlaying == true) R.drawable.pause_button else R.drawable.play_button
+            if (mediaPlayer?.isPlaying == true) R.drawable.noti_pause_button else R.drawable.notif_play_button
         )
 
         // Create pending intents for buttons
@@ -233,6 +261,14 @@ class MediaPlayerService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+     //   val favoriteIntent = PendingIntent.getBroadcast(
+     //       this,
+     //       3, // unique request code
+     //       Intent("com.example.audioflow.FAVORITE"),
+    //        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    //    )
+    //    remoteViews.setOnClickPendingIntent(R.id.favorite_button, favoriteIntent)
+
         // Set click listeners
         remoteViews.setOnClickPendingIntent(R.id.play_button, playPauseIntent)
         remoteViews.setOnClickPendingIntent(R.id.next_button, nextIntent)
@@ -254,6 +290,7 @@ class MediaPlayerService : Service() {
 
     override fun onDestroy() {
         mediaSession.release()
+        unregisterReceiver(mediaControlReceiver)
         super.onDestroy()
     }
 }

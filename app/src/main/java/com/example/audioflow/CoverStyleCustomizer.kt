@@ -9,7 +9,9 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import com.google.android.material.shape.ShapeAppearanceModel
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.util.TypedValue
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.RadioGroup
 import android.widget.SeekBar
@@ -23,6 +25,8 @@ class CoverStyleCustomizer(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("cover_style_prefs", Context.MODE_PRIVATE)
 
     private var originalPadding: Padding? = null
+    private lateinit var parentLayout: ConstraintLayout
+    private var isFullWidthMode = false
 
     data class Padding(
         val left: Int,
@@ -37,6 +41,9 @@ class CoverStyleCustomizer(private val context: Context) {
         private const val PREF_STYLE = "cover_style"
         private const val PREF_CORNER_RADIUS = "corner_radius"
         private const val PREF_COVER_SIZE = "cover_size"
+
+        // Add default padding values from your layout
+        private const val DEFAULT_PADDING = 20 // Match your layout's padding (20dp from your XML)
     }
 
     fun initialize(playerView: View) {
@@ -44,23 +51,30 @@ class CoverStyleCustomizer(private val context: Context) {
         albumArtCard = playerView.findViewById(R.id.cv_album_art)
         albumArtImage = playerView.findViewById(R.id.iv_album_art)
 
-        val parentLayout = playerView as? ConstraintLayout
-        parentLayout?.let {
-            originalPadding = Padding(
-                it.paddingLeft,
-                it.paddingTop,
-                it.paddingRight,
-                it.paddingBottom
-            )
-        }
+        // Store the parent layout
+        parentLayout = playerView as ConstraintLayout
+
+        // Convert default padding to pixels
+        val defaultPaddingPx = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            DEFAULT_PADDING.toFloat(),
+            context.resources.displayMetrics
+        ).toInt()
+
+        // Store original padding values
+        originalPadding = Padding(
+            defaultPaddingPx,
+            defaultPaddingPx,
+            defaultPaddingPx,
+            defaultPaddingPx
+        )
 
         applySavedStyle()
     }
 
     private fun restoreDefaultPadding() {
-        val parentLayout = playerView as? ConstraintLayout
         originalPadding?.let { padding ->
-            parentLayout?.setPadding(
+            parentLayout.setPadding(
                 padding.left,
                 padding.top,
                 padding.right,
@@ -102,6 +116,9 @@ class CoverStyleCustomizer(private val context: Context) {
             albumArtCard.radius = DEFAULT_CORNER_RADIUS
         }
 
+        // Explicitly restore default padding
+        restoreDefaultPadding()
+
         // Apply the reset parameters
         albumArtCard.layoutParams = params
     }
@@ -126,7 +143,7 @@ class CoverStyleCustomizer(private val context: Context) {
     fun applyCoverStyle(style: CoverStyle, cornerRadius: Float, coverSize: Int) {
         // First reset everything to default state
         resetAllLayoutParameters()
-        restoreDefaultPadding()
+        isFullWidthMode = false
 
         when (style) {
             CoverStyle.DEFAULT -> applyDefaultStyle(cornerRadius, coverSize)
@@ -136,6 +153,7 @@ class CoverStyleCustomizer(private val context: Context) {
             CoverStyle.SQUARE -> applySquareStyle(coverSize)
         }
 
+        updateWindowDecorations(style)
         savePreferences(style, cornerRadius, coverSize)
     }
 
@@ -148,28 +166,28 @@ class CoverStyleCustomizer(private val context: Context) {
     }
 
     fun resetToDefault() {
+        isFullWidthMode = false
         // Clear preferences
         prefs.edit().clear().apply()
 
-        // Reset all layout parameters
+        // Reset all layout parameters and restore padding
         resetAllLayoutParameters()
-
-        // Restore original padding
-        restoreDefaultPadding()
 
         // Apply default style
         applyCoverStyle(CoverStyle.DEFAULT, DEFAULT_CORNER_RADIUS, DEFAULT_COVER_SIZE)
+        updateWindowDecorations(CoverStyle.DEFAULT)
     }
 
     private fun applyDefaultStyle(cornerRadius: Float, coverSize: Int) {
+        // First restore default padding
+        restoreDefaultPadding()
+
         val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
 
         // Set exact parameters for default style
         params.width = 0
         params.height = 0
         params.dimensionRatio = "1:1"
-
-        // Important: Set the exact percentage for width constraint
         params.matchConstraintPercentWidth = coverSize / 100f
 
         // Get the default margin from resources
@@ -181,20 +199,15 @@ class CoverStyleCustomizer(private val context: Context) {
         params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
         params.topToBottom = R.id.btn_close_player
 
-        // Convert corner radius from dp to pixels
         val cornerRadiusInPixels = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
             cornerRadius,
             context.resources.displayMetrics
         )
 
-        // Apply corner radius
         albumArtCard.radius = cornerRadiusInPixels
-
-        // Set the scale type
         albumArtImage.scaleType = ImageView.ScaleType.CENTER_CROP
 
-        // Apply the parameters
         albumArtCard.layoutParams = params
     }
 
@@ -238,36 +251,66 @@ class CoverStyleCustomizer(private val context: Context) {
         albumArtImage.scaleType = ImageView.ScaleType.CENTER_CROP
     }
 
-    private fun applyFullWidthStyle(cornerRadius: Float) {
-        val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
-        params.width = ConstraintLayout.LayoutParams.MATCH_PARENT
-        params.height = 0
-        params.dimensionRatio = null // Clear any previous ratio
+    private fun updateWindowDecorations(style: CoverStyle) {
+        val activity = context as? Activity ?: return
+        val window = activity.window
 
-        // Clear constraints before setting new ones
+        when (style) {
+            CoverStyle.FULL_WIDTH -> {
+                // Make status bar transparent and remove blur
+                window.statusBarColor = Color.TRANSPARENT
+                window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
+
+                // Remove any blur effect (implementation depends on how you're applying blur)
+                // If using WindowManager.LayoutParams.FLAG_BLUR_BEHIND:
+                window.clearFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+            }
+            else -> {
+                // Restore blur effect for other styles if needed
+                if (playerView.visibility == View.VISIBLE) {
+                    // Apply your normal blur effect here
+                    // For example:
+                    window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+                }
+            }
+        }
+    }
+
+    private fun applyFullWidthStyle(cornerRadius: Float) {
+        isFullWidthMode = true
+        val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
+
         params.clearAllConstraints()
 
-        // Remove horizontal margins only
+        params.width = ConstraintLayout.LayoutParams.MATCH_PARENT
+        params.height = ConstraintLayout.LayoutParams.WRAP_CONTENT
+        //params.dimensionRatio = null
+
         params.setMargins(0, 0, 0, 0)
 
-        val parentLayout = playerView as? ConstraintLayout
-        parentLayout?.apply {
-            setPadding(0, paddingTop, 0, paddingBottom)
-        }
+        parentLayout.setPadding(0, 0, 0, parentLayout.paddingBottom)
+
+        val statusBarHeight = context.resources.getDimensionPixelSize(
+            context.resources.getIdentifier("status_bar_height", "dimen", "android")
+        )
 
         val closeButton = playerView.findViewById<View>(R.id.btn_close_player)
 
+        params.apply {
+            startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+        }
+
         playerView.post {
-            val distanceToTop = closeButton.top + closeButton.height
             val desiredHeight = (albumArtCard.width * 1.0).toInt()
 
-            params.height = desiredHeight
-            params.bottomMargin = 0
-            params.topMargin = distanceToTop - desiredHeight
+            // Set the top margin to half the status bar height
+            params.topMargin = -statusBarHeight / 2
 
-            params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
-            params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
-            params.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            params.height = desiredHeight + statusBarHeight +50
+            params.bottomMargin = 0
 
             albumArtCard.layoutParams = params
         }
@@ -286,13 +329,14 @@ class CoverStyleCustomizer(private val context: Context) {
         }
 
         albumArtImage.scaleType = ImageView.ScaleType.CENTER_CROP
+        updateWindowDecorations(CoverStyle.FULL_WIDTH)
     }
 
     private fun applyExpandedTopStyle(cornerRadius: Float) {
         val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
         params.width = ConstraintLayout.LayoutParams.MATCH_PARENT
         params.height = 0
-        params.dimensionRatio = "16:9"  // Fixed aspect ratio to prevent over-stretching
+        params.dimensionRatio = "16:16"  // Fixed aspect ratio to prevent over-stretching
 
         // Set constraints
         params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID

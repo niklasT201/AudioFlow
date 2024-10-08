@@ -2,6 +2,7 @@ package com.example.audioflow
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -65,7 +66,6 @@ class ColorManager(private val context: Context) {
                 val color = (it.background as ColorDrawable).color
                 saveColor(color)
                 applyColorToActivity(context as MainActivity)
-                dialog.dismiss()
             }
         }
 
@@ -279,6 +279,19 @@ class ColorManager(private val context: Context) {
             Color.WHITE // White text for black background
         } else {
             ContextCompat.getColor(activity, R.color.primary_text) // Default primary text color
+        }
+
+        val seekBar = activity.findViewById<SeekBar>(R.id.seek_bar)
+        if (color == Color.WHITE) {
+            seekBar?.apply {
+                progressTintList = ColorStateList.valueOf(Color.BLACK)
+                thumbTintList = ColorStateList.valueOf(Color.BLACK)
+            }
+        } else {
+            seekBar?.apply {
+                progressTintList = ColorStateList.valueOf(Color.WHITE)
+                thumbTintList = ColorStateList.valueOf(Color.WHITE)
+            }
         }
 
         val secondaryTextColor = if (color == Color.WHITE) {
