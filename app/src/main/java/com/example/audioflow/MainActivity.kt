@@ -1406,6 +1406,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         colorManager.applyColorToActivity(this)
+        colorManager.handleActivityResume(this)
         loadMusicFolders()
         // If you have a current song playing, update the UI
         lastPlayedSong?.let { updateMiniPlayer(it) }
@@ -1446,11 +1447,13 @@ class MainActivity : AppCompatActivity() {
 // holding song item for settings to
 
 // Full width/expand width bugging when cover customizer open
+// rotate feature fixen (hopefully)
+
 // making cover bottom blurry maybe
 // update play/pause button
 
 // search screen
-// add play function
+// improve search filter (maybe)
 // add playlist add button
 
 // metadata screen

@@ -345,4 +345,26 @@ class ColorManager(private val context: Context) {
         }
     }
 
+    fun handleActivityResume(activity: MainActivity) {
+        val playerViewContainer = activity.findViewById<View>(R.id.player_view_container)
+        if (playerViewContainer?.visibility == View.VISIBLE) {
+            val useBlurBackground = prefs.getBoolean("useBlurBackground", false)
+            if (useBlurBackground) {
+                // Ensure status bar is transparent
+                makeStatusBarTransparent(activity)
+                // Reapply blur if album art exists
+                val albumArtImageView = activity.findViewById<ImageView>(R.id.iv_album_art)
+                if (albumArtImageView?.drawable != null) {
+                    updateBackgroundWithAlbumArt(activity, albumArtImageView)
+                }
+            } else {
+                // For solid color mode
+                val color = getSavedColor()
+                applySolidColorMode(activity, color)
+            }
+            // Ensure consistent layout
+            applyConsistentLayout(activity)
+        }
+    }
+
 }

@@ -387,7 +387,7 @@ class CoverStyleCustomizer(private val context: Context) {
             // Set the top margin to half the status bar height
             params.topMargin = -statusBarHeight / 2
 
-            params.height = desiredHeight + statusBarHeight +50
+            params.height = desiredHeight + statusBarHeight +20
             params.bottomMargin = 0
 
             albumArtCard.layoutParams = params
