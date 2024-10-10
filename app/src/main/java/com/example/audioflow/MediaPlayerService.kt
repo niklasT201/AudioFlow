@@ -27,6 +27,7 @@ interface MediaPlayerCallback {
 
 class MediaPlayerService : Service() {
     private var mediaPlayer: MediaPlayer? = null
+    private var showNotification = true
     private lateinit var mediaSession: MediaSessionCompat
     private val binder = LocalBinder()
     private var currentSong: MainActivity.SongItem? = null
@@ -201,8 +202,19 @@ class MediaPlayerService : Service() {
         return output
     }
 
+    fun setNotificationVisibility(visible: Boolean) {
+        showNotification = visible
+        if (visible) {
+            updateNotification()
+        } else {
+            stopForeground(STOP_FOREGROUND_DETACH)
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(NOTIFICATION_ID)
+        }
+    }
+
     private fun updateNotification() {
-        if (!isPlayerInitialized || currentSong == null) return
+        if (!isPlayerInitialized || currentSong == null || !showNotification) return
 
         val remoteViews = RemoteViews(packageName, R.layout.custom_notification_layout)
 
@@ -281,7 +293,9 @@ class MediaPlayerService : Service() {
             .setOngoing(true)
             .build()
 
-        startForeground(NOTIFICATION_ID, notification)
+        if (showNotification) {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     override fun onBind(intent: Intent): IBinder {

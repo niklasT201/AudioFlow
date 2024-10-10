@@ -12,6 +12,7 @@ import android.content.SharedPreferences
 import android.graphics.Color
 import android.util.Log
 import android.util.TypedValue
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.animation.LinearInterpolator
 import android.widget.*
@@ -153,42 +154,50 @@ class CoverStyleCustomizer(private val context: Context) {
     }
 
     private fun startRotation() {
-        // Cancel any existing animation first
         stopRotation()
 
-        if (!isRotating) return  // Don't start if rotation is disabled
+        if (!isRotating) return
 
         rotationAnimator = ObjectAnimator.ofFloat(albumArtCard, View.ROTATION, lastRotation, lastRotation + 360f).apply {
-            duration = 5000 // 3 seconds per rotation
+            duration = 8000 // Increased duration to reduce lag
             interpolator = LinearInterpolator()
             repeatCount = ObjectAnimator.INFINITE
             addUpdateListener { animation ->
                 lastRotation = (animation.animatedValue as Float) % 360f
             }
+            // Add cleanup listener
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    if (!isRotating) {
+                        albumArtCard.rotation = 0f
+                        lastRotation = 0f
+                    }
+                }
+            })
         }
         rotationAnimator?.start()
     }
 
     private fun stopRotation() {
-        Log.d("CoverStyleCustomizer", "Stopping rotation")
         rotationAnimator?.apply {
-            Log.d("CoverStyleCustomizer", "Canceling rotation animator")
             cancel()
             removeAllListeners()
             removeAllUpdateListeners()
         }
         rotationAnimator = null
 
-        // If we're stopping rotation completely (not just for style change), reset the card rotation
-        if (!isRotating) {
-            Log.d("CoverStyleCustomizer", "Resetting card rotation")
-            albumArtCard.rotation = 0f
+        // Reset rotation only if we're not in circular mode
+        if (!isRotating || albumArtCard.parent?.let {
+                (it as? ViewGroup)?.findViewById<RadioGroup>(R.id.coverStyleGroup)?.checkedRadioButtonId
+            } != R.id.styleCircle) {
+            albumArtCard.animate().rotation(0f).setDuration(300).start()
             lastRotation = 0f
         }
     }
 
+    private fun applyStyle(style: CoverStyle, cornerRadius: Float, coverSize: Int, forceUpdate: Boolean = false) {
+        if (!::albumArtCard.isInitialized) return
 
-    fun applyCoverStyle(style: CoverStyle, cornerRadius: Float, coverSize: Int) {
         // First stop any existing rotation
         if (style != CoverStyle.CIRCULAR && isRotating) {
             isRotating = false
@@ -199,17 +208,34 @@ class CoverStyleCustomizer(private val context: Context) {
         resetAllLayoutParameters()
         isFullWidthMode = false
 
-        when (style) {
-            CoverStyle.DEFAULT -> applyDefaultStyle(cornerRadius, coverSize)
-            CoverStyle.CIRCULAR -> applyCircularStyle(coverSize)
-            CoverStyle.FULL_WIDTH -> applyFullWidthStyle(cornerRadius)
-            CoverStyle.EXPANDED_TOP -> applyExpandedTopStyle(cornerRadius)
-            CoverStyle.SQUARE -> applySquareStyle(coverSize)
+        // Use post to ensure layout measurements are ready
+        albumArtCard.post {
+            when (style) {
+                CoverStyle.DEFAULT -> applyDefaultStyle(cornerRadius, coverSize)
+                CoverStyle.CIRCULAR -> applyCircularStyle(coverSize)
+                CoverStyle.FULL_WIDTH -> applyFullWidthStyle(cornerRadius)
+                CoverStyle.EXPANDED_TOP -> applyExpandedTopStyle(cornerRadius)
+                CoverStyle.SQUARE -> applySquareStyle(coverSize)
+            }
+
+            // Force layout update
+            if (forceUpdate) {
+                albumArtCard.requestLayout()
+                parentLayout.requestLayout()
+            }
         }
 
         updateWindowDecorations(style)
-        savePreferences(style, cornerRadius, coverSize)
+        if (!forceUpdate) {
+            savePreferences(style, cornerRadius, coverSize)
+        }
     }
+
+
+    fun applyCoverStyle(style: CoverStyle, cornerRadius: Float, coverSize: Int) {
+        applyStyle(style, cornerRadius, coverSize)
+    }
+
 
     private fun ConstraintLayout.LayoutParams.clearAllConstraints() {
         startToStart = ConstraintLayout.LayoutParams.UNSET
@@ -230,8 +256,8 @@ class CoverStyleCustomizer(private val context: Context) {
         // Reset all layout parameters and restore padding
         resetAllLayoutParameters()
 
-        // Apply default style
-        applyCoverStyle(CoverStyle.DEFAULT, DEFAULT_CORNER_RADIUS, DEFAULT_COVER_SIZE)
+        // Apply default style with force update
+        applyStyle(CoverStyle.DEFAULT, DEFAULT_CORNER_RADIUS, DEFAULT_COVER_SIZE, true)
         updateWindowDecorations(CoverStyle.DEFAULT)
     }
 
@@ -307,6 +333,7 @@ class CoverStyleCustomizer(private val context: Context) {
         albumArtCard.layoutParams = params
         albumArtCard.post {
             albumArtCard.radius = albumArtCard.width / 2f
+            albumArtCard.elevation = 4f
             // Only start rotation after the layout is complete
             if (isRotating) {
                 startRotation()
@@ -356,30 +383,26 @@ class CoverStyleCustomizer(private val context: Context) {
     }
 
     private fun applyFullWidthStyle(cornerRadius: Float) {
-        isFullWidthMode = true
         val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
-
         params.clearAllConstraints()
 
-        params.width = ConstraintLayout.LayoutParams.MATCH_PARENT
-        params.height = ConstraintLayout.LayoutParams.WRAP_CONTENT
         //params.dimensionRatio = null
-
-        params.setMargins(0, 0, 0, 0)
-
-        parentLayout.setPadding(0, 0, 0, parentLayout.paddingBottom)
 
         val statusBarHeight = context.resources.getDimensionPixelSize(
             context.resources.getIdentifier("status_bar_height", "dimen", "android")
         )
 
-        val closeButton = playerView.findViewById<View>(R.id.btn_close_player)
-
         params.apply {
+            width = ConstraintLayout.LayoutParams.MATCH_PARENT
+            height = ConstraintLayout.LayoutParams.WRAP_CONTENT
+            topMargin = 0 // Reset margin first
             startToStart = ConstraintLayout.LayoutParams.PARENT_ID
             endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
             topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            parentLayout.setPadding(0, 0, 0, parentLayout.paddingBottom)
         }
+
+        val closeButton = playerView.findViewById<View>(R.id.btn_close_player)
 
         playerView.post {
             val desiredHeight = (albumArtCard.width * 1.0).toInt()
@@ -443,6 +466,10 @@ class CoverStyleCustomizer(private val context: Context) {
 
     fun cleanup() {
         stopRotation()
+        isRotating = false
+        lastRotation = 0f
+        // Clear any ongoing animations
+        albumArtCard.clearAnimation()
     }
 }
 

@@ -66,7 +66,41 @@
                             android:id="@+id/switch_reset_previous"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:trackTint="#60116D"
+                            android:trackTint="#871A99"
+                            android:thumbTint="#B749CA"/>
+                </LinearLayout>
+
+                <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#444444"
+                        android:layout_marginStart="40dp"/>
+
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingVertical="12dp">
+
+                    <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/notification_icon"
+                            android:layout_marginEnd="16dp"
+                            android:contentDescription="Notification icon"/>
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Show Media Player Notification"
+                            android:textColor="#FFFFFF"/>
+
+                    <Switch
+                            android:id="@+id/switch_notification_visibility"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:trackTint="#871A99"
                             android:thumbTint="#B749CA"/>
                 </LinearLayout>
 
@@ -101,7 +135,7 @@
                             android:id="@+id/switch_keep_screen_on"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:trackTint="#60116D"
+                            android:trackTint="#871A99"
                             android:thumbTint="#B749CA"/>
                 </LinearLayout>
 
@@ -121,7 +155,7 @@
                     <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/cover_art"
+                            android:src="@drawable/cover_search"
                             android:layout_marginEnd="16dp"
                             android:contentDescription="Cover icon"/>
 
@@ -136,7 +170,7 @@
                             android:id="@+id/switch_show_cover"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:trackTint="#60116D"
+                            android:trackTint="#871A99"
                             android:thumbTint="#B749CA"/>
                 </LinearLayout>
 
@@ -171,7 +205,7 @@
                             android:id="@+id/switch_timer"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:trackTint="#60116D"
+                            android:trackTint="#871A99"
                             android:thumbTint="#B749CA"/>
                 </LinearLayout>
 
