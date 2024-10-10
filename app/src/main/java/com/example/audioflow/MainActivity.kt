@@ -7,12 +7,9 @@ import androidx.appcompat.app.AppCompatActivity
 import android.app.Activity
 import android.net.Uri
 import android.Manifest
-import android.app.Dialog
 import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.provider.MediaStore
 import android.util.Log
 import androidx.core.app.ActivityCompat
@@ -27,7 +24,6 @@ import androidx.appcompat.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.widget.*
 import androidx.core.content.FileProvider
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -119,17 +115,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSearch: Button
     private lateinit var btnSettings: Button
     private lateinit var aboutScreen: View
-    private var resetPreviousEnabled = false
 
     private var lastPlayedSong: SongItem? = null
     private var currentFolderPath: String? = null
 
-    private var timer: CountDownTimer? = null
-    private var timerDuration: Long = 0
-    private var remainingTime: Long = 0
-    private var finishWithSong: Boolean = false
-    private var isTimerActive = false
-    private var selectedTimerMinutes: Int = 0
+    private lateinit var settingsManager: SettingsManager
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 1
@@ -162,20 +152,20 @@ class MainActivity : AppCompatActivity() {
         playerSettingsButton = findViewById(R.id.btn_player_settings)
 
         colorManager = ColorManager(this)
-
-        // Apply saved color on app start
         colorManager.applyColorToActivity(this)
+
         coverStyleCustomizer = CoverStyleCustomizer(this)
 
         setupPlayerOptionsOverlay()
-
-        setupScreenTimeoutSetting()
 
         initializePlayerStyles()
 
         Intent(this, MediaPlayerService::class.java).also { intent ->
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
+
+        settingsManager = SettingsManager(this)
+        settingsManager.setupSettings(settingsScreen, aboutScreen)
 
         // Show home screen by default
         showScreen(homeScreen)
@@ -296,7 +286,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showScreen(screen: View) {
+    fun showScreen(screen: View) {
         contentFrame.removeAllViews()
         contentFrame.addView(screen)
 
@@ -385,7 +375,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<LinearLayout>(R.id.item_add_timer).setOnClickListener {
-            showTimerDialog()
+            settingsManager.showTimerDialog()
         }
 
         findViewById<LinearLayout>(R.id.item_customize_player).setOnClickListener {
@@ -404,6 +394,18 @@ class MainActivity : AppCompatActivity() {
         } ?: run {
             Log.e("EditMetadata", "LinearLayout with ID 'item_edit_metadata' not found")
         }
+    }
+
+    fun isPlaying(): Boolean = mediaPlayer?.isPlaying == true
+
+    fun setOnCompletionListener(listener: () -> Unit) {
+        mediaPlayer?.setOnCompletionListener { listener() }
+    }
+
+    fun cleanupAndFinish() {
+        mediaPlayer?.release()
+        stopService(Intent(this, MediaPlayerService::class.java))
+        finish()
     }
 
     private fun showRenameDialog() {
@@ -605,7 +607,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Display the updated play mode toast
         showPlayModeToast()
     }
 
@@ -849,7 +850,6 @@ class MainActivity : AppCompatActivity() {
                     currentPlaylist = currentSongs.toList()
                     updateMiniPlayer(lastPlayedSong!!)
 
-                    // Update mini player visibility on both screens
                     homeScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
                     songsScreen.findViewById<View>(R.id.mini_player)?.visibility = View.VISIBLE
 
@@ -862,7 +862,6 @@ class MainActivity : AppCompatActivity() {
                     // Initialize the player screen
                     updatePlayerUI(lastPlayedSong!!)
 
-                    // Set up click listener for mini player to open player screen
                     val miniPlayerClickListener = View.OnClickListener {
                         showScreen(playerScreen)
                         playerScreen.visibility = View.VISIBLE
@@ -915,11 +914,6 @@ class MainActivity : AppCompatActivity() {
                 PlayMode.SHUFFLE -> playRandomSong()
             }
         }
-    }
-
-    private fun showSelectSingle() {
-        findViewById<View>(R.id.single_song_selector).visibility = View.VISIBLE
-        supportActionBar?.show()  // Show the ActionBar
     }
 
     private fun getSongsInFolder(folder: File): List<SongItem> {
@@ -1020,21 +1014,6 @@ class MainActivity : AppCompatActivity() {
         }.thenBy { germanCollator.getCollationKey(it.title) })
     }
 
-    private fun findMusicFoldersRecursively(dir: File, musicFolders: MutableList<File>) {
-        val files = dir.listFiles()
-        if (files != null) {
-            for (file in files) {
-                if (file.isDirectory) {
-                    if (file.listFiles { it -> it.extension.lowercase(Locale.ROOT) == "mp3" }?.isNotEmpty() == true) {
-                        musicFolders.add(file)
-                    } else {
-                        findMusicFoldersRecursively(file, musicFolders)
-                    }
-                }
-            }
-        }
-    }
-
     private fun playSong(position: Int, showPlayerScreen: Boolean = true) {
         if (position < 0 || position >= currentPlaylist.size) return
 
@@ -1072,7 +1051,7 @@ class MainActivity : AppCompatActivity() {
             updateMiniPlayer(song)
             updateMiniPlayerProgress(0f)
 
-            // Update the folder list to show the current folder icon
+            // Current Folder Name Showing
             currentFolderPath = song.file.parent
             updateFolderList()
 
@@ -1137,20 +1116,20 @@ class MainActivity : AppCompatActivity() {
             updateSeekBar()
 
             totalTimeTextView.text = formatTime(player.duration)
-            currentTimeTextView.text = formatTime(0)  // Always show the current time
+            currentTimeTextView.text = formatTime(0)
         }
 
         // Set album art
         val albumArt = getAlbumArt(song.file.absolutePath)
         if (albumArt != null) {
             albumArtImageView.setImageBitmap(albumArt)
-            // Update background with album art
+
             albumArtImageView.post {
                 colorManager.updateBackgroundWithAlbumArt(this, albumArtImageView)
             }
         } else {
             albumArtImageView.setImageResource(R.drawable.cover_art)
-            // Update background with default album art
+
             albumArtImageView.post {
                 colorManager.updateBackgroundWithAlbumArt(this, albumArtImageView)
             }
@@ -1167,11 +1146,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                // You can add code here if needed
+                // Maybe later adding something here :)
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                // You can add code here if needed
+                // Maybe later adding something here :)
             }
         })
     }
@@ -1230,7 +1209,7 @@ class MainActivity : AppCompatActivity() {
                     player.pause()
                 } else {
                     player.start()
-                    setupMediaPlayerCompletionListener()  // Ensure the completion listener is set
+                    setupMediaPlayerCompletionListener()
                     updateSeekBar()
                 }
                 updatePlayPauseButton()
@@ -1242,217 +1221,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupScreenTimeoutSetting() {
-        val switchKeepScreenOn = settingsScreen.findViewById<Switch>(R.id.switch_keep_screen_on)
-        val switchResetPrevious = settingsScreen.findViewById<Switch>(R.id.switch_reset_previous)
-        val switchTimer = settingsScreen.findViewById<Switch>(R.id.switch_timer)
-        val switchNotification = settingsScreen.findViewById<Switch>(R.id.switch_notification_visibility)
-
-        val versionText = aboutScreen.findViewById<TextView>(R.id.version_text)
-        val dateText = aboutScreen.findViewById<TextView>(R.id.date_text)
-
-        val serviceIntent = Intent(this, MediaPlayerService::class.java)
-        var mediaPlayerService: MediaPlayerService? = null
-
-        // Load saved preference
-        val packageInfo = packageManager.getPackageInfo(packageName, 0)
-        val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
-        resetPreviousEnabled = sharedPreferences.getBoolean("reset_previous", false)
-        val keepScreenOn = sharedPreferences.getBoolean("screen_on", false)
-        isTimerActive = sharedPreferences.getBoolean("timer_active", false)
-        val notificationEnabled = sharedPreferences.getBoolean("notification_enabled", true)
-        switchKeepScreenOn.isChecked = keepScreenOn
-        switchResetPrevious.isChecked = resetPreviousEnabled
-        switchTimer.isChecked = isTimerActive
-        switchNotification.isChecked = notificationEnabled
-
-        // Apply initial setting
-        applyScreenTimeoutSetting(keepScreenOn)
-
-        // Set up change listener
-        switchKeepScreenOn.setOnCheckedChangeListener { _, isChecked ->
-            // Save the preference
-            sharedPreferences.edit().putBoolean("screen_on", isChecked).apply()
-
-            // Apply the setting
-            applyScreenTimeoutSetting(isChecked)
-        }
-
-        switchResetPrevious.setOnCheckedChangeListener { _, isChecked ->
-            resetPreviousEnabled = isChecked
-            sharedPreferences.edit().putBoolean("reset_previous", isChecked).apply()
-        }
-
-        switchTimer.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                buttonView.isChecked = false
-                showTimerDialog()
-            } else {
-                isTimerActive = false
-                sharedPreferences.edit().putBoolean("timer_active", false).apply()
-                timer?.cancel()
-                timer = null
-            }
-        }
-
-        switchNotification.setOnCheckedChangeListener { _, isChecked ->
-            sharedPreferences.edit().putBoolean("notification_enabled", isChecked).apply()
-            mediaPlayerService?.setNotificationVisibility(isChecked)
-        }
-
-        settingsScreen.findViewById<LinearLayout>(R.id.about_app_button).setOnClickListener {
-            showScreen(aboutScreen)
-        }
-
-        aboutScreen.findViewById<ImageView>(R.id.btn_back).setOnClickListener {
-            showScreen(settingsScreen)
-        }
-
-        val serviceConnection = object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                val binder = service as MediaPlayerService.LocalBinder
-                mediaPlayerService = binder.getService()
-                // Apply initial setting
-                mediaPlayerService?.setNotificationVisibility(notificationEnabled)
-            }
-
-            override fun onServiceDisconnected(name: ComponentName?) {
-                mediaPlayerService = null
-            }
-        }
-
-        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
-
-        versionText?.text = "Version ${packageInfo.versionName}"
-        dateText?.text = "October 2024" // Or use dynamic date
-    }
-
-    private fun showTimerDialog() {
-        val dialog = Dialog(this)
-        dialog.setContentView(R.layout.timer_dialog)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-
-        val timeOptions = listOf(15, 30, 45, 60)
-        val radioGroup = dialog.findViewById<RadioGroup>(R.id.timer_radio_group)
-        val finishSongCheckbox = dialog.findViewById<CheckBox>(R.id.finish_song_checkbox)
-
-        // Load saved preference for finish with song
-        val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
-        finishWithSong = sharedPreferences.getBoolean("finish_with_song", false)
-        selectedTimerMinutes = sharedPreferences.getInt("selected_timer_minutes", 0)
-        remainingTime = sharedPreferences.getLong("remaining_time", 0)
-        finishSongCheckbox.isChecked = finishWithSong
-
-        timeOptions.forEachIndexed { index, minutes ->
-            val radioButton = RadioButton(this)
-            radioButton.id = index
-            radioButton.text = "$minutes minutes"
-            radioButton.setTextColor(Color.WHITE)
-            radioGroup.addView(radioButton)
-        }
-
-        dialog.findViewById<Button>(R.id.start_timer_button).setOnClickListener {
-            val selectedId = radioGroup.checkedRadioButtonId
-            if (selectedId != -1) {
-                // Only now we set the switch and activate the timer
-                val switchTimer = findViewById<Switch>(R.id.switch_timer)
-                switchTimer.isChecked = true
-                isTimerActive = true
-
-                finishWithSong = finishSongCheckbox.isChecked
-                sharedPreferences.edit()
-                    .putBoolean("finish_with_song", finishWithSong)
-                    .putBoolean("timer_active", true)
-                    .apply()
-
-                val minutes = timeOptions[selectedId]
-                timerDuration = minutes * 60 * 1000L
-                startTimer()
-                dialog.dismiss()
-
-                // Show a toast to confirm timer activation
-                Toast.makeText(this, "Timer set for $minutes minutes", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Please select a time duration", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        dialog.findViewById<Button>(R.id.cancel_button).setOnClickListener {
-            dialog.dismiss()
-        }
-
-        // Handle dialog dismissal
-        dialog.setOnDismissListener {
-            if (!isTimerActive) {
-                val switchTimer = findViewById<Switch>(R.id.switch_timer)
-                switchTimer.isChecked = false
-            }
-        }
-
-        dialog.show()
-    }
-
-    private fun startTimer() {
-        timer?.cancel()
-        timer = object : CountDownTimer(timerDuration, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                val minutes = millisUntilFinished / 1000 / 60
-                val seconds = (millisUntilFinished / 1000) % 60
-
-                // Optional: Update a TextView or notification with remaining time
-                // updateRemainingTimeDisplay(minutes, seconds)
-            }
-
-            override fun onFinish() {
-                if (finishWithSong && mediaPlayer?.isPlaying == true) {
-                    mediaPlayer?.setOnCompletionListener {
-                        finishApp()
-                    }
-                } else {
-                    finishApp()
-                }
-            }
-        }.start()
-    }
-
-    private fun finishApp() {
-        // Clean up and close the app
-        timer?.cancel()
-        timer = null
-        isTimerActive = false
-
-        val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
-        sharedPreferences.edit().putBoolean("timer_active", false).apply()
-
-        mediaPlayer?.release()
-        stopService(Intent(this, MediaPlayerService::class.java))
-        finish()
-    }
-
-
-    private fun applyScreenTimeoutSetting(keepScreenOn: Boolean) {
-        if (keepScreenOn) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        } else {
-            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
-    }
 
     fun playPreviousSong() {
         if (currentPlaylist.isNotEmpty()) {
             val currentPosition = mediaPlayer?.currentPosition ?: 0
             val totalDuration = mediaPlayer?.duration ?: 0
 
-            // Check if we should reset position or play previous song
-            if (resetPreviousEnabled &&
+            if (settingsManager.isResetPreviousEnabled() &&
                 currentPosition > 10000 && // 10 seconds
-                totalDuration > 30000
-            ) {   // 30 seconds
-                // Reset to beginning of current song
+                totalDuration > 30000 // 30 seconds
+            ) {
                 mediaPlayer?.seekTo(0)
                 updateSeekBar()
             } else {
-                // Existing previous song logic
                 when (currentPlayMode) {
                     PlayMode.NORMAL -> {
                         if (currentSongIndex > 0) {
@@ -1477,12 +1258,6 @@ class MainActivity : AppCompatActivity() {
 
         val randomIndex = (currentSongIndex + 1 + Random().nextInt(currentPlaylist.size - 1)) % currentPlaylist.size
         playSong(randomIndex)
-    }
-
-    private fun openMusicSelector() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT)
-        intent.type = "audio/*"
-        startActivityForResult(intent, PICK_AUDIO_REQUEST)
     }
 
     fun playNextSong(showPlayerScreen: Boolean = true) {
@@ -1510,27 +1285,6 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "No songs available to play", Toast.LENGTH_SHORT).show()
         }
     }
-
-    private fun playMusic() {
-        if (mediaPlayer == null) {
-            if (currentSongIndex == -1 && currentSongs.isNotEmpty()) {
-                playSong(0)
-            } else {
-                selectedSongUri?.let { uri ->
-                    mediaPlayer = MediaPlayer.create(this, uri)
-                    mediaPlayer?.start()
-                    playButton.text = getString(R.string.pause)
-                }
-            }
-        } else if (mediaPlayer?.isPlaying == true) {
-            mediaPlayer?.pause()
-            playButton.text = getString(R.string.play)
-        } else {
-            mediaPlayer?.start()
-            playButton.text = getString(R.string.pause)
-        }
-    }
-
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -1585,6 +1339,7 @@ class MainActivity : AppCompatActivity() {
             unbindService(serviceConnection)
             bound = false
         }
+        settingsManager.cleanup()
         coverStyleCustomizer?.cleanup()
         mediaPlayer?.release()
         lastPlayedSong?.let { saveLastPlayedSong(it) }
