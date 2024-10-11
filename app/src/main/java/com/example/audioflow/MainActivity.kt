@@ -17,17 +17,11 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.*
 import android.media.MediaMetadataRetriever
-import android.media.PlaybackParams
-import android.os.CountDownTimer
 import android.os.IBinder
-import androidx.appcompat.view.ContextThemeWrapper
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.core.content.FileProvider
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.textfield.TextInputLayout
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.text.Collator
@@ -36,6 +30,7 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var coverStyleCustomizer: CoverStyleCustomizer? = null
+    private lateinit var playerOptionsManager: PlayerOptionsManager
     private var mediaPlayerService: MediaPlayerService? = null
     private var bound = false
 
@@ -43,7 +38,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var previousButton: ImageView
     private lateinit var nextButton: ImageView
     private lateinit var playButton: Button
-    private lateinit var selectButton: Button
     private lateinit var songTitleTextView: TextView
     private lateinit var playerSongTitleTextView: TextView
     private lateinit var artistNameTextView: TextView
@@ -119,7 +113,7 @@ class MainActivity : AppCompatActivity() {
     private var lastPlayedSong: SongItem? = null
     private var currentFolderPath: String? = null
 
-    private lateinit var settingsManager: SettingsManager
+    lateinit var settingsManager: SettingsManager
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 1
@@ -145,20 +139,23 @@ class MainActivity : AppCompatActivity() {
 
         restorePlayMode()
 
-        playerOptionsOverlay = findViewById(R.id.player_options_overlay)
-        currentsongtitle = findViewById(R.id.current_song_title)
-        playbackSpeedSeekBar = findViewById(R.id.playback_speed_seekbar)
-        playbackSpeedText = findViewById(R.id.playback_speed_text)
-        playerSettingsButton = findViewById(R.id.btn_player_settings)
-
         colorManager = ColorManager(this)
         colorManager.applyColorToActivity(this)
 
         coverStyleCustomizer = CoverStyleCustomizer(this)
 
-        setupPlayerOptionsOverlay()
-
         initializePlayerStyles()
+
+        playerOptionsManager = PlayerOptionsManager(
+            activity = this,
+            overlay = playerOptionsOverlay,
+            currentSongTitle = currentsongtitle,
+            playbackSpeedSeekBar = playbackSpeedSeekBar,
+            playbackSpeedText = playbackSpeedText,
+            mediaPlayer = mediaPlayer,
+            colorManager = colorManager,
+            coverStyleCustomizer = coverStyleCustomizer
+        )
 
         Intent(this, MediaPlayerService::class.java).also { intent ->
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
@@ -208,6 +205,12 @@ class MainActivity : AppCompatActivity() {
         aboutScreen = layoutInflater.inflate(R.layout.about_screen, contentFrame, false)
 
         songListView = songsScreen.findViewById(R.id.song_list_view)
+
+        playerOptionsOverlay = findViewById(R.id.player_options_overlay)
+        currentsongtitle = findViewById(R.id.current_song_title)
+        playbackSpeedSeekBar = findViewById(R.id.playback_speed_seekbar)
+        playbackSpeedText = findViewById(R.id.playback_speed_text)
+        playerSettingsButton = findViewById(R.id.btn_player_settings)
     }
 
     private fun checkPermission(): Boolean {
@@ -340,62 +343,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupPlayerOptionsOverlay() {
-        playerSettingsButton.setOnClickListener {
-            playerOptionsOverlay.visibility = View.VISIBLE
-            currentsongtitle.text = currentPlaylist[currentSongIndex].title
-        }
-
-        findViewById<Button>(R.id.btn_close_overlay).setOnClickListener {
-            playerOptionsOverlay.visibility = View.GONE
-        }
-
-        playbackSpeedSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val speed = progress / 100f
-                playbackSpeedText.text = String.format("%.1fx", speed)
-                mediaPlayer?.playbackParams = mediaPlayer?.playbackParams?.setSpeed(speed) ?: PlaybackParams().setSpeed(speed)
-                updatePlayPauseButton()
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        findViewById<LinearLayout>(R.id.item_rename_file).setOnClickListener {
-            showRenameDialog()
-        }
-
-        findViewById<LinearLayout>(R.id.item_delete_file).setOnClickListener {
-            showDeleteConfirmationDialog()
-        }
-
-        findViewById<LinearLayout>(R.id.item_change_color).setOnClickListener {
-            colorManager.showColorSelectionDialog()
-        }
-
-        findViewById<LinearLayout>(R.id.item_add_timer).setOnClickListener {
-            settingsManager.showTimerDialog()
-        }
-
-        findViewById<LinearLayout>(R.id.item_customize_player).setOnClickListener {
-            showCoverStyleCustomization()
-        }
-
-        findViewById<LinearLayout>(R.id.item_edit_metadata)?.setOnClickListener {
-            try {
-                val intent = Intent(this, EditMetadataActivity::class.java)
-                intent.putExtra("songPath", currentPlaylist[currentSongIndex].file.absolutePath)
-                startActivity(intent)
-            } catch (e: Exception) {
-                Log.e("EditMetadata", "Error launching EditMetadataActivity: ${e.message}")
-                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        } ?: run {
-            Log.e("EditMetadata", "LinearLayout with ID 'item_edit_metadata' not found")
-        }
-    }
-
     fun isPlaying(): Boolean = mediaPlayer?.isPlaying == true
 
     fun setOnCompletionListener(listener: () -> Unit) {
@@ -408,59 +355,42 @@ class MainActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun showRenameDialog() {
-        val currentSong = currentPlaylist[currentSongIndex]
-        val themedContext = ContextThemeWrapper(this, R.style.CustomMaterialDialogTheme)
-        val dialogView = LayoutInflater.from(themedContext).inflate(R.layout.dialog_rename, null)
-        val textInputLayout = dialogView.findViewById<TextInputLayout>(R.id.textInputLayout)
-        val editText = textInputLayout.editText!!
-
-        editText.setText(currentSong.file.nameWithoutExtension)
-
-        MaterialAlertDialogBuilder(themedContext)
-            .setTitle("Rename File")
-            .setView(dialogView)
-            .setPositiveButton("Rename") { _, _ ->
-                val newName = editText.text.toString()
-                if (newName.isNotBlank()) {
-                    val newFile = File(currentSong.file.parent, "$newName.mp3")
-                    if (currentSong.file.renameTo(newFile)) {
-                        currentPlaylist = currentPlaylist.toMutableList().apply {
-                            set(currentSongIndex, currentSong.copy(file = newFile, title = newName))
-                        }
-                        updatePlayerUI(currentPlaylist[currentSongIndex])
-                        Toast.makeText(this, "File renamed successfully", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this, "Failed to rename file", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+    fun getCurrentSongTitle(): String {
+        return lastPlayedSong?.title ?: "Unknown Title"
     }
 
-    private fun showDeleteConfirmationDialog() {
-        val themedContext = ContextThemeWrapper(this, R.style.CustomMaterialDialogTheme)
-        MaterialAlertDialogBuilder(themedContext)
-            .setTitle("Delete File")
-            .setMessage("Are you sure you want to delete this file? This action cannot be undone.")
-            .setPositiveButton("Delete") { _, _ ->
-                val currentSong = currentPlaylist[currentSongIndex]
-                if (currentSong.file.delete()) {
-                    currentPlaylist = currentPlaylist.filterIndexed { index, _ -> index != currentSongIndex }
-                    if (currentPlaylist.isEmpty()) {
-                        finish()
-                    } else {
-                        currentSongIndex = currentSongIndex.coerceAtMost(currentPlaylist.size - 1)
-                        playSong(currentSongIndex)
-                    }
-                    Toast.makeText(this, "File deleted successfully", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Failed to delete file", Toast.LENGTH_SHORT).show()
-                }
+    fun getCurrentSongPath(): String {
+        return lastPlayedSong?.file?.absolutePath ?: ""
+    }
+
+    fun renameSongFile(newName: String) {
+        val currentSong = currentPlaylist[currentSongIndex]
+        val newFile = File(currentSong.file.parent, "$newName.mp3")
+        if (currentSong.file.renameTo(newFile)) {
+            currentPlaylist = currentPlaylist.toMutableList().apply {
+                set(currentSongIndex, currentSong.copy(file = newFile, title = newName))
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+            updatePlayerUI(currentPlaylist[currentSongIndex])
+            Toast.makeText(this, "File renamed successfully", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Failed to rename file", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun deleteCurrentSong() {
+        val currentSong = currentPlaylist[currentSongIndex]
+        if (currentSong.file.delete()) {
+            currentPlaylist = currentPlaylist.filterIndexed { index, _ -> index != currentSongIndex }
+            if (currentPlaylist.isEmpty()) {
+                finish()
+            } else {
+                currentSongIndex = currentSongIndex.coerceAtMost(currentPlaylist.size - 1)
+                playSong(currentSongIndex)
+            }
+            Toast.makeText(this, "File deleted successfully", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Failed to delete file", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private val scrollListener = object : AbsListView.OnScrollListener {
@@ -1193,7 +1123,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updatePlayPauseButton() {
+    fun updatePlayPauseButton() {
         val isPlaying = mediaPlayer?.isPlaying == true
         val resource = if (isPlaying) R.drawable.pause_button else R.drawable.play_button
         val miniResource = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
@@ -1301,10 +1231,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         when {
-            playerOptionsOverlay.visibility == View.VISIBLE -> {
-                // If the player options overlay is visible, hide it
-                playerOptionsOverlay.visibility = View.GONE
-            }
+            playerOptionsManager.isOverlayVisible() -> playerOptionsManager.hideOverlay()
             contentFrame.getChildAt(0) == songsScreen -> showScreen(homeScreen)
             contentFrame.getChildAt(0) == playerScreen -> {
                 showScreen(songsScreen)

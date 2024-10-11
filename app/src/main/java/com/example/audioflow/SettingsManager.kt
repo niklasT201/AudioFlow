@@ -9,7 +9,6 @@ import android.os.CountDownTimer
 import android.os.IBinder
 import android.view.View
 import android.widget.*
-import androidx.core.content.ContextCompat.getSystemService
 
 class SettingsManager(private val activity: Activity) {
     private lateinit var switchKeepScreenOn: Switch
