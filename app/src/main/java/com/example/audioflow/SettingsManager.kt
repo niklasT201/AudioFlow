@@ -16,6 +16,7 @@ class SettingsManager(private val activity: Activity) {
     private lateinit var switchResetPrevious: Switch
     private lateinit var switchTimer: Switch
     private lateinit var switchNotification: Switch
+    private lateinit var switchShowCovers: Switch
     private lateinit var versionText: TextView
     private lateinit var dateText: TextView
     private lateinit var timerDisplay: TextView
@@ -53,6 +54,7 @@ class SettingsManager(private val activity: Activity) {
         switchKeepScreenOn = settingsScreen.findViewById(R.id.switch_keep_screen_on)
         switchResetPrevious = settingsScreen.findViewById(R.id.switch_reset_previous)
         switchTimer = settingsScreen.findViewById(R.id.switch_timer)
+        switchShowCovers = settingsScreen.findViewById(R.id.switch_show_covers)
         switchNotification = settingsScreen.findViewById(R.id.switch_notification_visibility)
         timerDisplay = settingsScreen.findViewById(R.id.timer_display) // Add this TextView to your layout
         versionText = aboutScreen.findViewById(R.id.version_text)
@@ -68,11 +70,13 @@ class SettingsManager(private val activity: Activity) {
         val keepScreenOn = sharedPreferences.getBoolean("screen_on", false)
         isTimerActive = sharedPreferences.getBoolean("timer_active", false)
         val notificationEnabled = sharedPreferences.getBoolean("notification_enabled", true)
+        val showCovers = sharedPreferences.getBoolean("show_covers", true) // true as default
 
         switchKeepScreenOn.isChecked = keepScreenOn
         switchResetPrevious.isChecked = resetPreviousEnabled
         switchTimer.isChecked = isTimerActive
         switchNotification.isChecked = notificationEnabled
+        switchShowCovers.isChecked = showCovers
 
         applyScreenTimeoutSetting(keepScreenOn)
     }
@@ -97,6 +101,10 @@ class SettingsManager(private val activity: Activity) {
             } else {
                 cancelTimer()
             }
+        }
+
+        switchShowCovers.setOnCheckedChangeListener { _, isChecked ->
+            sharedPreferences.edit().putBoolean("show_covers", isChecked).apply()
         }
 
         switchNotification.setOnCheckedChangeListener { _, isChecked ->

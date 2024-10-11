@@ -167,7 +167,7 @@
                             android:textColor="#FFFFFF"/>
 
                     <Switch
-                            android:id="@+id/switch_show_cover"
+                            android:id="@+id/switch_show_covers"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:trackTint="#871A99"

@@ -47,7 +47,26 @@
                     android:contentDescription="@string/my_image_description"
                     app:tint="#E0E0E0"/>
 
+            <ImageView
+                    android:id="@+id/optionsButton"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:src="@drawable/options"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/search_option"
+                    app:tint="#E0E0E0"/>
+
         </LinearLayout>
+
+        <CheckBox
+                android:id="@+id/removeCoverCheckBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="16dp"
+                android:text="Remove cover art"
+                android:textColor="@color/secondary_text"
+                android:visibility="gone"/>
 
         <FrameLayout
                 android:layout_width="wrap_content"

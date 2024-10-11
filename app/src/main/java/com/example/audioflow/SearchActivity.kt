@@ -3,6 +3,7 @@ package com.example.audioflow
 import android.app.Activity
 import android.content.ContentResolver
 import android.content.ContentValues
+import android.content.Context
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.view.LayoutInflater
@@ -95,7 +96,8 @@ class SearchActivity : AppCompatActivity() {
             emptyList(),
             { song -> handleSongClick(song) },
             { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
-            albumArtCache
+            albumArtCache,
+            shouldShowCovers()
         )
 
         artistsRecyclerView.adapter = artistAdapter
@@ -142,16 +144,21 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
+    private fun shouldShowCovers(): Boolean {
+        return getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
+            .getBoolean("show_covers", true)
+    }
+
     private fun setupRecyclerView() {
         searchResultsList.layoutManager = LinearLayoutManager(this)
         songAdapter = SongAdapter(
             emptyList(),
             { song -> handleSongClick(song) },
             { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
-            albumArtCache
+            albumArtCache,
+            shouldShowCovers() // Add this parameter
         )
         searchResultsList.adapter = songAdapter
-        Log.d("SearchActivity", "RecyclerView setup complete")
     }
 
     private fun loadAllSongs() {
@@ -259,7 +266,8 @@ class SearchActivity : AppCompatActivity() {
             allMatchingSongs.take(5),
             { song -> handleSongClick(song) },
             { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
-            albumArtCache
+            albumArtCache,
+            shouldShowCovers()
         )
 
         artistsRecyclerView.adapter = artistAdapter
@@ -342,7 +350,8 @@ class SearchActivity : AppCompatActivity() {
             artistSongs,
             { song -> handleSongClick(song) },
             { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
-            albumArtCache
+            albumArtCache,
+            shouldShowCovers()
         )
 
         albumsRecyclerView.adapter = albumAdapter
@@ -378,7 +387,8 @@ class SearchActivity : AppCompatActivity() {
             albumSongs,
             { song -> handleSongClick(song) },
             { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
-            albumArtCache
+            albumArtCache,
+            shouldShowCovers()
         )
 
         songsRecyclerView.adapter = songAdapter
@@ -644,7 +654,8 @@ class SongAdapter(
     private var songs: List<SongItem>,
     private val onSongClick: (SongItem) -> Unit,
     private val getPlayMode: () -> Boolean,
-    private val albumArtCache: LruCache<String, Bitmap>
+    private val albumArtCache: LruCache<String, Bitmap>,
+    private val showCovers: Boolean
 ) : RecyclerView.Adapter<SongAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -665,11 +676,16 @@ class SongAdapter(
         holder.titleTextView.text = song.title
         holder.artistAlbumTextView.text = "${song.artist} - ${song.album}"
 
-        // Set default placeholder
-        holder.albumCover.setImageResource(R.drawable.cover_art)
-
-        // Load album art
-        LoadAlbumArtTask(holder.albumCover, albumArtCache).execute(song.file.absolutePath)
+        // Control visibility of album cover
+        if (showCovers) {
+            holder.albumCover.visibility = View.VISIBLE
+            // Set default placeholder
+            holder.albumCover.setImageResource(R.drawable.cover_art)
+            // Load album art
+            LoadAlbumArtTask(holder.albumCover, albumArtCache).execute(song.file.absolutePath)
+        } else {
+            holder.albumCover.visibility = View.GONE
+        }
 
         val isPlayMode = getPlayMode()
         holder.actionButton.setImageResource(

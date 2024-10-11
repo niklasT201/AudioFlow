@@ -1302,26 +1302,26 @@ class MainActivity : AppCompatActivity() {
 // Full width/expand width bugging when cover customizer open
 // rotate feature fixen (hopefully)
 
+// black statusbar after changing to blurry mode
+
+// short lag, playback after skipping some songs
+
 // making cover bottom blurry maybe
 // update play/pause button
 // Timer switch getting updated
+// updating buttons when playback
+// remove cover checkbox at the bottom
 
 // search screen
 // improve search filter (maybe)
 // add playlist add button
 
-// metadata screen
-// add remove cover button
-// add delete file button
-// add reset button
-
 // info screen
-// maybe add color change to more screen
+// maybe add color change to more screen and optional
 // sound changes
 // maybe driver mode
 
 // settings screen
-// show cover optional in search screen
 // Maybe add small infos about a song (where you found it, who told you of it)
 
 //can you help me with my kotlin android app? I would like to have a special feature. I want that when you hold down the play/pause button of the player screen, for maybe like 2 seconds, then a number in like a small round container appears and this number gets higher how longer you hold down on this button. for example when I don't hold down the button for 2 seconds or longer, then this container will not appear and the value will be like 0, that means that the current playing song will not repeat itself, it will once finish, go to the next song in the playlist, but when the value is over 0, so for example 4, then the current song will repeat itself 4 times after finishing. Song finishes, repeats, number in container gets down to 3, song finishes, repeats, number gets down to 2 and so on. Once the value is 0, the container disappears and the song will when finished go to the next song. hope you get what I mean :) and WITHOUT a library when possible

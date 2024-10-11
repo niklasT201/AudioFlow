@@ -9,15 +9,13 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.Tag
@@ -33,10 +31,17 @@ class EditMetadataActivity : AppCompatActivity() {
     private lateinit var songPathTextView: TextView
     private var songPath: String? = null
     private var newCoverUri: Uri? = null
+    private var originalTitle: String = ""
+    private var originalArtist: String = ""
+    private var originalAlbum: String = ""
+    private var originalCoverArt: ByteArray? = null
+    private var removeCover: Boolean = false
 
     private lateinit var saveButton: ImageView
     private lateinit var changeCoverButton: Button
+    private lateinit var removeCoverCheckBox: CheckBox
     private var isEditMode = false
+    private lateinit var optionsButton: ImageView
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -67,27 +72,16 @@ class EditMetadataActivity : AppCompatActivity() {
         saveButton = findViewById(R.id.saveButton)
         changeCoverButton = findViewById(R.id.changeCoverButton)
 
+        removeCoverCheckBox = findViewById(R.id.removeCoverCheckBox)
+        optionsButton = findViewById(R.id.optionsButton)
+
         songPath = intent.getStringExtra("songPath")
         songPathTextView.text = songPath
 
-        saveButton.setOnClickListener {
-            if (isEditMode) {
-                saveSongMetadata()
-            } else {
-                enableEditMode()
-            }
-        }
-
-        changeCoverButton.setOnClickListener {
-            pickImage.launch("image/*")
-        }
-
-        findViewById<ImageView>(R.id.back_btn).setOnClickListener {
-            onBackPressed()
-        }
-
+        setupButtons()
+        setupOptionsMenu()
         checkPermissionAndLoadMetadata()
-        disableEditMode() // Start in view mode
+        disableEditMode()
     }
 
     private fun checkPermissionAndLoadMetadata() {
@@ -109,6 +103,60 @@ class EditMetadataActivity : AppCompatActivity() {
             else -> {
                 requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
+        }
+    }
+
+    private fun setupOptionsMenu() {
+        optionsButton.setOnClickListener { view ->
+            val popup = PopupMenu(this, view)
+            popup.menuInflater.inflate(R.menu.metadata_options_menu, popup.menu)
+
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.action_delete -> {
+                        showDeleteConfirmationDialog()
+                        true
+                    }
+                    R.id.action_reset -> {
+                        showResetConfirmationDialog()
+                        true
+                    }
+                    else -> false
+                }
+            }
+            popup.show()
+        }
+    }
+
+    private fun setupButtons() {
+        saveButton.setOnClickListener {
+            if (isEditMode) {
+                saveSongMetadata()
+            } else {
+                enableEditMode()
+            }
+        }
+
+        changeCoverButton.setOnClickListener {
+            pickImage.launch("image/*")
+        }
+
+        removeCoverCheckBox.setOnClickListener {
+            removeCover = removeCoverCheckBox.isChecked
+            if (removeCover) {
+                coverImageView.setImageResource(R.drawable.cover_art)
+                newCoverUri = null
+            } else {
+                // Restore original cover if available
+                originalCoverArt?.let {
+                    val bitmap = BitmapFactory.decodeByteArray(it, 0, it.size)
+                    coverImageView.setImageBitmap(bitmap)
+                }
+            }
+        }
+
+        findViewById<ImageView>(R.id.back_btn).setOnClickListener {
+            onBackPressed()
         }
     }
 
@@ -139,14 +187,15 @@ class EditMetadataActivity : AppCompatActivity() {
                 val audioFile = AudioFileIO.read(file)
                 val tag: Tag = audioFile.tag
 
-                titleEditText.setText(tag.getFirst(FieldKey.TITLE))
-                artistEditText.setText(tag.getFirst(FieldKey.ARTIST))
-                albumEditText.setText(tag.getFirst(FieldKey.ALBUM))
+                originalTitle = tag.getFirst(FieldKey.TITLE).takeIf { it.isNotBlank() } ?: file.nameWithoutExtension
+                originalArtist = tag.getFirst(FieldKey.ARTIST).takeIf { it.isNotBlank() } ?: "Unknown Artist"
+                originalAlbum = tag.getFirst(FieldKey.ALBUM).takeIf { it.isNotBlank() } ?: "Unknown Album"
+                originalCoverArt = tag.firstArtwork?.binaryData
 
                 // Set default values if metadata is empty or null
-                titleEditText.setText(tag.getFirst(FieldKey.TITLE).takeIf { it.isNotBlank() } ?: file.nameWithoutExtension)
-                artistEditText.setText(tag.getFirst(FieldKey.ARTIST).takeIf { it.isNotBlank() } ?: "Unknown Artist")
-                albumEditText.setText(tag.getFirst(FieldKey.ALBUM).takeIf { it.isNotBlank() } ?: "Unknown Album")
+                titleEditText.setText(originalTitle)
+                artistEditText.setText(originalArtist)
+                albumEditText.setText(originalAlbum)
 
                 disableEditMode()
 
@@ -154,8 +203,10 @@ class EditMetadataActivity : AppCompatActivity() {
                 if (artworkBinaryData != null) {
                     val bitmap = BitmapFactory.decodeByteArray(artworkBinaryData, 0, artworkBinaryData.size)
                     coverImageView.setImageBitmap(bitmap)
+                    removeCoverCheckBox.visibility = View.VISIBLE
                 } else {
                     coverImageView.setImageResource(R.drawable.cover_art)
+                    removeCoverCheckBox.visibility = View.GONE
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -166,6 +217,67 @@ class EditMetadataActivity : AppCompatActivity() {
             finish()
         }
     }
+
+    private fun showDeleteConfirmationDialog() {
+        val themedContext = ContextThemeWrapper(this, R.style.CustomMaterialDialogTheme)
+        MaterialAlertDialogBuilder(themedContext)
+            .setTitle("Delete File")
+            .setMessage("Are you sure you want to delete this file? This action cannot be undone.")
+            .setPositiveButton("Delete") { _, _ ->
+                deleteFile()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showResetConfirmationDialog() {
+        val themedContext = ContextThemeWrapper(this, R.style.CustomMaterialDialogTheme)
+        MaterialAlertDialogBuilder(themedContext)
+            .setTitle("Reset Changes")
+            .setMessage("Are you sure you want to reset all changes? This will restore the original metadata.")
+            .setPositiveButton("Reset") { dialog, _ ->
+                resetChanges()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun resetChanges() {
+        titleEditText.setText(originalTitle)
+        artistEditText.setText(originalArtist)
+        albumEditText.setText(originalAlbum)
+        removeCoverCheckBox.isChecked = false
+        removeCover = false
+        newCoverUri = null
+
+        originalCoverArt?.let {
+            val bitmap = BitmapFactory.decodeByteArray(it, 0, it.size)
+            coverImageView.setImageBitmap(bitmap)
+        } ?: coverImageView.setImageResource(R.drawable.cover_art)
+
+        Toast.makeText(this, "Changes reset to original", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun deleteFile() {
+        songPath?.let { path ->
+            try {
+                val file = File(path)
+                if (file.delete()) {
+                    Toast.makeText(this, "File deleted successfully", Toast.LENGTH_SHORT).show()
+                    setResult(Activity.RESULT_OK, Intent().putExtra("fileDeleted", true))
+                    finish()
+                } else {
+                    Toast.makeText(this, "Failed to delete file", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error deleting file: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
 
     private fun saveSongMetadata() {
         songPath?.let { path ->
@@ -183,9 +295,11 @@ class EditMetadataActivity : AppCompatActivity() {
                 tag.setField(FieldKey.ARTIST, artist)
                 tag.setField(FieldKey.ALBUM, album)
 
-                // Save new cover art if selected
-                newCoverUri?.let { uri ->
-                    contentResolver.openInputStream(uri)?.use { inputStream ->
+                // Handle cover art
+                if (removeCover && tag.firstArtwork != null) {
+                    tag.deleteArtworkField()
+                } else if (newCoverUri != null) {
+                    contentResolver.openInputStream(newCoverUri!!)?.use { inputStream ->
                         val bitmap = BitmapFactory.decodeStream(inputStream)
                         val baos = ByteArrayOutputStream()
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
@@ -202,12 +316,11 @@ class EditMetadataActivity : AppCompatActivity() {
 
                 audioFile.commit()
 
-                // After successfully saving, set the result
                 val resultIntent = Intent().apply {
                     putExtra("updatedSongPath", path)
-                    putExtra("updatedTitle", titleEditText.text.toString())
-                    putExtra("updatedArtist", artistEditText.text.toString())
-                    putExtra("updatedAlbum", albumEditText.text.toString())
+                    putExtra("updatedTitle", title)
+                    putExtra("updatedArtist", artist)
+                    putExtra("updatedAlbum", album)
                 }
                 setResult(Activity.RESULT_OK, resultIntent)
                 disableEditMode()
