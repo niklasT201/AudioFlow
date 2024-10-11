@@ -13,35 +13,54 @@ import androidx.appcompat.view.ContextThemeWrapper
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class PlayerOptionsManager(
-    private val activity: MainActivity,  // Change this line
+    private val activity: MainActivity,
     private val overlay: View,
     private val currentSongTitle: TextView,
     private val playbackSpeedSeekBar: SeekBar,
     private val playbackSpeedText: TextView,
-    private val mediaPlayer: MediaPlayer?,
+    private var mediaPlayer: MediaPlayer?,
     private val colorManager: ColorManager,
+    private var playbackSpeedChangeListener: PlaybackSpeedChangeListener? = null,
     private val coverStyleCustomizer: CoverStyleCustomizer?
 ) {
+
+    fun updateMediaPlayer(newMediaPlayer: MediaPlayer?) {
+        mediaPlayer = newMediaPlayer
+        // Restore playback speed when media player is updated
+        mediaPlayer?.let { player ->
+            val currentSpeed = playbackSpeedSeekBar.progress / 100f
+            try {
+                player.playbackParams = player.playbackParams?.setSpeed(currentSpeed)
+                    ?: PlaybackParams().setSpeed(currentSpeed)
+            } catch (e: Exception) {
+                Log.e("PlayerOptionsManager", "Error setting playback speed: ${e.message}")
+            }
+        }
+    }
+
 
     init {
         setupPlayerOptionsOverlay()
     }
 
+    interface PlaybackSpeedChangeListener {
+        fun onPlaybackSpeedChanged(speed: Float)
+    }
+
+    fun setPlaybackSpeedChangeListener(listener: PlaybackSpeedChangeListener) {
+        playbackSpeedChangeListener = listener
+    }
+
     private fun setupPlayerOptionsOverlay() {
-        // Setup player settings button click listener
         activity.findViewById<ImageView>(R.id.btn_player_settings).setOnClickListener {
             showOverlay()
         }
 
-        // Setup close button
         activity.findViewById<Button>(R.id.btn_close_overlay).setOnClickListener {
             hideOverlay()
         }
 
-        // Setup playback speed control
         setupPlaybackSpeedControl()
-
-        // Setup other option items
         setupOptionItems()
     }
 
@@ -50,10 +69,32 @@ class PlayerOptionsManager(
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 val speed = progress / 100f
                 playbackSpeedText.text = String.format("%.1fx", speed)
-                mediaPlayer?.playbackParams = mediaPlayer?.playbackParams?.setSpeed(speed)
-                    ?: PlaybackParams().setSpeed(speed)
+
+                Log.d("PlayerOptionsManager", "Setting playback speed to $speed")
+
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                    try {
+                        mediaPlayer?.let { player ->
+                            val params = player.playbackParams ?: PlaybackParams()
+                            params.speed = speed
+                            player.playbackParams = params
+
+                            if (!activity.isPlaying()) {
+                                player.pause()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("PlayerOptionsManager", "Error setting playback speed: ${e.message}")
+                        Toast.makeText(activity, "Error setting playback speed", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Log.e("PlayerOptionsManager", "Playback speed adjustment not supported on this Android version")
+                }
+
                 activity.updatePlayPauseButton()
+                playbackSpeedChangeListener?.onPlaybackSpeedChanged(speed)
             }
+
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}

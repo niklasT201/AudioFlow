@@ -9,6 +9,7 @@ import android.os.CountDownTimer
 import android.os.IBinder
 import android.view.View
 import android.widget.*
+import java.util.concurrent.TimeUnit
 
 class SettingsManager(private val activity: Activity) {
     private lateinit var switchKeepScreenOn: Switch
@@ -17,6 +18,7 @@ class SettingsManager(private val activity: Activity) {
     private lateinit var switchNotification: Switch
     private lateinit var versionText: TextView
     private lateinit var dateText: TextView
+    private lateinit var timerDisplay: TextView
 
     private var mediaPlayerService: MediaPlayerService? = null
     private var timer: CountDownTimer? = null
@@ -26,6 +28,7 @@ class SettingsManager(private val activity: Activity) {
     private var isTimerActive = false
     private var selectedTimerMinutes: Int = 0
     private var resetPreviousEnabled = false
+    private var timerDialog: Dialog? = null
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -51,8 +54,12 @@ class SettingsManager(private val activity: Activity) {
         switchResetPrevious = settingsScreen.findViewById(R.id.switch_reset_previous)
         switchTimer = settingsScreen.findViewById(R.id.switch_timer)
         switchNotification = settingsScreen.findViewById(R.id.switch_notification_visibility)
+        timerDisplay = settingsScreen.findViewById(R.id.timer_display) // Add this TextView to your layout
         versionText = aboutScreen.findViewById(R.id.version_text)
         dateText = aboutScreen.findViewById(R.id.date_text)
+
+        // Initially hide the timer display
+        timerDisplay.visibility = View.GONE
     }
 
     private fun loadPreferences() {
@@ -124,29 +131,45 @@ class SettingsManager(private val activity: Activity) {
     }
 
     fun showTimerDialog() {
-        val dialog = Dialog(activity)
-        dialog.setContentView(R.layout.timer_dialog)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        // Prevent showing dialog if timer is active
+        if (isTimerActive) {
+            Toast.makeText(activity, "Timer is already running", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        timerDialog = Dialog(activity).apply {
+            setContentView(R.layout.timer_dialog)
+            window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        }
 
         val timeOptions = listOf(15, 30, 45, 60)
-        val radioGroup = dialog.findViewById<RadioGroup>(R.id.timer_radio_group)
-        val finishSongCheckbox = dialog.findViewById<CheckBox>(R.id.finish_song_checkbox)
+        val radioGroup = timerDialog?.findViewById<RadioGroup>(R.id.timer_radio_group)
+        val finishSongCheckbox = timerDialog?.findViewById<CheckBox>(R.id.finish_song_checkbox)
+        val startTimerButton = timerDialog?.findViewById<Button>(R.id.start_timer_button)
 
         val sharedPreferences = activity.getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
         finishWithSong = sharedPreferences.getBoolean("finish_with_song", false)
-        finishSongCheckbox.isChecked = finishWithSong
+        finishSongCheckbox?.isChecked = finishWithSong
 
-        setupTimerDialogOptions(dialog, timeOptions, radioGroup, finishSongCheckbox, sharedPreferences)
-        dialog.show()
+        // Enable start button only when a time is selected
+        startTimerButton?.isEnabled = false
+        radioGroup?.setOnCheckedChangeListener { _, checkedId ->
+            startTimerButton?.isEnabled = checkedId != -1
+        }
+
+        setupTimerDialogOptions(timeOptions, radioGroup!!, finishSongCheckbox!!, sharedPreferences)
+        timerDialog?.show()
     }
 
     private fun setupTimerDialogOptions(
-        dialog: Dialog,
         timeOptions: List<Int>,
         radioGroup: RadioGroup,
         finishSongCheckbox: CheckBox,
         sharedPreferences: SharedPreferences
     ) {
+        // Clear existing radio buttons
+        radioGroup.removeAllViews()
+
         timeOptions.forEachIndexed { index, minutes ->
             val radioButton = RadioButton(activity)
             radioButton.id = index
@@ -155,23 +178,17 @@ class SettingsManager(private val activity: Activity) {
             radioGroup.addView(radioButton)
         }
 
-        dialog.findViewById<Button>(R.id.start_timer_button).setOnClickListener {
-            handleTimerStart(dialog, radioGroup, timeOptions, finishSongCheckbox, sharedPreferences)
+        timerDialog?.findViewById<Button>(R.id.start_timer_button)?.setOnClickListener {
+            handleTimerStart(radioGroup, timeOptions, finishSongCheckbox, sharedPreferences)
         }
 
-        dialog.findViewById<Button>(R.id.cancel_button).setOnClickListener {
-            dialog.dismiss()
-        }
-
-        dialog.setOnDismissListener {
-            if (!isTimerActive) {
-                switchTimer.isChecked = false
-            }
+        timerDialog?.findViewById<Button>(R.id.cancel_button)?.setOnClickListener {
+            timerDialog?.dismiss()
+            switchTimer.isChecked = false
         }
     }
 
     private fun handleTimerStart(
-        dialog: Dialog,
         radioGroup: RadioGroup,
         timeOptions: List<Int>,
         finishSongCheckbox: CheckBox,
@@ -191,19 +208,21 @@ class SettingsManager(private val activity: Activity) {
             val minutes = timeOptions[selectedId]
             timerDuration = minutes * 60 * 1000L
             startTimer()
-            dialog.dismiss()
+            timerDialog?.dismiss()
+            timerDialog = null
 
             Toast.makeText(activity, "Timer set for $minutes minutes", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(activity, "Please select a time duration", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun startTimer() {
         timer?.cancel()
+        timerDisplay.visibility = View.VISIBLE
+
         timer = object : CountDownTimer(timerDuration, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 remainingTime = millisUntilFinished
+                updateTimerDisplay(millisUntilFinished)
             }
 
             override fun onFinish() {
@@ -220,14 +239,22 @@ class SettingsManager(private val activity: Activity) {
         }.start()
     }
 
-    fun cancelTimer() {
+    private fun updateTimerDisplay(millisUntilFinished: Long) {
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished)
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) % 60
+        timerDisplay.text = String.format("Timer: %02d:%02d", minutes, seconds)
+    }
+
+    private fun cancelTimer() {
         timer?.cancel()
         timer = null
         isTimerActive = false
+        timerDisplay.visibility = View.GONE
         activity.getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
             .edit()
             .putBoolean("timer_active", false)
             .apply()
+        switchTimer.isChecked = false
     }
 
     private fun finishApp() {

@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.*
 import android.media.MediaMetadataRetriever
+import android.media.PlaybackParams
 import android.os.IBinder
 import android.view.View
 import android.view.ViewGroup
@@ -127,6 +128,16 @@ class MainActivity : AppCompatActivity() {
         // Initialize screens
         initializeViews()
 
+        colorManager = ColorManager(this)
+        colorManager.applyColorToActivity(this)
+
+        coverStyleCustomizer = CoverStyleCustomizer(this)
+
+        initializePlayerStyles()
+
+        settingsManager = SettingsManager(this)
+        settingsManager.setupSettings(settingsScreen, aboutScreen)
+
         // Set up navigation
         setupNavigation()
 
@@ -139,13 +150,6 @@ class MainActivity : AppCompatActivity() {
 
         restorePlayMode()
 
-        colorManager = ColorManager(this)
-        colorManager.applyColorToActivity(this)
-
-        coverStyleCustomizer = CoverStyleCustomizer(this)
-
-        initializePlayerStyles()
-
         playerOptionsManager = PlayerOptionsManager(
             activity = this,
             overlay = playerOptionsOverlay,
@@ -157,12 +161,20 @@ class MainActivity : AppCompatActivity() {
             coverStyleCustomizer = coverStyleCustomizer
         )
 
+        playerOptionsManager.setPlaybackSpeedChangeListener(object : PlayerOptionsManager.PlaybackSpeedChangeListener {
+            override fun onPlaybackSpeedChanged(speed: Float) {
+                mediaPlayer?.let { player ->
+                    val params = player.playbackParams ?: PlaybackParams()
+                    params.speed = speed
+                    player.playbackParams = params
+                }
+            }
+        })
+
+
         Intent(this, MediaPlayerService::class.java).also { intent ->
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
-
-        settingsManager = SettingsManager(this)
-        settingsManager.setupSettings(settingsScreen, aboutScreen)
 
         // Show home screen by default
         showScreen(homeScreen)
@@ -962,6 +974,7 @@ class MainActivity : AppCompatActivity() {
             )
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer.create(this, uri)
+            playerOptionsManager.updateMediaPlayer(mediaPlayer)
 
             if (mediaPlayer == null) {
                 throw IOException("Failed to create MediaPlayer for this file")
@@ -1291,6 +1304,7 @@ class MainActivity : AppCompatActivity() {
 
 // making cover bottom blurry maybe
 // update play/pause button
+// Timer switch getting updated
 
 // search screen
 // improve search filter (maybe)
@@ -1305,7 +1319,6 @@ class MainActivity : AppCompatActivity() {
 // maybe add color change to more screen
 // sound changes
 // maybe driver mode
-// timer to close app
 
 // settings screen
 // show cover optional in search screen
