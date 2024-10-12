@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.CountDownTimer
 import android.os.IBinder
+import android.util.Log
 import android.view.View
 import android.widget.*
 import java.util.concurrent.TimeUnit
@@ -70,7 +71,8 @@ class SettingsManager(private val activity: Activity) {
         val keepScreenOn = sharedPreferences.getBoolean("screen_on", false)
         isTimerActive = sharedPreferences.getBoolean("timer_active", false)
         val notificationEnabled = sharedPreferences.getBoolean("notification_enabled", true)
-        val showCovers = sharedPreferences.getBoolean("show_covers", true) // true as default
+        val showCovers = sharedPreferences.getBoolean("show_covers", true)
+        remainingTime = sharedPreferences.getLong("remaining_time", 0) // Load remaining time
 
         switchKeepScreenOn.isChecked = keepScreenOn
         switchResetPrevious.isChecked = resetPreviousEnabled
@@ -79,6 +81,12 @@ class SettingsManager(private val activity: Activity) {
         switchShowCovers.isChecked = showCovers
 
         applyScreenTimeoutSetting(keepScreenOn)
+
+        // Restore the timer if it was active
+        if (isTimerActive && remainingTime > 0) {
+            timerDuration = remainingTime
+            startTimer()
+        }
     }
 
     private fun setupListeners(settingsScreen: View, aboutScreen: View) {
@@ -94,11 +102,14 @@ class SettingsManager(private val activity: Activity) {
             sharedPreferences.edit().putBoolean("reset_previous", isChecked).apply()
         }
 
+        // Assign the listener to the switch after it is initialized
         switchTimer.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                buttonView.isChecked = false
+            if (isChecked && !isTimerActive) {
+                // Only show dialog if timer is not active
+                buttonView.isChecked = false  // Reset switch state
                 showTimerDialog()
-            } else {
+            } else if (!isChecked && isTimerActive) {
+                // Cancel timer if switch is unchecked while timer is active
                 cancelTimer()
             }
         }
@@ -204,7 +215,8 @@ class SettingsManager(private val activity: Activity) {
     ) {
         val selectedId = radioGroup.checkedRadioButtonId
         if (selectedId != -1) {
-            switchTimer.isChecked = true
+            updateTimerSwitchState()
+
             isTimerActive = true
 
             finishWithSong = finishSongCheckbox.isChecked
@@ -221,6 +233,8 @@ class SettingsManager(private val activity: Activity) {
 
             Toast.makeText(activity, "Timer set for $minutes minutes", Toast.LENGTH_SHORT).show()
         }
+        Log.d("SettingsManager", "Start Timer button clicked")
+
     }
 
     private fun startTimer() {
@@ -230,6 +244,12 @@ class SettingsManager(private val activity: Activity) {
         timer = object : CountDownTimer(timerDuration, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 remainingTime = millisUntilFinished
+
+                // Save remaining time to SharedPreferences
+                activity.getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE).edit()
+                    .putLong("remaining_time", remainingTime)
+                    .apply()
+
                 updateTimerDisplay(millisUntilFinished)
             }
 
@@ -245,6 +265,8 @@ class SettingsManager(private val activity: Activity) {
                 }
             }
         }.start()
+
+        updateTimerSwitchState()
     }
 
     private fun updateTimerDisplay(millisUntilFinished: Long) {
@@ -262,7 +284,13 @@ class SettingsManager(private val activity: Activity) {
             .edit()
             .putBoolean("timer_active", false)
             .apply()
-        switchTimer.isChecked = false
+        updateTimerSwitchState()
+    }
+
+    private fun updateTimerSwitchState() {
+        activity.runOnUiThread {
+            switchTimer.isChecked = isTimerActive
+        }
     }
 
     private fun finishApp() {
