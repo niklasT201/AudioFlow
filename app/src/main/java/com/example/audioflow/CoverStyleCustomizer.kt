@@ -398,8 +398,7 @@ class CoverStyleCustomizer(private val context: Context) {
         val params = albumArtCard.layoutParams as ConstraintLayout.LayoutParams
         params.clearAllConstraints()
 
-        //params.dimensionRatio = null
-
+        // Get the status bar height
         val statusBarHeight = context.resources.getDimensionPixelSize(
             context.resources.getIdentifier("status_bar_height", "dimen", "android")
         )
@@ -407,27 +406,25 @@ class CoverStyleCustomizer(private val context: Context) {
         params.apply {
             width = ConstraintLayout.LayoutParams.MATCH_PARENT
             height = ConstraintLayout.LayoutParams.WRAP_CONTENT
-            topMargin = 0
+            topMargin = -statusBarHeight // Set the top margin to negative status bar height
             startToStart = ConstraintLayout.LayoutParams.PARENT_ID
             endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
             topToTop = ConstraintLayout.LayoutParams.PARENT_ID
             parentLayout.setPadding(0, 0, 0, parentLayout.paddingBottom)
         }
 
-        val closeButton = playerView.findViewById<View>(R.id.btn_close_player)
-
         playerView.post {
-            val desiredHeight = (albumArtCard.width * 1.0).toInt()
+            // Get the width of the albumArtCard
+            val width = albumArtCard.width
 
-            // Set the top margin to half the status bar height
-            params.topMargin = -statusBarHeight / 2
-            params.height = desiredHeight + statusBarHeight + 20
-            params.bottomMargin = 0
+            // Set the height to match the width
+            params.height = width
 
             albumArtCard.layoutParams = params
             applyBottomBlurEffect()
         }
 
+        val closeButton = playerView.findViewById<View>(R.id.btn_close_player)
         closeButton.elevation = albumArtCard.elevation + 1f
 
         if (albumArtCard is MaterialCardView) {
