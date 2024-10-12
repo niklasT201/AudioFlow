@@ -28,7 +28,6 @@ class SettingsManager(private val activity: Activity) {
     private var remainingTime: Long = 0
     private var finishWithSong: Boolean = false
     private var isTimerActive = false
-    private var selectedTimerMinutes: Int = 0
     private var resetPreviousEnabled = false
     private var timerDialog: Dialog? = null
 

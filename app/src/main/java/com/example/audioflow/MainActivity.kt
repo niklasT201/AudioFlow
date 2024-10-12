@@ -1306,8 +1306,7 @@ class MainActivity : AppCompatActivity() {
 
 // short lag, playback after skipping some songs
 
-// making cover bottom blurry maybe
-// Timer switch getting updated
+// bottom blurry always visible and not visible when mode switching
 // updating buttons when playback
 // remove cover checkbox at the bottom
 

@@ -180,6 +180,41 @@
                         android:background="#444444"
                         android:layout_marginStart="40dp"/>
 
+                <!-- Show Colors on all screens -->
+                <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingVertical="12dp">
+
+                    <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/cover_search"
+                            android:layout_marginEnd="16dp"
+                            android:contentDescription="Cover icon"/>
+
+                    <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Apply Color to All Screens"
+                            android:textColor="#FFFFFF"/>
+
+                    <Switch
+                            android:id="@+id/switch_apply_color_all_screens"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:trackTint="#871A99"
+                            android:thumbTint="#B749CA"/>
+                </LinearLayout>
+
+                <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#444444"
+                        android:layout_marginStart="40dp"/>
+
                 <!-- Timer Option -->
                 <LinearLayout
                         android:layout_width="match_parent"

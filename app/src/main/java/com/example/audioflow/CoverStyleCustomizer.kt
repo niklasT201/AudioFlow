@@ -9,14 +9,21 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import com.google.android.material.shape.ShapeAppearanceModel
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.content.SharedPreferences
-import android.graphics.Color
-import android.util.Log
+import android.graphics.*
+import android.graphics.drawable.LayerDrawable
+import android.renderscript.Allocation
+import android.renderscript.Element
+import android.renderscript.RenderScript
+import android.renderscript.ScriptIntrinsicBlur
 import android.util.TypedValue
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.view.WindowManager
 import android.view.animation.LinearInterpolator
 import android.widget.*
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.core.graphics.drawable.toBitmap
 import com.google.android.material.card.MaterialCardView
 
 class CoverStyleCustomizer(private val context: Context) {
@@ -356,6 +363,9 @@ class CoverStyleCustomizer(private val context: Context) {
         }
     }
 
+    private fun isBackgroundBlurry(): Boolean {
+        return prefs.getBoolean("useBlurBackground", false)
+    }
     private fun updateWindowDecorations(style: CoverStyle) {
         val activity = context as? Activity ?: return
         val window = activity.window
@@ -368,14 +378,16 @@ class CoverStyleCustomizer(private val context: Context) {
                         or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
 
                 // Remove any blur effect (implementation depends on how you're applying blur)
-                // If using WindowManager.LayoutParams.FLAG_BLUR_BEHIND:
                 window.clearFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+
+                if (isBackgroundBlurry()) {
+                    applyBottomBlurEffect()
+                }
             }
             else -> {
                 // Restore blur effect for other styles if needed
                 if (playerView.visibility == View.VISIBLE) {
                     // Apply your normal blur effect here
-                    // For example:
                     window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
                 }
             }
@@ -395,7 +407,7 @@ class CoverStyleCustomizer(private val context: Context) {
         params.apply {
             width = ConstraintLayout.LayoutParams.MATCH_PARENT
             height = ConstraintLayout.LayoutParams.WRAP_CONTENT
-            topMargin = 0 // Reset margin first
+            topMargin = 0
             startToStart = ConstraintLayout.LayoutParams.PARENT_ID
             endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
             topToTop = ConstraintLayout.LayoutParams.PARENT_ID
@@ -409,11 +421,11 @@ class CoverStyleCustomizer(private val context: Context) {
 
             // Set the top margin to half the status bar height
             params.topMargin = -statusBarHeight / 2
-
-            params.height = desiredHeight + statusBarHeight +20
+            params.height = desiredHeight + statusBarHeight + 20
             params.bottomMargin = 0
 
             albumArtCard.layoutParams = params
+            applyBottomBlurEffect()
         }
 
         closeButton.elevation = albumArtCard.elevation + 1f
@@ -431,6 +443,76 @@ class CoverStyleCustomizer(private val context: Context) {
 
         albumArtImage.scaleType = ImageView.ScaleType.CENTER_CROP
         updateWindowDecorations(CoverStyle.FULL_WIDTH)
+    }
+
+    private fun applyBottomBlurEffect() {
+        val blurHeight = context.resources.getDimensionPixelSize(R.dimen.bottom_blur_height)
+
+        albumArtImage.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                albumArtImage.viewTreeObserver.removeOnGlobalLayoutListener(this)
+
+                val originalBitmap = albumArtImage.drawable.toBitmap()
+                val blurredBitmap = createBottomBlurredBitmap(originalBitmap, blurHeight)
+
+                albumArtImage.setImageBitmap(blurredBitmap)
+            }
+        })
+    }
+    private fun createBottomBlurredBitmap(original: Bitmap, blurHeight: Int): Bitmap {
+        val width = original.width
+        val height = original.height
+
+        val outputBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(outputBitmap)
+
+        // Draw the original image
+        canvas.drawBitmap(original, 0f, 0f, null)
+
+        // Create and draw the blurred bottom part
+        val blurredBottomBitmap = Bitmap.createBitmap(width, blurHeight, Bitmap.Config.ARGB_8888)
+        val bottomPart = Bitmap.createBitmap(original, 0, height - blurHeight, width, blurHeight)
+        blurBitmap(bottomPart, blurredBottomBitmap)
+
+        canvas.drawBitmap(blurredBottomBitmap, 0f, (height - blurHeight).toFloat(), null)
+
+        // Create a gradient mask for smooth transition
+        val gradientMask = createGradientMask(width, blurHeight)
+        canvas.drawBitmap(gradientMask, 0f, (height - blurHeight).toFloat(), Paint(Paint.ANTI_ALIAS_FLAG))
+
+        return outputBitmap
+    }
+
+    private fun blurBitmap(input: Bitmap, output: Bitmap) {
+        val rs = RenderScript.create(context)
+        val allocIn = Allocation.createFromBitmap(rs, input)
+        val allocOut = Allocation.createFromBitmap(rs, output)
+
+        val blur = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs))
+        blur.setInput(allocIn)
+        blur.setRadius(2f)  // Adjust blur radius here (1-25)
+        blur.forEach(allocOut)
+
+        allocOut.copyTo(output)
+        rs.destroy()
+    }
+
+    private fun createGradientMask(width: Int, height: Int): Bitmap {
+        val mask = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(mask)
+
+        val gradient = LinearGradient(
+            0f, 0f, 0f, height.toFloat(),
+            intArrayOf(Color.TRANSPARENT, Color.BLACK),
+            null,
+            Shader.TileMode.CLAMP
+        )
+
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.shader = gradient
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+
+        return mask
     }
 
     private fun applyExpandedTopStyle(cornerRadius: Float) {
