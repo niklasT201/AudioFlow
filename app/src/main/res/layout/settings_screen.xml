@@ -28,7 +28,7 @@
             <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Settings"
+                    android:text="@string/settings"
                     android:textColor="#FFFFFF"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -53,13 +53,13 @@
                             android:layout_height="24dp"
                             android:src="@drawable/repeat"
                             android:layout_marginEnd="16dp"
-                            android:contentDescription="Reset icon"/>
+                            android:contentDescription="@string/my_image_description"/>
 
                     <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Reset Current Song on Previous"
+                            android:text="@string/reset_previous"
                             android:textColor="#FFFFFF"/>
 
                     <Switch
@@ -87,13 +87,13 @@
                             android:layout_height="24dp"
                             android:src="@drawable/notification_icon"
                             android:layout_marginEnd="16dp"
-                            android:contentDescription="Notification icon"/>
+                            android:contentDescription="@string/my_image_description"/>
 
                     <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Show Media Player Notification"
+                            android:text="@string/notification_icon"
                             android:textColor="#FFFFFF"/>
 
                     <Switch
@@ -122,13 +122,13 @@
                             android:layout_height="24dp"
                             android:src="@drawable/customize_icon"
                             android:layout_marginEnd="16dp"
-                            android:contentDescription="Display icon"/>
+                            android:contentDescription="@string/my_image_description"/>
 
                     <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Keep Display Always On"
+                            android:text="@string/display_on"
                             android:textColor="#FFFFFF"/>
 
                     <Switch
@@ -157,13 +157,13 @@
                             android:layout_height="24dp"
                             android:src="@drawable/cover_search"
                             android:layout_marginEnd="16dp"
-                            android:contentDescription="Cover icon"/>
+                            android:contentDescription="@string/my_image_description"/>
 
                     <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Show Cover in Search Screen"
+                            android:text="@string/search_cover"
                             android:textColor="#FFFFFF"/>
 
                     <Switch
@@ -190,15 +190,15 @@
                     <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@drawable/cover_search"
+                            android:src="@drawable/color_palette_icon"
                             android:layout_marginEnd="16dp"
-                            android:contentDescription="Cover icon"/>
+                            android:contentDescription="@string/my_image_description"/>
 
                     <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Apply Color to All Screens"
+                            android:text="@string/all_color"
                             android:textColor="#FFFFFF"/>
 
                     <Switch
@@ -227,13 +227,13 @@
                             android:layout_height="24dp"
                             android:src="@drawable/timer_icon"
                             android:layout_marginEnd="16dp"
-                            android:contentDescription="Timer icon"/>
+                            android:contentDescription="@string/my_image_description"/>
 
                     <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Timer"
+                            android:text="@string/add_timer"
                             android:textColor="#FFFFFF"/>
 
                     <Switch
@@ -263,12 +263,12 @@
                             android:layout_height="24dp"
                             android:src="@drawable/info"
                             android:layout_marginEnd="16dp"
-                            android:contentDescription="About icon"/>
+                            android:contentDescription="@string/my_image_description"/>
 
                     <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="About App"
+                            android:text="@string/about_app"
                             android:textColor="#FFFFFF"/>
                 </LinearLayout>
             </LinearLayout>

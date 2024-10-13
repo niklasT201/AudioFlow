@@ -61,8 +61,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginTop="40dp"
-                android:layout_marginBottom="16dp">
+                android:layout_marginTop="40dp">
 
             <ImageView
                     android:id="@+id/coverImageView"
@@ -82,13 +81,12 @@
                     android:visibility="gone" />
         </FrameLayout>
 
-        <!-- Move the Remove Cover CheckBox here -->
         <CheckBox
                 android:id="@+id/removeCoverCheckBox"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
-                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
                 android:text="Remove cover art"
                 android:textColor="@color/secondary_text"
                 android:visibility="gone" />

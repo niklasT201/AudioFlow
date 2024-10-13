@@ -1,6 +1,7 @@
 package com.example.audioflow
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
@@ -15,6 +16,7 @@ import android.database.ContentObserver
 import android.graphics.Bitmap
 import android.media.MediaPlayer
 import android.media.MediaScannerConnection
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -95,6 +97,7 @@ class SearchActivity : AppCompatActivity() {
         songAdapter = SongAdapter(
             emptyList(),
             { song -> handleSongClick(song) },
+            { song -> showAddToPlaylistDialog(song) },
             { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
             albumArtCache,
             shouldShowCovers()
@@ -154,9 +157,10 @@ class SearchActivity : AppCompatActivity() {
         songAdapter = SongAdapter(
             emptyList(),
             { song -> handleSongClick(song) },
+            { song -> showAddToPlaylistDialog(song) },
             { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
             albumArtCache,
-            shouldShowCovers() // Add this parameter
+            shouldShowCovers()
         )
         searchResultsList.adapter = songAdapter
     }
@@ -265,6 +269,7 @@ class SearchActivity : AppCompatActivity() {
         songAdapter = SongAdapter(
             allMatchingSongs.take(5),
             { song -> handleSongClick(song) },
+            { song -> showAddToPlaylistDialog(song) },
             { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
             albumArtCache,
             shouldShowCovers()
@@ -349,6 +354,7 @@ class SearchActivity : AppCompatActivity() {
         val songAdapter = SongAdapter(
             artistSongs,
             { song -> handleSongClick(song) },
+            { song -> showAddToPlaylistDialog(song) },
             { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
             albumArtCache,
             shouldShowCovers()
@@ -383,9 +389,10 @@ class SearchActivity : AppCompatActivity() {
         songsRecyclerView.layoutManager = LinearLayoutManager(this)
 
         // Set up the adapter
-        val songAdapter = SongAdapter(
-            albumSongs,
+        songAdapter = SongAdapter(
+            emptyList(),
             { song -> handleSongClick(song) },
+            { song -> showAddToPlaylistDialog(song) },
             { modeRadioGroup.checkedRadioButtonId == R.id.playModeRadio },
             albumArtCache,
             shouldShowCovers()
@@ -463,10 +470,8 @@ class SearchActivity : AppCompatActivity() {
 
     private fun playSong(song: SongItem) {
         try {
-            // Stop any currently playing song
             stopCurrentSong()
 
-            // Create and prepare new MediaPlayer
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(song.file.absolutePath)
                 prepare()
@@ -583,6 +588,91 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
+    private fun showAddToPlaylistDialog(song: SongItem) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_add_to_playlist, null)
+        val recyclerView = dialogView.findViewById<RecyclerView>(R.id.folderRecyclerView)
+        val titleTextView = dialogView.findViewById<TextView>(R.id.dialog_title)
+        val cancelButton = dialogView.findViewById<Button>(R.id.dialog_button_cancel)
+
+        titleTextView.text = "Add '${song.title}' to Playlist"
+
+        val dialog = AlertDialog.Builder(this, R.style.TransparentAlertDialog)
+            .setView(dialogView)
+            .create()
+
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        recyclerView.layoutManager = LinearLayoutManager(this)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val audioFolders = getAudioFolders()
+            withContext(Dispatchers.Main) {
+                val adapter = FolderAdapter(audioFolders) { selectedFolder ->
+                    dialog.dismiss()
+                    confirmAddToPlaylist(song, selectedFolder)
+                }
+                recyclerView.adapter = adapter
+            }
+        }
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.show()
+    }
+
+    private fun getAudioFolders(): List<File> {
+        val audioFolders = mutableListOf<File>()
+        val externalStorageDir = Environment.getExternalStorageDirectory()
+
+        fun searchAudioFolders(directory: File) {
+            directory.listFiles()?.forEach { file ->
+                if (file.isDirectory) {
+                    if (file.listFiles()?.any { it.isAudioFile() } == true) {
+                        audioFolders.add(file)
+                    }
+                    searchAudioFolders(file)
+                }
+            }
+        }
+
+        searchAudioFolders(externalStorageDir)
+        return audioFolders
+    }
+
+    private fun File.isAudioFile(): Boolean {
+        val audioExtensions = listOf(".mp3", ".wav", ".ogg", ".m4a", ".aac")
+        return audioExtensions.any { this.name.endsWith(it, ignoreCase = true) }
+    }
+
+    private fun confirmAddToPlaylist(song: SongItem, folder: File) {
+        AlertDialog.Builder(this)
+            .setTitle("Confirm")
+            .setMessage("Do you want to add '${song.title}' to '${folder.name}'?")
+            .setPositiveButton("Yes") { _, _ ->
+                copySongToFolder(song, folder)
+            }
+            .setNegativeButton("No", null)
+            .show()
+    }
+
+    private fun copySongToFolder(song: SongItem, folder: File) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val destFile = File(folder, song.file.name)
+                song.file.copyTo(destFile, overwrite = true)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@SearchActivity, "Song added to playlist", Toast.LENGTH_SHORT).show()
+                    refreshMediaStore(destFile.absolutePath)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@SearchActivity, "Error adding song to playlist", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     companion object {
         const val EDIT_METADATA_REQUEST = 1
     }
@@ -653,6 +743,7 @@ class AlbumAdapter(
 class SongAdapter(
     private var songs: List<SongItem>,
     private val onSongClick: (SongItem) -> Unit,
+    private val onAddToPlaylistClick: (SongItem) -> Unit,
     private val getPlayMode: () -> Boolean,
     private val albumArtCache: LruCache<String, Bitmap>,
     private val showCovers: Boolean
@@ -663,6 +754,7 @@ class SongAdapter(
         val titleTextView: TextView = view.findViewById(R.id.songTitle)
         val artistAlbumTextView: TextView = view.findViewById(R.id.artistAlbum)
         val actionButton: ImageButton = view.findViewById(R.id.actionButton)
+        val addToPlaylistButton: ImageButton = view.findViewById(R.id.addToPlaylistButton)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -695,6 +787,7 @@ class SongAdapter(
 
         holder.actionButton.setOnClickListener { onSongClick(song) }
         holder.itemView.setOnClickListener { onSongClick(song) }
+        holder.addToPlaylistButton.setOnClickListener { onAddToPlaylistClick(song) }
     }
 
     override fun getItemCount() = songs.size
@@ -704,6 +797,30 @@ class SongAdapter(
         songs = newSongs
         notifyDataSetChanged()
     }
+}
+
+class FolderAdapter(
+    private val folders: List<File>,
+    private val onFolderClick: (File) -> Unit
+) : RecyclerView.Adapter<FolderAdapter.ViewHolder>() {
+
+    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val folderName: TextView = view.findViewById(R.id.folder_name)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_folder, parent, false)
+        return ViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val folder = folders[position]
+        holder.folderName.text = folder.name
+        holder.itemView.setOnClickListener { onFolderClick(folder) }
+    }
+
+    override fun getItemCount() = folders.size
 }
 
 // Make sure this SongItem data class matches the one you're using in your MainActivity

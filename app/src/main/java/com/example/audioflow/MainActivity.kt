@@ -1268,11 +1268,10 @@ class MainActivity : AppCompatActivity() {
 
 // bottom blurry always visible and not visible when mode switching and blurrier
 // updating buttons when playback
-// remove cover checkbox at the bottom
 
 // search screen
 // improve search filter (maybe)
-// add playlist add button
+// fix playlist button position
 
 // info screen
 // maybe add color change to more screen and optional

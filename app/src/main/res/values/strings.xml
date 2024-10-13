@@ -38,7 +38,13 @@
     <string name="add_timer">Add Timer</string>
     <string name="customize_player">Customize Player</string>
     <string name="car_mode">Car Mode</string>
+    <string name="about_app">About App</string>
     <string name="version_info">Version %1$s\nLast updated: %2$s</string>
     <string name="channel_name">Music Playback</string>
     <string name="channel_description">Controls for music playback</string>
+    <string name="reset_previous">Reset Current Song on Previous</string>
+    <string name="notification_icon">Show Media Player Notification</string>
+    <string name="display_on">Keep Display Always On</string>
+    <string name="search_cover">Show Cover in Search Screen</string>
+    <string name="all_color">Apply Color to All Screens</string>
 </resources>
