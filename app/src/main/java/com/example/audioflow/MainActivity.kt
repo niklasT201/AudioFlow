@@ -1239,13 +1239,18 @@ class MainActivity : AppCompatActivity() {
 
     fun playSingleAudioFile(uri: Uri) {
         try {
+            // Stop the previous song
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
+
             // Get file details
             val fileName = getFileName(uri)
             val mimeType = contentResolver.getType(uri)
 
             // Create a temporary file in the app's cache directory
-            val cacheDir = cacheDir
-            val tempFile = File.createTempFile("temp_audio", ".${mimeType?.substringAfter('/') ?: "mp3"}", cacheDir)
+            val cacheDir = externalCacheDir
+            val tempFile = File(cacheDir, "temp_audio.${mimeType?.substringAfter('/') ?: "mp3"}")
 
             // Copy content from Uri to the temporary file
             contentResolver.openInputStream(uri)?.use { input ->
