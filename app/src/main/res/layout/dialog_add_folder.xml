@@ -1,10 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
               android:layout_width="match_parent"
               android:layout_height="wrap_content"
-              android:background="@color/list_divider"
+              android:background="@drawable/rounded_dialog_background"
               android:orientation="vertical"
               android:padding="16dp">
+
+    <TextView
+            android:id="@+id/dialog_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Create A New Folder"
+            android:textSize="18sp"
+            android:textColor="@color/primary_text"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="14sp"
+            app:autoSizeMaxTextSize="18sp"
+            app:autoSizeStepGranularity="2sp" />
 
     <EditText
             android:id="@+id/folder_name_edit_text"
@@ -28,9 +43,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:backgroundTint="@color/accent_color"
+                android:backgroundTint="@color/primary_text"
                 android:text="Cancel"
-                android:textColor="@color/primary_text"
+                android:textColor="@color/secondary_text"
                 android:textSize="16sp" />
 
         <Button
@@ -38,9 +53,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:backgroundTint="@color/accent_color"
+                android:backgroundTint="@color/primary_text"
                 android:text="Add"
-                android:textColor="@color/primary_text"
+                android:textColor="@color/secondary_text"
                 android:textSize="16sp" />
 
     </LinearLayout>

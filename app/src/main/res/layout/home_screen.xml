@@ -9,17 +9,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:layout_marginBottom="30dp"
             android:gravity="end">
-
-        <ImageButton
-                android:id="@+id/search_folder_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/search"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="20dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/my_image_description"/>
 
         <ImageButton
                 android:id="@+id/add_file_button"
@@ -28,18 +19,28 @@
                 android:src="@drawable/play_button_header"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Add File"
-                android:layout_marginEnd="16dp"
+                android:layout_marginEnd="6dp"
                 android:layout_marginTop="20dp"/>
 
         <ImageButton
                 android:id="@+id/add_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
+                android:layout_marginEnd="6dp"
                 android:layout_marginTop="20dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/search"
                 android:src="@drawable/add_playlist" />
+
+        <ImageButton
+                android:id="@+id/search_folder_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/add_folder"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="20dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/my_image_description"/>
 
     </LinearLayout>
 

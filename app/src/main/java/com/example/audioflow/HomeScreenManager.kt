@@ -55,24 +55,27 @@ class HomeScreenManager(private val activity: MainActivity) {
         val cancelButton: Button = dialogView.findViewById(R.id.dialog_button_cancel)
         val addButton: Button = dialogView.findViewById(R.id.dialog_button_add)
 
-        val builder = AlertDialog.Builder(activity)
+        val builder = AlertDialog.Builder(activity, R.style.TransparentAlertDialog)
         builder.setView(dialogView)
 
+        val dialog = builder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
         cancelButton.setOnClickListener {
-            builder.setCancelable(true)
-            builder.create().dismiss()
+            dialog.dismiss()
         }
 
         addButton.setOnClickListener {
             val folderName = folderNameEditText.text.toString()
             if (folderName.isNotEmpty()) {
                 addNewFolder(folderName)
+                dialog.dismiss()
             } else {
                 Toast.makeText(activity, "Please enter a folder name", Toast.LENGTH_SHORT).show()
             }
         }
 
-        builder.show()
+        dialog.show()
     }
 
     private fun addNewFolder(folderName: String) {

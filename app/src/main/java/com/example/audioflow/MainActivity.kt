@@ -19,6 +19,7 @@ import java.util.*
 import android.media.MediaMetadataRetriever
 import android.media.PlaybackParams
 import android.os.IBinder
+import android.provider.OpenableColumns
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -1237,11 +1238,39 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun playSingleAudioFile(uri: Uri) {
-        val file = File(uri.path ?: "")
-        val song = SongItem(file, file.nameWithoutExtension, "Unknown Artist", "Unknown Album")
-        playSong(currentPlaylist.size)
-        currentPlaylist = listOf(song)
-        currentSongIndex = 0
+        try {
+            // Get file details
+            val fileName = getFileName(uri)
+            val mimeType = contentResolver.getType(uri)
+
+            // Create a temporary file in the app's cache directory
+            val cacheDir = cacheDir
+            val tempFile = File.createTempFile("temp_audio", ".${mimeType?.substringAfter('/') ?: "mp3"}", cacheDir)
+
+            // Copy content from Uri to the temporary file
+            contentResolver.openInputStream(uri)?.use { input ->
+                tempFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            // Create SongItem
+            val song = SongItem(tempFile, fileName, "Unknown Artist", "Unknown Album")
+
+            // Update currentPlaylist and currentSongIndex
+            currentPlaylist = listOf(song)
+            currentSongIndex = 0
+
+            // Play the song
+            playSong(0)
+
+            // Update UI
+            updateMiniPlayer(song)
+            showPlayerScreen()
+        } catch (e: Exception) {
+            Log.e("AudioFlow", "Error playing single audio file: ${e.message}", e)
+            Toast.makeText(this, "Error playing file: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -1281,12 +1310,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getFileName(uri: Uri): String {
-        val cursor = contentResolver.query(uri, null, null, null, null)
-        return cursor?.use {
-            val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-            it.moveToFirst()
-            it.getString(nameIndex)
-        } ?: "Unknown"
+        var result: String? = null
+        if (uri.scheme == "content") {
+            val cursor = contentResolver.query(uri, null, null, null, null)
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex != -1) {
+                        result = cursor.getString(nameIndex)
+                    }
+                }
+            } finally {
+                cursor?.close()
+            }
+        }
+        if (result == null) {
+            result = uri.path
+            val cut = result?.lastIndexOf('/')
+            if (cut != -1) {
+                result = result?.substring(cut!! + 1)
+            }
+        }
+        return result ?: "Unknown"
     }
 
     override fun onDestroy() {
