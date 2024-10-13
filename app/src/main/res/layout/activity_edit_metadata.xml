@@ -25,7 +25,7 @@
                     android:src="@drawable/before"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/my_image_description"
-                    app:tint="#E0E0E0"/>
+                    app:tint="#E0E0E0" />
 
             <TextView
                     android:layout_width="0dp"
@@ -35,8 +35,7 @@
                     android:text="@string/song_info"
                     android:layout_marginStart="5dp"
                     android:textSize="20sp"
-                    android:textStyle="bold"
-                    />
+                    android:textStyle="bold" />
 
             <ImageView
                     android:id="@+id/saveButton"
@@ -45,7 +44,7 @@
                     android:src="@drawable/edit_button"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/my_image_description"
-                    app:tint="#E0E0E0"/>
+                    app:tint="#E0E0E0" />
 
             <ImageView
                     android:id="@+id/optionsButton"
@@ -55,19 +54,8 @@
                     android:src="@drawable/better_option"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/search_option"
-                    app:tint="#E0E0E0"/>
-
+                    app:tint="#E0E0E0" />
         </LinearLayout>
-
-        <CheckBox
-                android:id="@+id/removeCoverCheckBox"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="16dp"
-                android:text="Remove cover art"
-                android:textColor="@color/secondary_text"
-                android:visibility="gone"/>
 
         <FrameLayout
                 android:layout_width="wrap_content"
@@ -76,24 +64,34 @@
                 android:layout_marginTop="40dp"
                 android:layout_marginBottom="16dp">
 
-        <ImageView
-                android:id="@+id/coverImageView"
-                android:layout_width="200dp"
-                android:layout_height="200dp"
-                android:scaleType="centerCrop"
-                android:src="@drawable/cover_art"
-                android:contentDescription="@string/my_image_description" />
+            <ImageView
+                    android:id="@+id/coverImageView"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/cover_art"
+                    android:contentDescription="@string/my_image_description" />
 
-        <Button
-                android:id="@+id/changeCoverButton"
-                android:layout_width="200dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:alpha="0.7"
-                android:text="@string/cover"
-                android:visibility="gone" />
-
+            <Button
+                    android:id="@+id/changeCoverButton"
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:alpha="0.7"
+                    android:text="@string/cover"
+                    android:visibility="gone" />
         </FrameLayout>
+
+        <!-- Move the Remove Cover CheckBox here -->
+        <CheckBox
+                android:id="@+id/removeCoverCheckBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:text="Remove cover art"
+                android:textColor="@color/secondary_text"
+                android:visibility="gone" />
 
         <LinearLayout
                 android:layout_width="match_parent"

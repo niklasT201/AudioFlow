@@ -50,6 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var totalTimeTextView: TextView
     private lateinit var playSettingsButton: ImageView
     private lateinit var playerSettingsButton: ImageView
+    private val shuffleHistory = mutableListOf<Int>()
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -464,6 +465,7 @@ class MainActivity : AppCompatActivity() {
         val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
         with(sharedPreferences.edit()) {
             putString("currentPlayMode", currentPlayMode.name)
+            putBoolean("isShuffleMode", isShuffleMode) // Save shuffle state
             apply()
         }
     }
@@ -472,6 +474,7 @@ class MainActivity : AppCompatActivity() {
         val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
         val savedPlayMode = sharedPreferences.getString("currentPlayMode", PlayMode.NORMAL.name)
         currentPlayMode = PlayMode.valueOf(savedPlayMode ?: PlayMode.NORMAL.name)
+        isShuffleMode = sharedPreferences.getBoolean("isShuffleMode", false) // Restore shuffle state
         updatePlaySettingsIcon()
     }
 
@@ -553,6 +556,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        shuffleHistory.clear()
         showPlayModeToast()
     }
 
@@ -1190,7 +1194,15 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this, "This is the first song", Toast.LENGTH_SHORT).show()
                         }
                     }
-
+                    PlayMode.SHUFFLE -> {
+                        // Implement shuffled previous song logic
+                        if (shuffleHistory.isNotEmpty()) {
+                            currentSongIndex = shuffleHistory.removeLast()
+                            playSong(currentSongIndex)
+                        } else {
+                            Toast.makeText(this, "No previous shuffled songs", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                     else -> {
                         currentSongIndex = if (currentSongIndex > 0) currentSongIndex - 1 else currentPlaylist.size - 1
                         playSong(currentSongIndex)
@@ -1219,10 +1231,12 @@ class MainActivity : AppCompatActivity() {
         if (currentPlaylist.isNotEmpty()) {
             when (currentPlayMode) {
                 PlayMode.NORMAL, PlayMode.REPEAT_ALL, PlayMode.REPEAT_ONE -> {
+                    shuffleHistory.add(currentSongIndex)
                     currentSongIndex = (currentSongIndex + 1) % currentPlaylist.size
                     playSong(currentSongIndex, showPlayerScreen)
                 }
                 PlayMode.SHUFFLE -> {
+                    shuffleHistory.add(currentSongIndex)
                     currentSongIndex = (0 until currentPlaylist.size).random()
                     playSong(currentSongIndex, showPlayerScreen)
                 }
