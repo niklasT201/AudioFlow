@@ -19,6 +19,7 @@ import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import android.graphics.*
+import com.example.audioflow.AudioMetadataRetriever.SongItem
 
 interface MediaPlayerCallback {
     fun onNextTrack()
@@ -30,7 +31,7 @@ class MediaPlayerService : Service() {
     private var showNotification = true
     private lateinit var mediaSession: MediaSessionCompat
     private val binder = LocalBinder()
-    private var currentSong: MainActivity.SongItem? = null
+    private var currentSong: SongItem? = null
     private var isPlayerInitialized = false
     private var callback: MediaPlayerCallback? = null
 
@@ -138,7 +139,7 @@ class MediaPlayerService : Service() {
         )
     }
 
-    fun updateMetadata(song: MainActivity.SongItem) {
+    fun updateMetadata(song: SongItem) {
         currentSong = song
         val retriever = MediaMetadataRetriever()
         try {

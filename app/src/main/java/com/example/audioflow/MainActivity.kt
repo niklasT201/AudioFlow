@@ -9,14 +9,11 @@ import android.net.Uri
 import android.Manifest
 import android.content.*
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
-import android.provider.MediaStore
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.*
-import android.media.MediaMetadataRetriever
 import android.media.PlaybackParams
 import android.os.IBinder
 import android.provider.OpenableColumns
@@ -28,6 +25,7 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import java.text.Collator
 import java.util.Locale
+import com.example.audioflow.AudioMetadataRetriever.SongItem
 
 class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
@@ -36,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private var mediaPlayerService: MediaPlayerService? = null
     private var bound = false
 
+    private lateinit var audioMetadataRetriever: AudioMetadataRetriever
     private lateinit var playPauseButton: ImageView
     private lateinit var previousButton: ImageView
     private lateinit var nextButton: ImageView
@@ -127,9 +126,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        // Initialize screens
         initializeViews()
 
+        audioMetadataRetriever = AudioMetadataRetriever(contentResolver)
         colorManager = ColorManager(this)
         colorManager.applyColorToActivity(this)
 
@@ -613,8 +612,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadMusicFolders() {
-        folderItems = getMusicFolders().map { folder ->
-            val songCount = getSongsInFolder(folder).size
+        folderItems = audioMetadataRetriever.getMusicFolders().map { folder ->
+            val songCount = audioMetadataRetriever.getSongsInFolder(folder).size
             FolderItem(folder, folder.name, "$songCount songs", folder.absolutePath == currentFolderPath)
         }
 
@@ -637,7 +636,7 @@ class MainActivity : AppCompatActivity() {
         Log.d("AudioFlow", "Loading folder: ${folder.name}")
         Log.d("AudioFlow", "Current song index: $currentSongIndex")
 
-        currentSongs = getSongsInFolder(folder).filter { it.file.exists() }
+        currentSongs = audioMetadataRetriever.getSongsInFolder(folder).filter { it.file.exists() }
 
         Log.d("AudioFlow", "Song count of folder: ${currentSongs.size}")
 
@@ -720,7 +719,7 @@ class MainActivity : AppCompatActivity() {
             view.visibility = View.VISIBLE
 
             // Update album art
-            val albumArt = getAlbumArt(song.file.absolutePath)
+            val albumArt = audioMetadataRetriever.getAlbumArt(song.file.absolutePath)
             if (albumArt != null) {
                 view.findViewById<ImageView>(R.id.mini_player_cover).setImageBitmap(albumArt)
             } else {
@@ -866,104 +865,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getSongsInFolder(folder: File): List<SongItem> {
-        val projection = arrayOf(
-            MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.ARTIST,
-            MediaStore.Audio.Media.ALBUM
-        )
-        val selection = MediaStore.Audio.Media.IS_MUSIC + " != 0 AND " + MediaStore.Audio.Media.DATA + " LIKE ?"
-        val selectionArgs = arrayOf("${folder.absolutePath}%")
-        val sortOrder = MediaStore.Audio.Media.TITLE + " ASC"
-        val songs = mutableListOf<SongItem>()
-
-        contentResolver.query(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            projection,
-            selection,
-            selectionArgs,
-            sortOrder
-        )?.use { cursor ->
-            val pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-            val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-            val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-            val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
-            while (cursor.moveToNext()) {
-                val path = cursor.getString(pathColumn)
-                var title = cursor.getString(titleColumn)
-                val artist = cursor.getString(artistColumn)
-                var album = cursor.getString(albumColumn)
-                val file = File(path)
-
-                if (title.isNullOrEmpty() || artist.isNullOrEmpty() || album.isNullOrEmpty()) {
-                    val retriever = MediaMetadataRetriever()
-                    try {
-                        retriever.setDataSource(path)
-                        title = title ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE) ?: file.nameWithoutExtension
-                        album = album ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM) ?: "Unknown Album"
-                    } catch (e: Exception) {
-                        Log.e("AudioFlow", "Error retrieving metadata for $path", e)
-                        title = file.nameWithoutExtension
-                        album = "Unknown Album"
-                    } finally {
-                        retriever.release()
-                    }
-                }
-
-                songs.add(SongItem(file, title, artist, album))
-            }
-        }
-
-        return customSongSort(songs)
-    }
-
-    private fun getMusicFolders(): List<File> {
-        val musicFolders = mutableSetOf<File>()
-        val projection = arrayOf(MediaStore.Audio.Media.DATA)
-        val selection = MediaStore.Audio.Media.IS_MUSIC + " != 0"
-        val sortOrder = MediaStore.Audio.Media.TITLE + " ASC"
-        val cursor = contentResolver.query(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-            projection,
-            selection,
-            null,
-            sortOrder
-        )
-
-        cursor?.use {
-            val columnIndex = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-            while (it.moveToNext()) {
-                val path = it.getString(columnIndex)
-                val file = File(path)
-                musicFolders.add(file.parentFile)
-            }
-        }
-
-        Log.d("AudioFlow", "Found ${musicFolders.size} music folders")
-        return musicFolders.toList()
-    }
-
-    private fun customSongSort(songs: List<SongItem>): List<SongItem> {
-        val germanCollator = Collator.getInstance(Locale.GERMAN).apply {
-            strength = Collator.PRIMARY
-        }
-
-        return songs.sortedWith(compareBy<SongItem> { song ->
-            val title = song.title.lowercase(Locale.GERMAN)
-            when {
-                title.first().isDigit() -> "zzz$title"  // Move numbers to the end
-                title.startsWith("ä") -> "a" + title.substring(1)
-                title.startsWith("ö") -> "o" + title.substring(1)
-                title.startsWith("ü") -> "u" + title.substring(1)
-                else -> title.replace("ä", "a")
-                    .replace("ö", "o")
-                    .replace("ü", "u")
-                    .replace("ß", "ss")
-            }
-        }.thenBy { germanCollator.getCollationKey(it.title) })
-    }
-
     private fun playSong(position: Int, showPlayerScreen: Boolean = true) {
         if (position < 0 || position >= currentPlaylist.size) return
 
@@ -1071,7 +972,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Set album art
-        val albumArt = getAlbumArt(song.file.absolutePath)
+        val albumArt = audioMetadataRetriever.getAlbumArt(song.file.absolutePath)
         if (albumArt != null) {
             albumArtImageView.setImageBitmap(albumArt)
 
@@ -1124,24 +1025,6 @@ class MainActivity : AppCompatActivity() {
         val minutes = seconds / 60
         val remainingSeconds = seconds % 60
         return String.format("%d:%02d", minutes, remainingSeconds)
-    }
-
-    private fun getAlbumArt(path: String): android.graphics.Bitmap? {
-        val retriever = MediaMetadataRetriever()
-        return try {
-            retriever.setDataSource(path)
-            val art = retriever.embeddedPicture
-            if (art != null) {
-                BitmapFactory.decodeByteArray(art, 0, art.size)
-            } else {
-                null
-            }
-        } catch (e: IllegalArgumentException) {
-            Log.e("AudioFlow", "Error retrieving album art: ${e.message}")
-            null
-        } finally {
-            retriever.release()
-        }
     }
 
     fun updatePlayPauseButton() {
@@ -1367,7 +1250,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     data class FolderItem(val folder: File, val name: String, val songCount: String, var isCurrentFolder: Boolean = false)
-    data class SongItem(val file: File, val title: String, val artist: String, val album: String)
 }
 
 
