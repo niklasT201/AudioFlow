@@ -3,15 +3,12 @@ package com.example.audioflow
 import android.app.Activity
 import android.content.Intent
 import android.media.MediaScannerConnection
-import android.net.Uri
-import android.os.Environment
 import android.provider.DocumentsContract
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.ListView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
@@ -25,6 +22,16 @@ class HomeScreenManager(private val activity: MainActivity) {
     fun setupHomeScreen(homeScreen: View) {
         setupAddButton(homeScreen)
         setupAddFileButton(homeScreen)
+        setupSearchFolderButton(homeScreen)
+    }
+
+    private fun setupSearchFolderButton(homeScreen: View) {
+        val searchFolderButton: ImageButton = homeScreen.findViewById(R.id.search_folder_button)
+        searchFolderButton.setOnClickListener {
+            // Open the file explorer to search for folders
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+            activity.startActivityForResult(intent, ADD_FOLDER_REQUEST_CODE)
+        }
     }
 
     private fun setupAddButton(homeScreen: View) {
@@ -45,20 +52,27 @@ class HomeScreenManager(private val activity: MainActivity) {
     private fun showAddFolderDialog() {
         val dialogView = LayoutInflater.from(activity).inflate(R.layout.dialog_add_folder, null)
         val folderNameEditText: EditText = dialogView.findViewById(R.id.folder_name_edit_text)
+        val cancelButton: Button = dialogView.findViewById(R.id.dialog_button_cancel)
+        val addButton: Button = dialogView.findViewById(R.id.dialog_button_add)
 
-        AlertDialog.Builder(activity, R.style.CustomMaterialDialogTheme)
-            .setTitle("Add New Playlist/Folder")
-            .setView(dialogView)
-            .setPositiveButton("Add") { _, _ ->
-                val folderName = folderNameEditText.text.toString()
-                if (folderName.isNotEmpty()) {
-                    addNewFolder(folderName)
-                } else {
-                    Toast.makeText(activity, "Please enter a folder name", Toast.LENGTH_SHORT).show()
-                }
+        val builder = AlertDialog.Builder(activity)
+        builder.setView(dialogView)
+
+        cancelButton.setOnClickListener {
+            builder.setCancelable(true)
+            builder.create().dismiss()
+        }
+
+        addButton.setOnClickListener {
+            val folderName = folderNameEditText.text.toString()
+            if (folderName.isNotEmpty()) {
+                addNewFolder(folderName)
+            } else {
+                Toast.makeText(activity, "Please enter a folder name", Toast.LENGTH_SHORT).show()
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
+
+        builder.show()
     }
 
     private fun addNewFolder(folderName: String) {

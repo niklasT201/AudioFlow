@@ -1308,7 +1308,6 @@ class MainActivity : AppCompatActivity() {
 
 
 // Options song
-// Add Playlist Create
 // Add/search Folder to List
 // Add Play Song next button
 // add smoother animations to app
@@ -1321,6 +1320,8 @@ class MainActivity : AppCompatActivity() {
 // black statusbar after changing to blurry mode
 
 // short lag, playback after skipping some songs
+
+// select single song closes app
 
 // bottom blurry always visible and not visible when mode switching and blurrier
 // updating buttons when playback

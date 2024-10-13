@@ -12,6 +12,16 @@
             android:gravity="end">
 
         <ImageButton
+                android:id="@+id/search_folder_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/search"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="20dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/my_image_description"/>
+
+        <ImageButton
                 android:id="@+id/add_file_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
