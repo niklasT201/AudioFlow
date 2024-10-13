@@ -630,6 +630,7 @@ class SearchActivity : AppCompatActivity() {
                 if (file.isDirectory) {
                     if (file.listFiles()?.any { it.isAudioFile() } == true) {
                         audioFolders.add(file)
+                        Log.d("SearchActivity", "Found audio folder: ${file.absolutePath}")
                     }
                     searchAudioFolders(file)
                 }
@@ -637,6 +638,7 @@ class SearchActivity : AppCompatActivity() {
         }
 
         searchAudioFolders(externalStorageDir)
+        Log.d("SearchActivity", "Total audio folders found: ${audioFolders.size}")
         return audioFolders
     }
 

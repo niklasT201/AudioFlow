@@ -24,9 +24,12 @@
             android:textColor="@color/primary_text"
             android:textStyle="bold"
             android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toEndOf="@id/albumCover"
-            app:layout_constraintEnd_toStartOf="@id/actionButton" />
+            app:layout_constraintEnd_toStartOf="@id/addToPlaylistButton" />
 
     <TextView
             android:id="@+id/artistAlbum"
@@ -35,9 +38,11 @@
             android:textColor="@color/secondary_text"
             android:textSize="12sp"
             android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             app:layout_constraintTop_toBottomOf="@id/songTitle"
             app:layout_constraintStart_toStartOf="@id/songTitle"
-            app:layout_constraintEnd_toStartOf="@id/actionButton" />
+            app:layout_constraintEnd_toStartOf="@id/addToPlaylistButton" />
 
     <ImageButton
             android:id="@+id/actionButton"

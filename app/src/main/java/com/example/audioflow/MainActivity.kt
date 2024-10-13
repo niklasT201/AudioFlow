@@ -1271,7 +1271,8 @@ class MainActivity : AppCompatActivity() {
 
 // search screen
 // improve search filter (maybe)
-// fix playlist button position
+// folders list needs to long to show up
+// Add to playlist screen bad design
 
 // info screen
 // maybe add color change to more screen and optional
