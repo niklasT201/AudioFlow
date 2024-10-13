@@ -110,7 +110,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSearch: Button
     private lateinit var btnSettings: Button
     private lateinit var aboutScreen: View
-
+    private lateinit var homeScreenManager: HomeScreenManager
     private var lastPlayedSong: SongItem? = null
     private var currentFolderPath: String? = null
 
@@ -137,6 +137,9 @@ class MainActivity : AppCompatActivity() {
 
         settingsManager = SettingsManager(this)
         settingsManager.setupSettings(settingsScreen, aboutScreen)
+
+        homeScreenManager = HomeScreenManager(this)
+        homeScreenManager.setupHomeScreen(homeScreen)
 
         // Set up navigation
         setupNavigation()
@@ -1229,8 +1232,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun addFolderToList(folderUri: Uri) {
+        loadMusicFolders()
+    }
+
+    fun playSingleAudioFile(uri: Uri) {
+        val file = File(uri.path ?: "")
+        val song = SongItem(file, file.nameWithoutExtension, "Unknown Artist", "Unknown Album")
+        playSong(currentPlaylist.size)
+        currentPlaylist = listOf(song)
+        currentSongIndex = 0
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        homeScreenManager.handleActivityResult(requestCode, resultCode, data)
         if (requestCode == PICK_AUDIO_REQUEST && resultCode == Activity.RESULT_OK) {
             data?.data?.let { uri ->
                 selectedSongUri = uri
@@ -1306,7 +1322,7 @@ class MainActivity : AppCompatActivity() {
 
 // short lag, playback after skipping some songs
 
-// bottom blurry always visible and not visible when mode switching
+// bottom blurry always visible and not visible when mode switching and blurrier
 // updating buttons when playback
 // remove cover checkbox at the bottom
 

@@ -10,6 +10,7 @@ import com.google.android.material.shape.ShapeAppearanceModel
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import android.content.SharedPreferences
 import android.graphics.*
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.LayerDrawable
 import android.renderscript.Allocation
 import android.renderscript.Element
@@ -452,10 +453,16 @@ class CoverStyleCustomizer(private val context: Context) {
                 val originalBitmap = albumArtImage.drawable.toBitmap()
                 val blurredBitmap = createBottomBlurredBitmap(originalBitmap, blurHeight)
 
-                albumArtImage.setImageBitmap(blurredBitmap)
+                val layerDrawable = LayerDrawable(arrayOf(
+                    BitmapDrawable(context.resources, originalBitmap),
+                    BitmapDrawable(context.resources, blurredBitmap)
+                ))
+
+                albumArtImage.setImageDrawable(layerDrawable)
             }
         })
     }
+
     private fun createBottomBlurredBitmap(original: Bitmap, blurHeight: Int): Bitmap {
         val width = original.width
         val height = original.height
@@ -463,19 +470,21 @@ class CoverStyleCustomizer(private val context: Context) {
         val outputBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(outputBitmap)
 
-        // Draw the original image
-        canvas.drawBitmap(original, 0f, 0f, null)
-
-        // Create and draw the blurred bottom part
-        val blurredBottomBitmap = Bitmap.createBitmap(width, blurHeight, Bitmap.Config.ARGB_8888)
+        // Extract the bottom part of the original image
         val bottomPart = Bitmap.createBitmap(original, 0, height - blurHeight, width, blurHeight)
-        blurBitmap(bottomPart, blurredBottomBitmap)
 
-        canvas.drawBitmap(blurredBottomBitmap, 0f, (height - blurHeight).toFloat(), null)
+        // Create a blurred version of the bottom part
+        val blurredBottomBitmap = Bitmap.createBitmap(width, blurHeight, Bitmap.Config.ARGB_8888)
+        blurBitmap(bottomPart, blurredBottomBitmap)
 
         // Create a gradient mask for smooth transition
         val gradientMask = createGradientMask(width, blurHeight)
-        canvas.drawBitmap(gradientMask, 0f, (height - blurHeight).toFloat(), Paint(Paint.ANTI_ALIAS_FLAG))
+
+        // Apply the gradient mask to the blurred bottom part
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+        canvas.drawBitmap(blurredBottomBitmap, 0f, (height - blurHeight).toFloat(), null)
+        canvas.drawBitmap(gradientMask, 0f, (height - blurHeight).toFloat(), paint)
 
         return outputBitmap
     }
@@ -487,7 +496,7 @@ class CoverStyleCustomizer(private val context: Context) {
 
         val blur = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs))
         blur.setInput(allocIn)
-        blur.setRadius(2f)  // Adjust blur radius here (1-25)
+        blur.setRadius(25f)  // Increase blur radius for more noticeable effect
         blur.forEach(allocOut)
 
         allocOut.copyTo(output)
