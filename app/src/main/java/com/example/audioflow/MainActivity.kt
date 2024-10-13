@@ -1371,8 +1371,6 @@ class MainActivity : AppCompatActivity() {
 
 // short lag, playback after skipping some songs
 
-// select single song closes app
-
 // bottom blurry always visible and not visible when mode switching and blurrier
 // updating buttons when playback
 // remove cover checkbox at the bottom
