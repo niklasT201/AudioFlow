@@ -23,8 +23,6 @@ import android.widget.*
 import androidx.core.content.FileProvider
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.text.Collator
-import java.util.Locale
 import com.example.audioflow.AudioMetadataRetriever.SongItem
 
 class MainActivity : AppCompatActivity() {
@@ -464,7 +462,7 @@ class MainActivity : AppCompatActivity() {
         val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
         with(sharedPreferences.edit()) {
             putString("currentPlayMode", currentPlayMode.name)
-            putBoolean("isShuffleMode", isShuffleMode) // Save shuffle state
+            putBoolean("isShuffleMode", isShuffleMode)
             apply()
         }
     }
@@ -473,7 +471,7 @@ class MainActivity : AppCompatActivity() {
         val sharedPreferences = getSharedPreferences("AudioFlowPrefs", Context.MODE_PRIVATE)
         val savedPlayMode = sharedPreferences.getString("currentPlayMode", PlayMode.NORMAL.name)
         currentPlayMode = PlayMode.valueOf(savedPlayMode ?: PlayMode.NORMAL.name)
-        isShuffleMode = sharedPreferences.getBoolean("isShuffleMode", false) // Restore shuffle state
+        isShuffleMode = sharedPreferences.getBoolean("isShuffleMode", false)
         updatePlaySettingsIcon()
     }
 
@@ -1079,12 +1077,13 @@ class MainActivity : AppCompatActivity() {
                     }
                     PlayMode.SHUFFLE -> {
                         // Implement shuffled previous song logic
-                        if (shuffleHistory.isNotEmpty()) {
-                            currentSongIndex = shuffleHistory.removeLast()
-                            playSong(currentSongIndex)
+                        currentSongIndex = if (shuffleHistory.isNotEmpty()) {
+                            shuffleHistory.removeLast()
                         } else {
-                            Toast.makeText(this, "No previous shuffled songs", Toast.LENGTH_SHORT).show()
+                            // Play a random previous song if there's no history
+                            (0 until currentPlaylist.size).random()
                         }
+                        playSong(currentSongIndex)
                     }
                     else -> {
                         currentSongIndex = if (currentSongIndex > 0) currentSongIndex - 1 else currentPlaylist.size - 1
