@@ -622,24 +622,27 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun getAudioFolders(): List<File> {
-        val audioFolders = mutableListOf<File>()
-        val externalStorageDir = Environment.getExternalStorageDirectory()
+        val audioFolders = mutableSetOf<File>()
+        val projection = arrayOf(MediaStore.Audio.Media.DATA)
+        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
+        val sortOrder = "${MediaStore.Audio.Media.DATA} ASC"
 
-        fun searchAudioFolders(directory: File) {
-            directory.listFiles()?.forEach { file ->
-                if (file.isDirectory) {
-                    if (file.listFiles()?.any { it.isAudioFile() } == true) {
-                        audioFolders.add(file)
-                        Log.d("SearchActivity", "Found audio folder: ${file.absolutePath}")
-                    }
-                    searchAudioFolders(file)
-                }
+        contentResolver.query(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            null,
+            sortOrder
+        )?.use { cursor ->
+            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+            while (cursor.moveToNext()) {
+                val path = cursor.getString(columnIndex)
+                val file = File(path)
+                audioFolders.add(file.parentFile)
             }
         }
 
-        searchAudioFolders(externalStorageDir)
-        Log.d("SearchActivity", "Total audio folders found: ${audioFolders.size}")
-        return audioFolders
+        return audioFolders.toList()
     }
 
     private fun File.isAudioFile(): Boolean {
@@ -648,14 +651,30 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun confirmAddToPlaylist(song: SongItem, folder: File) {
-        AlertDialog.Builder(this)
-            .setTitle("Confirm")
-            .setMessage("Do you want to add '${song.title}' to '${folder.name}'?")
-            .setPositiveButton("Yes") { _, _ ->
-                copySongToFolder(song, folder)
-            }
-            .setNegativeButton("No", null)
-            .show()
+        val dialogView = layoutInflater.inflate(R.layout.dialog_confirm_add_to_playlist, null)
+        val titleTextView = dialogView.findViewById<TextView>(R.id.dialog_title)
+        val messageTextView = dialogView.findViewById<TextView>(R.id.dialog_message)
+        val yesButton = dialogView.findViewById<Button>(R.id.dialog_button_yes)
+        val noButton = dialogView.findViewById<Button>(R.id.dialog_button_no)
+
+        titleTextView.text = "Confirm"
+        messageTextView.text = "Do you want to add '${song.title}' to '${folder.name}'?"
+
+        val dialog = AlertDialog.Builder(this, R.style.TransparentAlertDialog)
+            .setView(dialogView)
+            .create()
+
+        yesButton.setOnClickListener {
+            dialog.dismiss()
+            copySongToFolder(song, folder)
+        }
+
+        noButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.show()
     }
 
     private fun copySongToFolder(song: SongItem, folder: File) {

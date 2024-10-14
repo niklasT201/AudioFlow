@@ -2,7 +2,9 @@ package com.example.audioflow
 
 import android.content.ContentResolver
 import android.media.MediaMetadataRetriever
+import android.net.Uri
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import java.io.File
 import java.text.Collator
 import java.util.*
@@ -96,6 +98,31 @@ class AudioMetadataRetriever(private val contentResolver: ContentResolver) {
         } finally {
             retriever.release()
         }
+    }
+
+    fun getFileName(uri: Uri): String {
+        var result: String? = null
+        if (uri.scheme == "content") {
+            val cursor = contentResolver.query(uri, null, null, null, null)
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex != -1) {
+                        result = cursor.getString(nameIndex)
+                    }
+                }
+            } finally {
+                cursor?.close()
+            }
+        }
+        if (result == null) {
+            result = uri.path
+            val cut = result?.lastIndexOf('/')
+            if (cut != -1) {
+                result = result?.substring(cut!! + 1)
+            }
+        }
+        return result ?: "Unknown"
     }
 
     fun getMusicFolders(): List<File> {

@@ -16,7 +16,6 @@ import java.io.File
 import java.util.*
 import android.media.PlaybackParams
 import android.os.IBinder
-import android.provider.OpenableColumns
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -1141,7 +1140,7 @@ class MainActivity : AppCompatActivity() {
             mediaPlayer = null
 
             // Get file details
-            val fileName = getFileName(uri)
+            val fileName = audioMetadataRetriever.getFileName(uri)
             val mimeType = contentResolver.getType(uri)
 
             // Create a temporary file in the app's cache directory
@@ -1180,7 +1179,7 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == PICK_AUDIO_REQUEST && resultCode == Activity.RESULT_OK) {
             data?.data?.let { uri ->
                 selectedSongUri = uri
-                songTitleTextView.text = getFileName(uri)
+                songTitleTextView.text = audioMetadataRetriever.getFileName(uri)
                 playButton.isEnabled = true
                 mediaPlayer?.release()
                 mediaPlayer = null
@@ -1206,33 +1205,7 @@ class MainActivity : AppCompatActivity() {
         colorManager.applyColorToActivity(this)
         colorManager.handleActivityResume(this)
         loadMusicFolders()
-        // If you have a current song playing, update the UI
         lastPlayedSong?.let { updateMiniPlayer(it) }
-    }
-
-    private fun getFileName(uri: Uri): String {
-        var result: String? = null
-        if (uri.scheme == "content") {
-            val cursor = contentResolver.query(uri, null, null, null, null)
-            try {
-                if (cursor != null && cursor.moveToFirst()) {
-                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex != -1) {
-                        result = cursor.getString(nameIndex)
-                    }
-                }
-            } finally {
-                cursor?.close()
-            }
-        }
-        if (result == null) {
-            result = uri.path
-            val cut = result?.lastIndexOf('/')
-            if (cut != -1) {
-                result = result?.substring(cut!! + 1)
-            }
-        }
-        return result ?: "Unknown"
     }
 
     override fun onDestroy() {
@@ -1271,8 +1244,6 @@ class MainActivity : AppCompatActivity() {
 
 // search screen
 // improve search filter (maybe)
-// folders list needs to long to show up
-// Add to playlist screen bad design
 
 // info screen
 // maybe add color change to more screen and optional

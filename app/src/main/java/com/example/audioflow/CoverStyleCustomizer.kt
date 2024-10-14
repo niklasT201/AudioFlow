@@ -22,7 +22,6 @@ import android.view.ViewTreeObserver
 import android.view.WindowManager
 import android.view.animation.LinearInterpolator
 import android.widget.*
-import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.graphics.drawable.toBitmap
 import com.google.android.material.card.MaterialCardView
@@ -553,11 +552,12 @@ class CoverStyleCustomizer(private val context: Context) {
     }
 
     fun cleanup() {
-        stopRotation()
-        isRotating = false
-        lastRotation = 0f
-        // Clear any ongoing animations
-        albumArtCard.clearAnimation()
+        if (::albumArtCard.isInitialized) {
+            stopRotation()
+            isRotating = false
+            lastRotation = 0f
+            albumArtCard.clearAnimation()
+        }
     }
 }
 
