@@ -130,8 +130,7 @@ class MainActivity : AppCompatActivity() {
         colorManager.applyColorToActivity(this)
 
         coverStyleCustomizer = CoverStyleCustomizer(this)
-
-        initializePlayerStyles()
+        coverStyleCustomizer!!.initialize(findViewById(R.id.player_view_container))
 
         settingsManager = SettingsManager(this)
         settingsManager.setupSettings(settingsScreen, aboutScreen)
@@ -254,12 +253,6 @@ class MainActivity : AppCompatActivity() {
                 // Permission denied, handle this case (e.g., show a message to the user)
             }
         }
-    }
-
-    private fun initializePlayerStyles() {
-        val coverStyleCustomizer = CoverStyleCustomizer(this)
-        val playerView = findViewById<View>(R.id.player_view_container)
-        coverStyleCustomizer.initialize(playerView)
     }
 
     private fun setupNavigation() {

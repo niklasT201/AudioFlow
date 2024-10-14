@@ -16,6 +16,7 @@ import android.renderscript.Allocation
 import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicBlur
+import android.util.Log
 import android.util.TypedValue
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -55,6 +56,7 @@ class CoverStyleCustomizer(private val context: Context) {
         private const val PREF_COVER_SIZE = "cover_size"
         private const val PREF_IS_ROTATING = "is_rotating"
         private const val PREF_LAST_ROTATION = "last_rotation"
+        private const val TAG = "CoverStyleCustomizer"
 
         // Add default padding values from your layout
         private const val DEFAULT_PADDING = 20
@@ -161,18 +163,15 @@ class CoverStyleCustomizer(private val context: Context) {
     }
 
     private fun startRotation() {
-        stopRotation()
-
-        if (!isRotating) return
+        stopRotation()  // Ensure any existing animation is stopped
 
         rotationAnimator = ObjectAnimator.ofFloat(albumArtCard, View.ROTATION, lastRotation, lastRotation + 360f).apply {
-            duration = 8000 // Increased duration to reduce lag
+            duration = 8000
             interpolator = LinearInterpolator()
             repeatCount = ObjectAnimator.INFINITE
             addUpdateListener { animation ->
                 lastRotation = (animation.animatedValue as Float) % 360f
             }
-            // Add cleanup listener
             addListener(object : android.animation.AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: android.animation.Animator) {
                     if (!isRotating) {
@@ -193,13 +192,9 @@ class CoverStyleCustomizer(private val context: Context) {
         }
         rotationAnimator = null
 
-        // Reset rotation only if we're not in circular mode
-        if (!isRotating || albumArtCard.parent?.let {
-                (it as? ViewGroup)?.findViewById<RadioGroup>(R.id.coverStyleGroup)?.checkedRadioButtonId
-            } != R.id.styleCircle) {
-            albumArtCard.animate().rotation(0f).setDuration(300).start()
-            lastRotation = 0f
-        }
+        // Immediately reset rotation to 0
+        albumArtCard.animate().rotation(0f).setDuration(300).start()
+        lastRotation = 0f
     }
 
     private fun applyStyle(style: CoverStyle, cornerRadius: Float, coverSize: Int, forceUpdate: Boolean = false) {
@@ -350,11 +345,15 @@ class CoverStyleCustomizer(private val context: Context) {
     }
 
     fun setRotating(rotating: Boolean) {
+        if (isRotating == rotating) return  // No change, exit early
+
         isRotating = rotating
         if (isRotating) {
             startRotation()
+            Log.d(TAG, "Cover rotation started")
         } else {
             stopRotation()
+            Log.d(TAG, "Cover rotation stopped")
         }
         // Save the rotation state
         prefs.edit {
@@ -362,6 +361,7 @@ class CoverStyleCustomizer(private val context: Context) {
             putFloat(PREF_LAST_ROTATION, lastRotation)
         }
     }
+
 
     private fun isBackgroundBlurry(): Boolean {
         return prefs.getBoolean("useBlurBackground", false)
@@ -590,19 +590,17 @@ fun Activity.showCoverStyleCustomization() {
     val cornerRadiusSeekBar = view.findViewById<SeekBar>(R.id.cornerRadiusSeekBar)
     val coverSizeSeekBar = view.findViewById<SeekBar>(R.id.coverSizeSeekBar)
     val circularOptionsContainer = view.findViewById<LinearLayout>(R.id.circularOptionsContainer)
-    val circularOptionsGroup = view.findViewById<RadioGroup>(R.id.circularOptionsGroup)
-    val circularRotating = view.findViewById<RadioButton>(R.id.circularRotating)
+    val rotateCheckBox = view.findViewById<CheckBox>(R.id.rotateCheckBox)
 
+    rotateCheckBox.isChecked = isRotating
+
+    // Show/hide circular options based on selected style
     radioGroup.setOnCheckedChangeListener { _, checkedId ->
         circularOptionsContainer.visibility = if (checkedId == R.id.styleCircle) {
             View.VISIBLE
         } else {
             View.GONE
         }
-    }
-
-    if (savedStyle == CoverStyleCustomizer.CoverStyle.CIRCULAR.name && isRotating) {
-        circularRotating.isChecked = true
     }
 
     // Set the radio button based on saved style
@@ -630,11 +628,8 @@ fun Activity.showCoverStyleCustomization() {
             else -> CoverStyleCustomizer.CoverStyle.DEFAULT
         }
 
-        if (selectedStyle == CoverStyleCustomizer.CoverStyle.CIRCULAR) {
-            coverStyleCustomizer.setRotating(circularRotating.isChecked)
-        } else {
-            coverStyleCustomizer.setRotating(false)
-        }
+        val shouldRotate = selectedStyle == CoverStyleCustomizer.CoverStyle.CIRCULAR && rotateCheckBox.isChecked
+        coverStyleCustomizer.setRotating(shouldRotate)
 
         coverStyleCustomizer.applyCoverStyle(
             selectedStyle,
