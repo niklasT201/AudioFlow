@@ -132,14 +132,28 @@ class ColorManager(private val context: Context) {
                             playerViewContainer?.background = BitmapDrawable(activity.resources, blurredBackground)
                             // Ensure layout stays consistent
                             applyConsistentLayout(activity)
+                            // Immediately make status bar transparent
+                            makeStatusBarTransparent(activity)
                         }
                         albumArtBitmap.recycle()
                     }.start()
                 }
+            } else {
+                // If there's no album art, apply a default blur or color
+                applyDefaultBackground(activity)
             }
         } catch (e: Exception) {
             Log.e("ColorManager", "Error updating background: ${e.message}")
             applyColorToActivity(activity)
+        }
+    }
+
+    private fun applyDefaultBackground(activity: MainActivity) {
+        val color = getSavedColor()
+        activity.runOnUiThread {
+            activity.findViewById<View>(R.id.player_view_container)?.setBackgroundColor(color)
+            makeStatusBarTransparent(activity)
+            applyConsistentLayout(activity)
         }
     }
 

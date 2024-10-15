@@ -1228,8 +1228,6 @@ class MainActivity : AppCompatActivity() {
 // Full width/expand width bugging when cover customizer open
 // rotate feature fixen (hopefully)
 
-// black statusbar after changing to blurry mode
-
 // short lag, playback after skipping some songs
 
 // bottom blurry always visible and not visible when mode switching and blurrier

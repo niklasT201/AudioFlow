@@ -572,9 +572,6 @@ fun Activity.showCoverStyleCustomization() {
         decorView.setBackgroundResource(android.R.color.transparent)
     }
 
-    val bottomSheet = dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
-    bottomSheet?.setBackgroundResource(android.R.color.transparent)
-
     val coverStyleCustomizer = CoverStyleCustomizer(this)
     coverStyleCustomizer.initialize(findViewById(R.id.player_view_container))
 
