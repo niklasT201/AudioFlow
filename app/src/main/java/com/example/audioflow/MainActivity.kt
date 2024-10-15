@@ -20,6 +20,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.core.content.FileProvider
+import androidx.core.view.isVisible
 import java.io.FileNotFoundException
 import java.io.IOException
 import com.example.audioflow.AudioMetadataRetriever.SongItem
@@ -30,6 +31,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var playerOptionsManager: PlayerOptionsManager
     private var mediaPlayerService: MediaPlayerService? = null
     private var bound = false
+    private lateinit var songOptionsFooter: LinearLayout
 
     private lateinit var audioMetadataRetriever: AudioMetadataRetriever
     private lateinit var playPauseButton: ImageView
@@ -188,6 +190,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupFooter()
+
+        songListView?.setOnItemLongClickListener { _, _, _, _ ->
+            showFooter()
+            true
+        }
     }
 
     private fun initializeViews() {
@@ -217,6 +224,7 @@ class MainActivity : AppCompatActivity() {
         aboutScreen = layoutInflater.inflate(R.layout.about_screen, contentFrame, false)
 
         songListView = songsScreen.findViewById(R.id.song_list_view)
+        songOptionsFooter = songsScreen.findViewById(R.id.song_options_footer)
 
         playerOptionsOverlay = findViewById(R.id.player_options_overlay)
         currentsongtitle = findViewById(R.id.current_song_title)
@@ -274,6 +282,7 @@ class MainActivity : AppCompatActivity() {
 
         songsScreen.findViewById<ImageButton>(R.id.back_btn).setOnClickListener {
             showScreen(homeScreen)
+            hideFooter()
         }
 
         // Set up close player button
@@ -618,6 +627,14 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Error showing settings view: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    private fun showFooter() {
+        songOptionsFooter.isVisible = true
+    }
+
+    private fun hideFooter() {
+        songOptionsFooter.isVisible = false
     }
 
     private fun loadMusicFolders() {
@@ -1202,7 +1219,9 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         when {
             playerOptionsManager.isOverlayVisible() -> playerOptionsManager.hideOverlay()
-            contentFrame.getChildAt(0) == songsScreen -> showScreen(homeScreen)
+            contentFrame.getChildAt(0) == songsScreen -> {
+                showScreen(homeScreen)
+                songOptionsFooter.isVisible=false}
             contentFrame.getChildAt(0) == playerScreen -> {
                 showScreen(songsScreen)
                 hidePlayerScreen()}
@@ -1238,7 +1257,6 @@ class MainActivity : AppCompatActivity() {
 
 
 // Options song
-// Add/search Folder to List
 // Add Play Song next button
 // add smoother animations to app
 // song list settings for one song

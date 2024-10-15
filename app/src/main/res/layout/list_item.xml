@@ -14,23 +14,23 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-    <TextView
-            android:id="@+id/list_item_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/primary_text"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:textSize="15sp" />
+        <TextView
+                android:id="@+id/list_item_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/primary_text"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textSize="15sp" />
 
-    <TextView
-            android:id="@+id/list_item_artist"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/secondary_text"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:textSize="13sp" />
+        <TextView
+                android:id="@+id/list_item_artist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/secondary_text"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textSize="13sp" />
 
     </LinearLayout>
 
@@ -42,4 +42,12 @@
             android:layout_marginStart="8dp"
             android:visibility="gone"
             android:contentDescription="@string/home"/>
+
+    <ImageView
+            android:id="@+id/song_settings_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/better_option"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@string/settings"/>
 </LinearLayout>
