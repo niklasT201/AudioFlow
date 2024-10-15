@@ -305,6 +305,12 @@ class MainActivity : AppCompatActivity() {
             else -> View.GONE
         }
 
+        when (screen) {
+            homeScreen -> updateFooterHighlight(btnHome)
+            songsScreen -> updateFooterHighlight(btnSearch)
+            settingsScreen -> updateFooterHighlight(btnSettings)
+        }
+
         songsScreen.findViewById<View>(R.id.folder_name_header)?.visibility = when (screen) {
             songsScreen -> View.VISIBLE
             else -> View.GONE
@@ -565,6 +571,19 @@ class MainActivity : AppCompatActivity() {
             val currentSong = currentPlaylist[currentSongIndex]
             currentPlaylist = originalPlaylist.toList()
             currentSongIndex = currentPlaylist.indexOf(currentSong)
+        }
+    }
+
+    private fun updateFooterHighlight(activeButton: Button) {
+        val buttons = listOf(btnHome, btnSearch, btnSettings)
+        buttons.forEach { button ->
+            if (button == activeButton) {
+                button.setTextColor(ContextCompat.getColor(this, R.color.primary_text))
+                button.compoundDrawables[1]?.setTint(ContextCompat.getColor(this, R.color.primary_text))
+            } else {
+                button.setTextColor(ContextCompat.getColor(this, R.color.secondary_text))
+                button.compoundDrawables[1]?.setTint(ContextCompat.getColor(this, R.color.secondary_text))
+            }
         }
     }
 

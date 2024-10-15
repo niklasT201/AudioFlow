@@ -19,14 +19,17 @@ class AudioMetadataRetriever(private val contentResolver: ContentResolver) {
         return songs.sortedWith(compareBy<SongItem> { song ->
             val title = song.title.lowercase(Locale.GERMAN)
             when {
-                title.first().isDigit() -> "zzz$title"  // Move numbers to the end
-                title.startsWith("ä") -> "a" + title.substring(1)
-                title.startsWith("ö") -> "o" + title.substring(1)
-                title.startsWith("ü") -> "u" + title.substring(1)
-                else -> title.replace("ä", "a")
-                    .replace("ö", "o")
-                    .replace("ü", "u")
-                    .replace("ß", "ss")
+                title.first().isDigit() -> "zzz$title"  // Move numbers to the very end
+                title.first().isLetter() -> when {
+                    title.startsWith("ä") -> "a" + title.substring(1)
+                    title.startsWith("ö") -> "o" + title.substring(1)
+                    title.startsWith("ü") -> "u" + title.substring(1)
+                    else -> title.replace("ä", "a")
+                        .replace("ö", "o")
+                        .replace("ü", "u")
+                        .replace("ß", "ss")
+                }
+                else -> "zzz$title"  // Move special characters after letters but before numbers
             }
         }.thenBy { germanCollator.getCollationKey(it.title) })
     }

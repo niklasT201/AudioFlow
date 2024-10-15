@@ -141,6 +141,7 @@ class ColorManager(private val context: Context) {
             } else {
                 // If there's no album art, apply a default blur or color
                 applyDefaultBackground(activity)
+                makeStatusBarTransparent(activity)
             }
         } catch (e: Exception) {
             Log.e("ColorManager", "Error updating background: ${e.message}")
