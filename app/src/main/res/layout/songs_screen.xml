@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
+              xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:orientation="vertical">
 
@@ -54,12 +54,14 @@
                     android:id="@+id/play_song_icon"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/play_button_header" />
+                    android:src="@drawable/play_button_header"
+                    app:tint="@color/secondary_text"/>
 
             <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Play Song"
+                    android:textColor="@color/secondary_text"
                     android:textSize="12sp" />
         </LinearLayout>
 
@@ -74,12 +76,14 @@
                     android:id="@+id/edit_song_icon"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    app:tint="@color/secondary_text"
                     android:src="@drawable/edit_button" />
 
             <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Edit Song"
+                    android:textColor="@color/secondary_text"
                     android:textSize="12sp" />
         </LinearLayout>
 
@@ -94,12 +98,14 @@
                     android:id="@+id/add_to_playlist_icon"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    app:tint="@color/secondary_text"
                     android:src="@drawable/add_playlist" />
 
             <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Add to Playlist"
+                    android:textColor="@color/secondary_text"
                     android:textSize="12sp" />
         </LinearLayout>
 
@@ -114,11 +120,13 @@
                     android:id="@+id/delete_song_icon"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    app:tint="@color/secondary_text"
                     android:src="@drawable/delete_icon" />
 
             <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/secondary_text"
                     android:text="Delete Song"
                     android:textSize="12sp" />
         </LinearLayout>

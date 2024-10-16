@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var coverStyleCustomizer: CoverStyleCustomizer? = null
     private lateinit var audioMetadataRetriever: AudioMetadataRetriever
+    private lateinit var songOptionsHandler: SongOptionsHandler
     private lateinit var colorManager: ColorManager
     private lateinit var homeScreenManager: HomeScreenManager
     lateinit var settingsManager: SettingsManager
@@ -189,11 +190,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupFooter()
-
-        songListView?.setOnItemLongClickListener { _, _, _, _ ->
-            showFooter()
-            true
-        }
+        songOptionsHandler = songListView?.let { SongOptionsHandler(songOptionsFooter, it) }!!
     }
 
     private fun initializeViews() {
@@ -266,13 +263,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_home).setOnClickListener { showScreen(homeScreen) }
         findViewById<Button>(R.id.btn_settings).setOnClickListener { showScreen(settingsScreen) }
 
-        // Set up folder list click listener
         homeScreen.findViewById<ListView>(R.id.folder_list_view).setOnItemClickListener { _, _, position, _ ->
             loadSongsInFolder(folderItems[position].folder)
             showScreen(songsScreen)
         }
 
-        // Set up song list click listener
         songsScreen.findViewById<ListView>(R.id.song_list_view).setOnItemClickListener { _, _, position, _ ->
             playSong(position)
             showScreen(playerScreen)
@@ -281,7 +276,7 @@ class MainActivity : AppCompatActivity() {
 
         songsScreen.findViewById<ImageButton>(R.id.back_btn).setOnClickListener {
             showScreen(homeScreen)
-            hideFooter()
+            songOptionsHandler.hideFooter()
         }
 
         // Set up close player button
@@ -626,14 +621,6 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Error showing settings view: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
-    }
-
-    private fun showFooter() {
-        songOptionsFooter.isVisible = true
-    }
-
-    private fun hideFooter() {
-        songOptionsFooter.isVisible = false
     }
 
     private fun loadMusicFolders() {
@@ -1218,6 +1205,9 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         when {
             playerOptionsManager.isOverlayVisible() -> playerOptionsManager.hideOverlay()
+            songOptionsFooter.isVisible -> {
+                songOptionsHandler.hideFooter()
+            }
             contentFrame.getChildAt(0) == songsScreen -> {
                 showScreen(homeScreen)
                 songOptionsFooter.isVisible=false}
@@ -1259,7 +1249,6 @@ class MainActivity : AppCompatActivity() {
 // Add Play Song next button
 // add smoother animations to app
 // song list settings for one song
-// holding song item for settings to
 
 // Full width/expand width bugging when cover customizer open
 // rotate feature fixen (hopefully)
