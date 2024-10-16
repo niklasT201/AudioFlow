@@ -28,12 +28,15 @@ import com.example.audioflow.AudioMetadataRetriever.SongItem
 class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var coverStyleCustomizer: CoverStyleCustomizer? = null
+    private lateinit var audioMetadataRetriever: AudioMetadataRetriever
+    private lateinit var colorManager: ColorManager
+    private lateinit var homeScreenManager: HomeScreenManager
+    lateinit var settingsManager: SettingsManager
     private lateinit var playerOptionsManager: PlayerOptionsManager
     private var mediaPlayerService: MediaPlayerService? = null
     private var bound = false
     private lateinit var songOptionsFooter: LinearLayout
 
-    private lateinit var audioMetadataRetriever: AudioMetadataRetriever
     private lateinit var playPauseButton: ImageView
     private lateinit var previousButton: ImageView
     private lateinit var nextButton: ImageView
@@ -104,17 +107,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settingsScreen: View
     private var folderItems: List<FolderItem> = emptyList()
 
-    private lateinit var colorManager: ColorManager
     private lateinit var contentFrame: FrameLayout
     private lateinit var btnHome: Button
     private lateinit var btnSearch: Button
     private lateinit var btnSettings: Button
     private lateinit var aboutScreen: View
-    private lateinit var homeScreenManager: HomeScreenManager
     private var lastPlayedSong: SongItem? = null
     private var currentFolderPath: String? = null
-
-    lateinit var settingsManager: SettingsManager
 
     companion object {
         private const val PERMISSION_REQUEST_CODE = 1

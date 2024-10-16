@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <size android:height="1dp" />
-    <solid android:color="@color/list_divider" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:left="18dp" android:right="17dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/list_divider" />
+            <size android:height="1dp" />
+        </shape>
+    </item>
+</layer-list>

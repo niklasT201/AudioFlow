@@ -22,7 +22,7 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:scrollbars="none"
-                android:divider="@color/list_divider"
+                android:divider="@drawable/list_divider"
                 android:dividerHeight="1dp" />
 
         <com.example.audioflow.AlphabetIndexView
