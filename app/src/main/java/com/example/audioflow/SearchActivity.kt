@@ -28,6 +28,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
+import com.example.audioflow.AudioMetadataRetriever.SongItem
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -588,7 +589,7 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
-    private fun showAddToPlaylistDialog(song: SongItem) {
+    fun showAddToPlaylistDialog(song: SongItem) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_to_playlist, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.folderRecyclerView)
         val titleTextView = dialogView.findViewById<TextView>(R.id.dialog_title)
@@ -843,6 +844,3 @@ class FolderAdapter(
 
     override fun getItemCount() = folders.size
 }
-
-// Make sure this SongItem data class matches the one you're using in your MainActivity
-data class SongItem(val file: File, val title: String, val artist: String, val album: String)

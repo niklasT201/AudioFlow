@@ -101,7 +101,7 @@ class MainActivity : AppCompatActivity() {
     private var selectedSongUri: Uri? = null
     private var currentSongIndex: Int = -1
     private var currentSongs: List<SongItem> = emptyList()
-    private var currentPlaylist: List<SongItem> = emptyList()
+    var currentPlaylist: List<SongItem> = emptyList()
     private lateinit var playerScreen: View
     private lateinit var homeScreen: View
     private lateinit var songsScreen: View
@@ -190,7 +190,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupFooter()
-        songOptionsHandler = songListView?.let { SongOptionsHandler(songOptionsFooter, it) }!!
+        // In MainActivity.onCreate
+        songOptionsHandler = SongOptionsHandler(
+            activity = this,
+            songOptionsFooter = songOptionsFooter,
+            songListView = songListView!!,
+            playerOptionsManager = playerOptionsManager
+        )
     }
 
     private fun initializeViews() {
@@ -877,7 +883,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun playSong(position: Int, showPlayerScreen: Boolean = true) {
+    fun playSong(position: Int, showPlayerScreen: Boolean = true) {
         if (position < 0 || position >= currentPlaylist.size) return
 
         currentSongIndex = position

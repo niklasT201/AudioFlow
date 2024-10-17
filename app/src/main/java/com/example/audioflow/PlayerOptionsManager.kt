@@ -161,7 +161,7 @@ class PlayerOptionsManager(
             .show()
     }
 
-    private fun showDeleteConfirmationDialog() {
+    fun showDeleteConfirmationDialog() {
         val themedContext = ContextThemeWrapper(activity, R.style.CustomMaterialDialogTheme)
         MaterialAlertDialogBuilder(themedContext)
             .setTitle("Delete File")
