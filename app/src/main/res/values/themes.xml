@@ -36,7 +36,7 @@
         <!-- Icon Colors (if any) -->
         <item name="colorOnSurface">@color/primary_text</item>
 
-        <item name="android:textSize">16sp</item> <!-- Increase text size -->
+        <item name="android:textSize">16sp</item>
     </style>
 
 </resources>

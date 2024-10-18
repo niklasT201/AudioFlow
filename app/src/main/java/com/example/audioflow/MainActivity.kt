@@ -120,7 +120,6 @@ class MainActivity : AppCompatActivity() {
     private var currentFolderPath: String? = null
 
     companion object {
-        private const val PERMISSION_REQUEST_CODE = 1
         private const val READ_EXTERNAL_STORAGE_REQUEST = 1
         private const val PICK_AUDIO_REQUEST = 1
     }
@@ -179,6 +178,15 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        setupFooter()
+
+        songOptionsHandler = SongOptionsHandler(
+            activity = this,
+            songOptionsFooter = songOptionsFooter,
+            songListView = songListView!!,
+            playerOptionsManager = playerOptionsManager
+        )
+
 
         Intent(this, MediaPlayerService::class.java).also { intent ->
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
@@ -194,15 +202,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             requestPermission()
         }
-
-        setupFooter()
-        // In MainActivity.onCreate
-        songOptionsHandler = SongOptionsHandler(
-            activity = this,
-            songOptionsFooter = songOptionsFooter,
-            songListView = songListView!!,
-            playerOptionsManager = playerOptionsManager
-        )
     }
 
     private fun initializeViews() {
@@ -1268,18 +1267,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     data class FolderItem(val folder: File, val name: String, val songCount: String, var isCurrentFolder: Boolean = false)
-}
-
-class SplashActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.splash_screen)
-
-        Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
-        }, 2000) // 2000 ms delay, adjust as needed
-    }
 }
 
 

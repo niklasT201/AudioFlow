@@ -174,7 +174,7 @@ class PlayerOptionsManager(
     }
 
 
-    private fun showOverlay() {
+    fun showOverlay() {
         overlay.visibility = View.VISIBLE
         currentSongTitle.text = activity.getCurrentSongTitle()
     }

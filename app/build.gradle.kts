@@ -55,6 +55,7 @@ dependencies {
 
     implementation("androidx.core:core-ktx:1.10.1")
     //implementation("com.google.android.gms:play-services-ads:22.6.0")
+    implementation ("androidx.core:core-splashscreen:1.0.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation("androidx.activity:activity-compose:1.7.0")
     implementation("net.jthink:jaudiotagger:3.0.1")
