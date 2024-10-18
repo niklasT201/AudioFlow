@@ -15,7 +15,9 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.*
 import android.media.PlaybackParams
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -34,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var homeScreenManager: HomeScreenManager
     lateinit var settingsManager: SettingsManager
     private lateinit var playerOptionsManager: PlayerOptionsManager
+    private lateinit var repeatManager: RepeatManager
     private var mediaPlayerService: MediaPlayerService? = null
     private var bound = false
     private lateinit var songOptionsFooter: LinearLayout
@@ -139,6 +142,9 @@ class MainActivity : AppCompatActivity() {
 
         homeScreenManager = HomeScreenManager(this)
         homeScreenManager.setupHomeScreen(homeScreen)
+
+        repeatManager = RepeatManager(findViewById(R.id.repeat_counter_view), this)
+        repeatManager.setupRepeatListener(playPauseButton)
 
         // Set up navigation
         setupNavigation()
@@ -635,19 +641,29 @@ class MainActivity : AppCompatActivity() {
             FolderItem(folder, folder.name, "$songCount songs", folder.absolutePath == currentFolderPath)
         }
 
-        val adapter = object : ArrayAdapter<FolderItem>(this, R.layout.folder_list_item, folderItems) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = convertView ?: layoutInflater.inflate(R.layout.folder_list_item, parent, false)
-                val folder = getItem(position)
-                view.findViewById<TextView>(R.id.folder_item_title).text = folder?.name
-                view.findViewById<TextView>(R.id.folder_item_count).text = folder?.songCount
-                view.findViewById<ImageView>(R.id.folder_current_song_icon).visibility =
-                    if (folder?.isCurrentFolder == true) View.VISIBLE else View.GONE
-                return view
-            }
-        }
+        val noFoldersMessage = homeScreen.findViewById<TextView>(R.id.no_folders_message)
 
-        homeScreen.findViewById<ListView>(R.id.folder_list_view).adapter = adapter
+        if (folderItems.isEmpty()) {
+            homeScreen.findViewById<ListView>(R.id.folder_list_view).visibility = View.GONE
+            noFoldersMessage.visibility = View.VISIBLE
+        } else {
+            homeScreen.findViewById<ListView>(R.id.folder_list_view).visibility = View.VISIBLE
+            noFoldersMessage.visibility = View.GONE
+
+            val adapter = object : ArrayAdapter<FolderItem>(this, R.layout.folder_list_item, folderItems) {
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                    val view = convertView ?: layoutInflater.inflate(R.layout.folder_list_item, parent, false)
+                    val folder = getItem(position)
+                    view.findViewById<TextView>(R.id.folder_item_title).text = folder?.name
+                    view.findViewById<TextView>(R.id.folder_item_count).text = folder?.songCount
+                    view.findViewById<ImageView>(R.id.folder_current_song_icon).visibility =
+                        if (folder?.isCurrentFolder == true) View.VISIBLE else View.GONE
+                    return view
+                }
+            }
+
+            homeScreen.findViewById<ListView>(R.id.folder_list_view).adapter = adapter
+        }
     }
 
     private fun loadSongsInFolder(folder: File) {
@@ -865,20 +881,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupMediaPlayerCompletionListener() {
         mediaPlayer?.setOnCompletionListener {
-            when (currentPlayMode) {
-                PlayMode.NORMAL -> {
-                    if (currentSongIndex < currentPlaylist.size - 1) {
-                        playNextSong()
-                    } else {
-                        // At the last song, stop playback
-                        mediaPlayer?.pause()
-                        updatePlayPauseButton()
-                        Toast.makeText(this, "Playlist ended", Toast.LENGTH_SHORT).show()
+            if (repeatManager.onSongFinished()) {
+                mediaPlayer?.start()
+            } else {
+                when (currentPlayMode) {
+                    PlayMode.NORMAL -> {
+                        if (currentSongIndex < currentPlaylist.size - 1) {
+                            playNextSong()
+                        } else {
+                            mediaPlayer?.pause()
+                            updatePlayPauseButton()
+                            Toast.makeText(this, "Playlist ended", Toast.LENGTH_SHORT).show()
+                        }
                     }
+                    PlayMode.REPEAT_ALL -> playNextSong()
+                    PlayMode.REPEAT_ONE -> mediaPlayer?.start()
+                    PlayMode.SHUFFLE -> playRandomSong()
                 }
-                PlayMode.REPEAT_ALL -> playNextSong()
-                PlayMode.REPEAT_ONE -> mediaPlayer?.start()
-                PlayMode.SHUFFLE -> playRandomSong()
             }
         }
     }
@@ -917,6 +936,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             updatePlayerUI(song)
+            repeatManager.reset()
 
             updateMiniPlayer(song)
             updateMiniPlayerProgress(0f)
@@ -1054,7 +1074,7 @@ class MainActivity : AppCompatActivity() {
         songsScreen.findViewById<CircularProgressButton>(R.id.mini_player_play_pause)?.setImageResource(miniResource)
     }
 
-    private fun togglePlayPause() {
+    fun togglePlayPause() {
         try {
             mediaPlayer?.let { player ->
                 if (player.isPlaying) {
@@ -1250,6 +1270,18 @@ class MainActivity : AppCompatActivity() {
     data class FolderItem(val folder: File, val name: String, val songCount: String, var isCurrentFolder: Boolean = false)
 }
 
+class SplashActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.splash_screen)
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+        }, 2000) // 2000 ms delay, adjust as needed
+    }
+}
+
 
 // Options song
 // Add Play Song next button
@@ -1274,5 +1306,3 @@ class MainActivity : AppCompatActivity() {
 
 // settings screen
 // Maybe add small infos about a song (where you found it, who told you of it)
-
-//can you help me with my kotlin android app? I would like to have a special feature. I want that when you hold down the play/pause button of the player screen, for maybe like 2 seconds, then a number in like a small round container appears and this number gets higher how longer you hold down on this button. for example when I don't hold down the button for 2 seconds or longer, then this container will not appear and the value will be like 0, that means that the current playing song will not repeat itself, it will once finish, go to the next song in the playlist, but when the value is over 0, so for example 4, then the current song will repeat itself 4 times after finishing. Song finishes, repeats, number in container gets down to 3, song finishes, repeats, number gets down to 2 and so on. Once the value is 0, the container disappears and the song will when finished go to the next song. hope you get what I mean :) and WITHOUT a library when possible

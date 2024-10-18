@@ -231,6 +231,15 @@
                     android:src="@drawable/previous"
                     android:contentDescription="@string/my_image_description" />
 
+            <TextView
+                    android:id="@+id/repeat_counter_view"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/circular_background"
+                    android:gravity="center"
+                    android:textColor="@android:color/white"
+                    android:visibility="gone"/>
+
             <ImageView
                     android:id="@+id/btn_play_pause"
                     android:layout_width="72dp"

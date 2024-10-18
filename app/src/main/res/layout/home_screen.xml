@@ -52,5 +52,16 @@
             android:divider="@color/list_divider"
             android:dividerHeight="1dp" />
 
+    <TextView
+            android:id="@+id/no_folders_message"
+            android:layout_width="wrap_content"
+            android:textColor="@color/primary_text"
+            android:layout_height="wrap_content"
+            android:text="No music folders found. Try adding music or choosing a folder."
+            android:visibility="gone"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="16dp"/>
+
     <include layout="@layout/mini_player" />
 </LinearLayout>
