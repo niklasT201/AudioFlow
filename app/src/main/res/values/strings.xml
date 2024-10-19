@@ -47,4 +47,6 @@
     <string name="display_on">Keep Display Always On</string>
     <string name="search_cover">Show Cover in Search Screen</string>
     <string name="all_color">Apply Color to All Screens</string>
+    <string name="share">Share</string>
+    <string name="add_to_playlist">Add to Playlist</string>
 </resources>

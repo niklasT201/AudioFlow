@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+    <androidx.cardview.widget.CardView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="#212121"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.9">
+
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+            <TextView
+                    android:id="@+id/current_song_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:padding="16dp" />
+
+            <LinearLayout
+                    android:id="@+id/item_play"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="24dp"
+                    style="@style/SongOptionItem">
+
+                <ImageView
+                        style="@style/SongOptionIcon"
+                        android:src="@drawable/play_button"
+                        android:contentDescription="@string/play" />
+
+                <TextView
+                        style="@style/SongOptionText"
+                        android:text="@string/play" />
+            </LinearLayout>
+
+            <View style="@style/SongOptionDivider" />
+
+            <LinearLayout
+                    android:id="@+id/item_add_to_playlist"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="24dp"
+                    style="@style/SongOptionItem">
+
+                <ImageView
+                        style="@style/SongOptionIcon"
+                        android:src="@drawable/add_playlist"
+                        android:contentDescription="@string/my_image_description" />
+
+                <TextView
+                        style="@style/SongOptionText"
+                        android:text="@string/add_to_playlist" />
+            </LinearLayout>
+
+            <View style="@style/SongOptionDivider" />
+
+            <LinearLayout
+                    android:id="@+id/item_share"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="24dp"
+                    style="@style/SongOptionItem">
+
+                <ImageView
+                        style="@style/SongOptionIcon"
+                        android:src="@drawable/share_icon"
+                        android:contentDescription="@string/my_image_description" />
+
+                <TextView
+                        style="@style/SongOptionText"
+                        android:text="@string/share" />
+            </LinearLayout>
+
+            <View style="@style/SongOptionDivider" />
+
+            <LinearLayout
+                    android:id="@+id/item_rename_file"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="24dp"
+                    style="@style/SongOptionItem">
+
+                <ImageView
+                        style="@style/SongOptionIcon"
+                        android:src="@drawable/rename_icon"
+                        android:contentDescription="@string/rename_file" />
+
+                <TextView
+                        style="@style/SongOptionText"
+                        android:text="@string/rename_file" />
+            </LinearLayout>
+
+            <View style="@style/SongOptionDivider" />
+
+            <LinearLayout
+                    android:id="@+id/item_delete_file"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="24dp"
+                    style="@style/SongOptionItem">
+
+                <ImageView
+                        style="@style/SongOptionIcon"
+                        android:src="@drawable/delete_icon"
+                        android:contentDescription="@string/delete_file" />
+
+                <TextView
+                        style="@style/SongOptionText"
+                        android:text="@string/delete_file" />
+            </LinearLayout>
+
+            <Button
+                    android:id="@+id/btn_close_overlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/close"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#2C2C2C"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="-6dp"
+                    android:layout_marginLeft="-5dp"
+                    android:layout_marginRight="-5dp" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

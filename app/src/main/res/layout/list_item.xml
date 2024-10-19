@@ -1,18 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:orientation="horizontal"
-              android:paddingTop="11dp"
-              android:paddingBottom="11dp"
-              android:paddingStart="18dp"
-              android:paddingEnd="10dp"
-              android:gravity="center_vertical">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="11dp"
+                android:paddingBottom="11dp"
+                android:paddingStart="18dp"
+                android:paddingEnd="24dp"> <!-- Reduced paddingEnd to allow more space for icons -->
 
     <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_toStartOf="@+id/icons_container"
             android:orientation="vertical">
 
         <TextView
@@ -35,20 +32,30 @@
 
     </LinearLayout>
 
-    <ImageView
-            android:id="@+id/song_current_song_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/current_song"
-            android:layout_marginStart="8dp"
-            android:visibility="gone"
-            android:contentDescription="@string/home"/>
+    <LinearLayout
+            android:id="@+id/icons_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:orientation="horizontal"
+            android:layout_marginStart="16dp"> <!-- Added margin to move icons to the right -->
 
-    <ImageView
-            android:id="@+id/song_settings_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/better_option"
-            android:layout_marginStart="8dp"
-            android:contentDescription="@string/settings"/>
-</LinearLayout>
+        <ImageView
+                android:id="@+id/song_current_song_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/current_song"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone"
+                android:contentDescription="@string/home"/>
+
+        <ImageView
+                android:id="@+id/song_settings_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/better_option"
+                android:contentDescription="@string/settings"/>
+    </LinearLayout>
+
+</RelativeLayout>

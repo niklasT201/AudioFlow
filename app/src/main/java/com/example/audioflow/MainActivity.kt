@@ -15,9 +15,7 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.*
 import android.media.PlaybackParams
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -734,9 +732,29 @@ class MainActivity : AppCompatActivity() {
                 view.findViewById<TextView>(R.id.list_item_artist).text = "${song?.artist} - ${song?.album}"
                 view.findViewById<ImageView>(R.id.song_current_song_icon).visibility =
                     if (song == lastPlayedSong) View.VISIBLE else View.GONE
+
+                // Add click listener to the settings icon
+                view.findViewById<ImageView>(R.id.song_settings_icon).setOnClickListener {
+                    song?.let { showSongOptionsDialog(it, position) }
+                }
+
                 return view
             }
         }
+    }
+
+    private fun showSongOptionsDialog(song: SongItem, position: Int) {
+        val songOptionsDialog = SongOptionsDialog(this)
+        songOptionsDialog.show(
+            song = song,
+            position = position,
+            onPlaySelected = { pos -> playSong(pos) },
+            onPlaylistUpdated = {
+                currentFolderPath?.let { File(it) }?.let { loadSongsInFolder(it) }
+                updateMiniPlayer(currentPlaylist[currentSongIndex])
+            },
+            onAddToPlaylist = { songItem -> /* Implement add to playlist functionality */ }
+        )
     }
 
     private fun updateFolderList() {
@@ -1270,10 +1288,8 @@ class MainActivity : AppCompatActivity() {
 }
 
 
-// Options song
 // Add Play Song next button
 // add smoother animations to app
-// song list settings for one song
 
 // Full width/expand width bugging when cover customizer open
 // rotate feature fixen (hopefully)
