@@ -1291,6 +1291,19 @@ class MainActivity : AppCompatActivity() {
 // Add Play Song next button
 // add smoother animations to app
 
+// add to playlist func
+// rename func
+// favorite song func
+// show album func
+// show artist func
+// metadata func
+// search func for songs list
+
+// Player Screen:
+// add favorite func
+// add to playlist func
+// switch through solid and blurry mode
+
 // Full width/expand width bugging when cover customizer open
 // rotate feature fixen (hopefully)
 
