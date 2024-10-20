@@ -49,4 +49,7 @@
     <string name="all_color">Apply Color to All Screens</string>
     <string name="share">Share</string>
     <string name="add_to_playlist">Add to Playlist</string>
+    <string name="add_to_favorites">Add to Favorites</string>
+    <string name="show_album">Album Details:</string>
+    <string name="show_artist">Artist Details:</string>
 </resources>

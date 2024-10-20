@@ -753,7 +753,10 @@ class MainActivity : AppCompatActivity() {
                 currentFolderPath?.let { File(it) }?.let { loadSongsInFolder(it) }
                 updateMiniPlayer(currentPlaylist[currentSongIndex])
             },
-            onAddToPlaylist = { songItem -> /* Implement add to playlist functionality */ }
+            onAddToPlaylist = { songItem -> /* Implement add to playlist functionality */ },
+            onAddToFavorites = { songItem -> /* Implement add to playlist functionality */  },
+            onShowAlbum = { albumName -> /* Implement add to playlist functionality */  },
+            onShowArtist = { artistName -> /* Implement add to playlist functionality */  }
         )
     }
 

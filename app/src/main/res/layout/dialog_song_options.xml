@@ -33,6 +33,7 @@
                     android:gravity="center"
                     android:padding="16dp" />
 
+            <!-- Play Option -->
             <LinearLayout
                     android:id="@+id/item_play"
                     android:paddingVertical="12dp"
@@ -51,6 +52,7 @@
 
             <View style="@style/SongOptionDivider" />
 
+            <!-- Add to Playlist Option -->
             <LinearLayout
                     android:id="@+id/item_add_to_playlist"
                     android:paddingVertical="12dp"
@@ -60,7 +62,7 @@
                 <ImageView
                         style="@style/SongOptionIcon"
                         android:src="@drawable/add_playlist"
-                        android:contentDescription="@string/my_image_description" />
+                        android:contentDescription="@string/add_to_playlist" />
 
                 <TextView
                         style="@style/SongOptionText"
@@ -69,6 +71,83 @@
 
             <View style="@style/SongOptionDivider" />
 
+            <!-- Add to Favorites Option -->
+            <LinearLayout
+                    android:id="@+id/item_add_to_favorites"
+                    style="@style/SongOptionItem"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="24dp">
+
+                <ImageView
+                        style="@style/SongOptionIcon"
+                        android:src="@drawable/no_favorite"
+                        android:contentDescription="@string/add_to_favorites" />
+
+                <TextView
+                        style="@style/SongOptionText"
+                        android:text="@string/add_to_favorites" />
+            </LinearLayout>
+
+            <View style="@style/SongOptionDivider" />
+
+            <!-- Edit Metadata Option -->
+            <LinearLayout
+                    android:id="@+id/item_edit_metadata"
+                    style="@style/SongOptionItem"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="24dp">
+
+                <ImageView
+                        style="@style/SongOptionIcon"
+                        android:src="@drawable/edit_button"
+                        android:contentDescription="@string/edit_metadata" />
+
+                <TextView
+                        style="@style/SongOptionText"
+                        android:text="@string/edit_metadata" />
+            </LinearLayout>
+
+            <View style="@style/SongOptionDivider" />
+
+            <!-- Show Album Details Option -->
+            <LinearLayout
+                    android:id="@+id/item_show_album"
+                    style="@style/SongOptionItem"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="24dp">
+
+                <ImageView
+                        style="@style/SongOptionIcon"
+                        android:src="@drawable/cover_search"
+                        android:contentDescription="@string/show_album" />
+
+                <TextView
+                        style="@style/SongOptionText"
+                        android:text="@string/show_album" />
+            </LinearLayout>
+
+            <View style="@style/SongOptionDivider" />
+
+            <!-- Show Artist Details Option -->
+            <LinearLayout
+                    android:id="@+id/item_show_artist"
+                    style="@style/SongOptionItem"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="24dp">
+
+                <ImageView
+                        style="@style/SongOptionIcon"
+                        android:src="@drawable/artist_icon"
+                        android:contentDescription="@string/show_artist" />
+
+                <TextView
+                        style="@style/SongOptionText"
+                        android:text="@string/show_artist" />
+            </LinearLayout>
+
+            <View style="@style/SongOptionDivider" />
+
+            <!-- Share Option -->
             <LinearLayout
                     android:id="@+id/item_share"
                     android:paddingVertical="12dp"
@@ -78,7 +157,7 @@
                 <ImageView
                         style="@style/SongOptionIcon"
                         android:src="@drawable/share_icon"
-                        android:contentDescription="@string/my_image_description" />
+                        android:contentDescription="@string/share" />
 
                 <TextView
                         style="@style/SongOptionText"
@@ -87,6 +166,7 @@
 
             <View style="@style/SongOptionDivider" />
 
+            <!-- Rename File Option -->
             <LinearLayout
                     android:id="@+id/item_rename_file"
                     android:paddingVertical="12dp"
@@ -105,6 +185,7 @@
 
             <View style="@style/SongOptionDivider" />
 
+            <!-- Delete File Option -->
             <LinearLayout
                     android:id="@+id/item_delete_file"
                     android:paddingVertical="12dp"
