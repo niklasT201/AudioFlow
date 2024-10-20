@@ -84,6 +84,7 @@
         <item name="android:layout_height">1dp</item>
         <item name="android:background">#444444</item>
         <item name="android:layout_marginStart">65dp</item>
+        <item name="android:layout_marginEnd">40dp</item>
     </style>
 
     <style name="SplashTheme" parent="Theme.AppCompat.Light.NoActionBar">

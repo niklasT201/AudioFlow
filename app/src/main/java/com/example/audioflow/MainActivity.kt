@@ -114,7 +114,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnSearch: Button
     private lateinit var btnSettings: Button
     private lateinit var aboutScreen: View
-    private var lastPlayedSong: SongItem? = null
+    var lastPlayedSong: SongItem? = null
     private var currentFolderPath: String? = null
 
     companion object {
@@ -753,7 +753,6 @@ class MainActivity : AppCompatActivity() {
                 currentFolderPath?.let { File(it) }?.let { loadSongsInFolder(it) }
                 updateMiniPlayer(currentPlaylist[currentSongIndex])
             },
-            onAddToPlaylist = { songItem -> /* Implement add to playlist functionality */ },
             onAddToFavorites = { songItem -> /* Implement add to playlist functionality */  },
             onShowAlbum = { albumName -> /* Implement add to playlist functionality */  },
             onShowArtist = { artistName -> /* Implement add to playlist functionality */  }
@@ -766,7 +765,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun updateMiniPlayer(song: SongItem) {
+    fun updateMiniPlayer(song: SongItem) {
         val updateMiniPlayerView = { view: View ->
             view.findViewById<TextView>(R.id.mini_player_title).text = song.title
             view.findViewById<TextView>(R.id.mini_player_artist).text = song.artist
@@ -1014,7 +1013,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updatePlayerUI(song: SongItem) {
+    fun updatePlayerUI(song: SongItem) {
         playerSongTitleTextView.text = song.title.takeIf { it.isNotBlank() } ?: "Unknown Title"
         artistNameTextView.text = song.artist.takeIf { it.isNotBlank() } ?: "Unknown Artist"
         updatePlayPauseButton()
@@ -1294,12 +1293,9 @@ class MainActivity : AppCompatActivity() {
 // Add Play Song next button
 // add smoother animations to app
 
-// add to playlist func
-// rename func
 // favorite song func
 // show album func
 // show artist func
-// metadata func
 // search func for songs list
 
 // Player Screen:

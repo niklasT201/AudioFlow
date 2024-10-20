@@ -589,7 +589,7 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
-    fun showAddToPlaylistDialog(song: SongItem) {
+    private fun showAddToPlaylistDialog(song: SongItem) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_add_to_playlist, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.folderRecyclerView)
         val titleTextView = dialogView.findViewById<TextView>(R.id.dialog_title)

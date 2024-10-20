@@ -4,6 +4,8 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -15,6 +17,14 @@ import androidx.core.content.FileProvider
 import com.example.audioflow.AudioMetadataRetriever.SongItem
 import com.google.android.material.textfield.TextInputLayout
 import androidx.appcompat.view.ContextThemeWrapper
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 class SongOptionsDialog(private val context: Context) {
 
@@ -23,7 +33,6 @@ class SongOptionsDialog(private val context: Context) {
         position: Int,
         onPlaySelected: (Int) -> Unit,
         onPlaylistUpdated: () -> Unit,
-        onAddToPlaylist: (SongItem) -> Unit,
         onAddToFavorites: (SongItem) -> Unit = {},
         onShowAlbum: (String) -> Unit = {},
         onShowArtist: (String) -> Unit = {}
@@ -32,6 +41,12 @@ class SongOptionsDialog(private val context: Context) {
         val dialog = Dialog(context)
         dialog.setContentView(dialogView)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        // Set the dialog's dimensions
+        val displayMetrics = context.resources.displayMetrics
+        val width = (displayMetrics.widthPixels * 0.9).toInt()
+        val height = (displayMetrics.heightPixels * 0.8).toInt()
+        dialog.window?.setLayout(width, height)
 
         // Set up the dialog components
         val titleTextView = dialogView.findViewById<TextView>(R.id.current_song_title)
@@ -44,7 +59,7 @@ class SongOptionsDialog(private val context: Context) {
         }
 
         setupOptionItem(dialogView, R.id.item_add_to_playlist) {
-            onAddToPlaylist(song)
+            showAddToPlaylistDialog(song)
             dialog.dismiss()
         }
 
@@ -129,17 +144,45 @@ class SongOptionsDialog(private val context: Context) {
 
         editText.setText(song.title)
 
-        AlertDialog.Builder(themedContext)
+        MaterialAlertDialogBuilder(themedContext)
             .setTitle("Rename Song")
             .setView(dialogView)
             .setPositiveButton("Rename") { _, _ ->
                 val newName = editText.text.toString()
                 if (newName.isNotBlank()) {
                     try {
-                        // Implement your rename logic here
-                        onPlaylistUpdated()
-                        Toast.makeText(context, "Song renamed successfully", Toast.LENGTH_SHORT).show()
+                        // Implement rename logic
+                        val oldFile = song.file
+                        val newFile = File(oldFile.parentFile, "$newName.${oldFile.extension}")
+
+                        if (oldFile.renameTo(newFile)) {
+                            // Update the SongItem
+                            val updatedSong = song.copy(file = newFile, title = newName)
+
+                            // Update the playlist in MainActivity
+                            (context as? MainActivity)?.let { activity ->
+                                val index = activity.currentPlaylist.indexOf(song)
+                                if (index != -1) {
+                                    val updatedPlaylist = activity.currentPlaylist.toMutableList()
+                                    updatedPlaylist[index] = updatedSong
+                                    activity.currentPlaylist = updatedPlaylist
+                                }
+
+                                // If this is the currently playing song, update lastPlayedSong
+                                if (activity.lastPlayedSong == song) {
+                                    activity.lastPlayedSong = updatedSong
+                                    activity.updatePlayerUI(updatedSong)
+                                    activity.updateMiniPlayer(updatedSong)
+                                }
+                            }
+
+                            onPlaylistUpdated()
+                            Toast.makeText(context, "Song renamed successfully", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Failed to rename song", Toast.LENGTH_SHORT).show()
+                        }
                     } catch (e: Exception) {
+                        Log.e("AudioFlow", "Error renaming song: ${e.message}", e)
                         Toast.makeText(context, "Error renaming: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -149,7 +192,8 @@ class SongOptionsDialog(private val context: Context) {
     }
 
     private fun showDeleteConfirmation(song: SongItem, position: Int, onPlaylistUpdated: () -> Unit) {
-        AlertDialog.Builder(context)
+        val themedContext = ContextThemeWrapper(context, R.style.CustomMaterialDialogTheme)
+        MaterialAlertDialogBuilder(themedContext)
             .setTitle("Delete Song")
             .setMessage("Are you sure you want to delete ${song.title}?")
             .setPositiveButton("Yes") { _, _ ->
@@ -166,5 +210,112 @@ class SongOptionsDialog(private val context: Context) {
             }
             .setNegativeButton("No", null)
             .show()
+    }
+
+    private fun showAddToPlaylistDialog(song: SongItem) {
+        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_add_to_playlist, null)
+        val recyclerView = dialogView.findViewById<RecyclerView>(R.id.folderRecyclerView)
+        val titleTextView = dialogView.findViewById<TextView>(R.id.dialog_title)
+        val cancelButton = dialogView.findViewById<Button>(R.id.dialog_button_cancel)
+
+        titleTextView.text = "Add '${song.title}' to Playlist"
+
+        val dialog = AlertDialog.Builder(context, R.style.TransparentAlertDialog)
+            .setView(dialogView)
+            .create()
+
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        recyclerView.layoutManager = LinearLayoutManager(context)
+
+        (context as? MainActivity)?.lifecycleScope?.launch(Dispatchers.IO) {
+            val audioFolders = getAudioFolders()
+            withContext(Dispatchers.Main) {
+                val adapter = FolderAdapter(audioFolders) { selectedFolder ->
+                    dialog.dismiss()
+                    confirmAddToPlaylist(song, selectedFolder)
+                }
+                recyclerView.adapter = adapter
+            }
+        }
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.show()
+    }
+
+    private fun getAudioFolders(): List<File> {
+        val audioFolders = mutableSetOf<File>()
+        val projection = arrayOf(MediaStore.Audio.Media.DATA)
+        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
+        val sortOrder = "${MediaStore.Audio.Media.DATA} ASC"
+
+        context.contentResolver.query(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            null,
+            sortOrder
+        )?.use { cursor ->
+            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+            while (cursor.moveToNext()) {
+                val path = cursor.getString(columnIndex)
+                val file = File(path)
+                audioFolders.add(file.parentFile)
+            }
+        }
+
+        return audioFolders.toList()
+    }
+
+    private fun confirmAddToPlaylist(song: SongItem, folder: File) {
+        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_confirm_add_to_playlist, null)
+        val titleTextView = dialogView.findViewById<TextView>(R.id.dialog_title)
+        val messageTextView = dialogView.findViewById<TextView>(R.id.dialog_message)
+        val yesButton = dialogView.findViewById<Button>(R.id.dialog_button_yes)
+        val noButton = dialogView.findViewById<Button>(R.id.dialog_button_no)
+
+        titleTextView.text = "Confirm"
+        messageTextView.text = "Do you want to add '${song.title}' to '${folder.name}'?"
+
+        val dialog = AlertDialog.Builder(context, R.style.TransparentAlertDialog)
+            .setView(dialogView)
+            .create()
+
+        yesButton.setOnClickListener {
+            dialog.dismiss()
+            copySongToFolder(song, folder)
+        }
+
+        noButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.show()
+    }
+
+    private fun copySongToFolder(song: SongItem, folder: File) {
+        (context as? MainActivity)?.lifecycleScope?.launch(Dispatchers.IO) {
+            try {
+                val destFile = File(folder, song.file.name)
+                song.file.copyTo(destFile, overwrite = true)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Song added to playlist", Toast.LENGTH_SHORT).show()
+                    refreshMediaStore(destFile.absolutePath)
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Error adding song to playlist", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun refreshMediaStore(path: String) {
+        val intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+        intent.data = Uri.fromFile(File(path))
+        context.sendBroadcast(intent)
     }
 }
