@@ -35,6 +35,7 @@ class AudioMetadataRetriever(private val contentResolver: ContentResolver) {
     }
 
     fun getSongsInFolder(folder: File): List<SongItem> {
+        val songs = mutableListOf<SongItem>()
         val projection = arrayOf(
             MediaStore.Audio.Media.DATA,
             MediaStore.Audio.Media.TITLE,
@@ -44,7 +45,6 @@ class AudioMetadataRetriever(private val contentResolver: ContentResolver) {
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DATA} LIKE ?"
         val selectionArgs = arrayOf("${folder.absolutePath}%")
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
-        val songs = mutableListOf<SongItem>()
 
         contentResolver.query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -60,26 +60,30 @@ class AudioMetadataRetriever(private val contentResolver: ContentResolver) {
 
             while (cursor.moveToNext()) {
                 val path = cursor.getString(pathColumn)
-                var title = cursor.getString(titleColumn)
-                val artist = cursor.getString(artistColumn)
-                var album = cursor.getString(albumColumn)
                 val file = File(path)
 
-                if (title.isNullOrEmpty() || artist.isNullOrEmpty() || album.isNullOrEmpty()) {
-                    val retriever = MediaMetadataRetriever()
-                    try {
-                        retriever.setDataSource(path)
-                        title = title ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE) ?: file.nameWithoutExtension
-                        album = album ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM) ?: "Unknown Album"
-                    } catch (e: Exception) {
-                        title = file.nameWithoutExtension
-                        album = "Unknown Album"
-                    } finally {
-                        retriever.release()
-                    }
-                }
+                // Check if the file actually exists
+                if (file.exists()) {
+                    var title = cursor.getString(titleColumn)
+                    val artist = cursor.getString(artistColumn)
+                    var album = cursor.getString(albumColumn)
 
-                songs.add(SongItem(file, title, artist ?: "Unknown Artist", album))
+                    if (title.isNullOrEmpty() || artist.isNullOrEmpty() || album.isNullOrEmpty()) {
+                        val retriever = MediaMetadataRetriever()
+                        try {
+                            retriever.setDataSource(path)
+                            title = title ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE) ?: file.nameWithoutExtension
+                            album = album ?: retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM) ?: "Unknown Album"
+                        } catch (e: Exception) {
+                            title = file.nameWithoutExtension
+                            album = "Unknown Album"
+                        } finally {
+                            retriever.release()
+                        }
+                    }
+
+                    songs.add(SongItem(file, title, artist ?: "Unknown Artist", album))
+                }
             }
         }
 

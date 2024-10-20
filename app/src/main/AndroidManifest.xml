@@ -67,6 +67,16 @@
         </activity>
 
         <activity
+                android:name=".ArtistSongsActivity"
+                android:screenOrientation="portrait"
+                android:exported="false" />
+
+        <activity
+                android:name=".AlbumSongsActivity"
+                android:screenOrientation="portrait"
+                android:exported="false" />
+
+        <activity
                 android:name=".EditMetadataActivity"
                 android:screenOrientation="portrait"/>
     </application>

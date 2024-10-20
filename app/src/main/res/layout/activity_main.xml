@@ -203,6 +203,53 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
+        <!-- Add this just above the controls_layout in the player_view_container -->
+        <LinearLayout
+                android:id="@+id/additional_controls"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                app:layout_constraintBottom_toTopOf="@+id/controls_layout"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+            <ImageView
+                    android:id="@+id/btn_add_to_playlist"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/add_playlist"
+                    android:contentDescription="@string/add_to_playlist"
+                    android:layout_weight="1"
+                    android:alpha="0.5"
+                    android:layout_gravity="start"
+                    app:tint="@color/secondary_text"/>
+
+            <ImageView
+                    android:id="@+id/btn_switch_background"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/switch_mode"
+                    android:contentDescription="@string/switch_mode"
+                    android:layout_weight="1"
+                    android:alpha="0.5"
+                    android:layout_gravity="center"
+                    app:tint="@color/secondary_text"/>
+
+            <ImageView
+                    android:id="@+id/btn_share_song"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/share_icon"
+                    android:contentDescription="@string/share"
+                    android:alpha="0.5"
+                    android:layout_weight="1"
+                    android:layout_gravity="end" app:tint="@color/secondary_text"/>
+
+        </LinearLayout>
+
         <FrameLayout
                 android:id="@+id/controls_layout"
                 android:layout_width="match_parent"

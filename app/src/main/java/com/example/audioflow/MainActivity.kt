@@ -16,6 +16,7 @@ import java.io.File
 import java.util.*
 import android.media.PlaybackParams
 import android.os.IBinder
+import android.provider.MediaStore
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -404,6 +405,7 @@ class MainActivity : AppCompatActivity() {
     fun deleteCurrentSong() {
         val currentSong = currentPlaylist[currentSongIndex]
         if (currentSong.file.delete()) {
+            updateMediaStoreAfterDeletion(currentSong.file.absolutePath)
             currentPlaylist = currentPlaylist.filterIndexed { index, _ -> index != currentSongIndex }
             if (currentPlaylist.isEmpty()) {
                 finish()
@@ -415,6 +417,13 @@ class MainActivity : AppCompatActivity() {
         } else {
             Toast.makeText(this, "Failed to delete file", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun updateMediaStoreAfterDeletion(filePath: String) {
+        val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        val where = MediaStore.Audio.Media.DATA + "=?"
+        val selectionArgs = arrayOf(filePath)
+        contentResolver.delete(uri, where, selectionArgs)
     }
 
     private val scrollListener = object : AbsListView.OnScrollListener {

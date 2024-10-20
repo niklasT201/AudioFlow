@@ -462,7 +462,10 @@ class SearchActivity : AppCompatActivity() {
                 val album = cursor.getString(albumColumn)
                 val data = cursor.getString(dataColumn)
 
-                songs.add(SongItem(File(data), title, artist, album))
+                val file = File(data)
+                if (file.exists()) {
+                    songs.add(SongItem(file, title, artist, album))
+                }
             }
         }
 
