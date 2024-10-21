@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var coverStyleCustomizer: CoverStyleCustomizer? = null
     private lateinit var audioMetadataRetriever: AudioMetadataRetriever
+    private lateinit var favoriteManager: FavoriteManager
     private lateinit var songOptionsHandler: SongOptionsHandler
     private lateinit var colorManager: ColorManager
     private lateinit var homeScreenManager: HomeScreenManager
@@ -132,8 +133,21 @@ class MainActivity : AppCompatActivity() {
         colorManager = ColorManager(this)
         colorManager.applyColorToActivity(this)
 
+        playerOptionsManager = PlayerOptionsManager(
+            activity = this,
+            overlay = playerOptionsOverlay,
+            currentSongTitle = currentsongtitle,
+            playbackSpeedSeekBar = playbackSpeedSeekBar,
+            playbackSpeedText = playbackSpeedText,
+            mediaPlayer = mediaPlayer,
+            colorManager = colorManager,
+            coverStyleCustomizer = coverStyleCustomizer
+        )
+
         coverStyleCustomizer = CoverStyleCustomizer(this)
         coverStyleCustomizer!!.initialize(findViewById(R.id.player_view_container))
+
+        favoriteManager = FavoriteManager(this)
 
         settingsManager = SettingsManager(this)
         settingsManager.setupSettings(settingsScreen, aboutScreen)
@@ -143,6 +157,23 @@ class MainActivity : AppCompatActivity() {
 
         repeatManager = RepeatManager(findViewById(R.id.repeat_counter_view), this)
         repeatManager.setupRepeatListener(playPauseButton)
+
+        intent.getStringExtra("PLAY_SONG")?.let { songPath ->
+            val songFile = File(songPath)
+            if (songFile.exists()) {
+                val song = audioMetadataRetriever.getSongsInFolder(songFile.parentFile).find { it.file == songFile }
+                if (song != null) {
+                    currentPlaylist = listOf(song)
+                    currentSongIndex = 0
+                    playSong(0)
+                    showScreen(playerScreen)
+                } else {
+                    Toast.makeText(this, "Error loading song", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "Song file not found", Toast.LENGTH_SHORT).show()
+            }
+        }
 
         // Set up navigation
         setupNavigation()
@@ -155,17 +186,6 @@ class MainActivity : AppCompatActivity() {
         setupPlaySettings()
 
         restorePlayMode()
-
-        playerOptionsManager = PlayerOptionsManager(
-            activity = this,
-            overlay = playerOptionsOverlay,
-            currentSongTitle = currentsongtitle,
-            playbackSpeedSeekBar = playbackSpeedSeekBar,
-            playbackSpeedText = playbackSpeedText,
-            mediaPlayer = mediaPlayer,
-            colorManager = colorManager,
-            coverStyleCustomizer = coverStyleCustomizer
-        )
 
         playerOptionsManager.setPlaybackSpeedChangeListener(object : PlayerOptionsManager.PlaybackSpeedChangeListener {
             override fun onPlaybackSpeedChanged(speed: Float) {
@@ -193,6 +213,12 @@ class MainActivity : AppCompatActivity() {
 
         // Show home screen by default
         showScreen(homeScreen)
+
+
+        findViewById<Button>(R.id.btn_favorites).setOnClickListener {
+            val intent = Intent(this, FavoritesActivity::class.java)
+            startActivity(intent)
+        }
 
         if (checkPermission()) {
             loadMusicFolders()
@@ -365,6 +391,25 @@ class MainActivity : AppCompatActivity() {
             colorManager.handlePlayerVisibilityChange(this, false)
         } catch (e: Exception) {
             Log.e("MainActivity", "Error hiding player screen: ${e.message}")
+        }
+    }
+
+    private fun updateFavoriteButton() {
+        val favoriteButton = findViewById<ImageView>(R.id.btn_favorite)
+        val currentSong = currentPlaylist.getOrNull(currentSongIndex)
+        if (currentSong != null) {
+            favoriteButton.setImageResource(
+                if (favoriteManager.isFavorite(currentSong)) R.drawable.favorite
+                else R.drawable.no_favorite
+            )
+            favoriteButton.setOnClickListener {
+                if (favoriteManager.isFavorite(currentSong)) {
+                    favoriteManager.removeFavorite(currentSong)
+                } else {
+                    favoriteManager.addFavorite(currentSong)
+                }
+                updateFavoriteButton()
+            }
         }
     }
 
@@ -964,6 +1009,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             updatePlayerUI(song)
+            if (showPlayerScreen) {
+                updateFavoriteButton()
+            }
+
             repeatManager.reset()
 
             updateMiniPlayer(song)
@@ -1302,15 +1351,12 @@ class MainActivity : AppCompatActivity() {
 // Add Play Song next button
 // add smoother animations to app
 
-// favorite song func
 // show album func
 // show artist func
 // search func for songs list
 
-// Player Screen:
-// add favorite func
-// add to playlist func
-// switch through solid and blurry mode
+// fix favorite songs list
+// improving the design
 
 // Full width/expand width bugging when cover customizer open
 // rotate feature fixen (hopefully)
