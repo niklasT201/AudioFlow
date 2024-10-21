@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var coverStyleCustomizer: CoverStyleCustomizer? = null
     private lateinit var audioMetadataRetriever: AudioMetadataRetriever
+    private lateinit var footerManager: FooterManager
     private lateinit var favoriteManager: FavoriteManager
     private lateinit var songOptionsHandler: SongOptionsHandler
     private lateinit var colorManager: ColorManager
@@ -106,15 +107,12 @@ class MainActivity : AppCompatActivity() {
     private var currentSongs: List<SongItem> = emptyList()
     var currentPlaylist: List<SongItem> = emptyList()
     private lateinit var playerScreen: View
-    private lateinit var homeScreen: View
+    lateinit var homeScreen: View
     private lateinit var songsScreen: View
-    private lateinit var settingsScreen: View
+    lateinit var settingsScreen: View
     private var folderItems: List<FolderItem> = emptyList()
 
     private lateinit var contentFrame: FrameLayout
-    private lateinit var btnHome: Button
-    private lateinit var btnSearch: Button
-    private lateinit var btnSettings: Button
     private lateinit var aboutScreen: View
     var lastPlayedSong: SongItem? = null
     private var currentFolderPath: String? = null
@@ -197,7 +195,8 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        setupFooter()
+        footerManager = FooterManager(this)
+        footerManager.setupFooter()
 
         songOptionsHandler = SongOptionsHandler(
             activity = this,
@@ -231,10 +230,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         contentFrame = findViewById(R.id.content_frame)
-        val footer = findViewById<View>(R.id.footer)
-        btnHome = footer.findViewById(R.id.btn_home)
-        btnSearch = footer.findViewById(R.id.btn_search)
-        btnSettings = footer.findViewById(R.id.btn_settings)
 
         homeScreen = layoutInflater.inflate(R.layout.home_screen, contentFrame, false)
         songsScreen = layoutInflater.inflate(R.layout.songs_screen, contentFrame, false)
@@ -345,9 +340,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         when (screen) {
-            homeScreen -> updateFooterHighlight(btnHome)
-            songsScreen -> updateFooterHighlight(btnSearch)
-            settingsScreen -> updateFooterHighlight(btnSettings)
+            homeScreen -> footerManager.updateFooterHighlight(findViewById(R.id.btn_home))
+            songsScreen -> footerManager.updateFooterHighlight(findViewById(R.id.btn_search))
+            settingsScreen -> footerManager.updateFooterHighlight(findViewById(R.id.btn_settings))
         }
 
         songsScreen.findViewById<View>(R.id.folder_name_header)?.visibility = when (screen) {
@@ -640,51 +635,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateFooterHighlight(activeButton: Button) {
-        val buttons = listOf(btnHome, btnSearch, btnSettings)
-        buttons.forEach { button ->
-            if (button == activeButton) {
-                button.setTextColor(ContextCompat.getColor(this, R.color.primary_text))
-                button.compoundDrawables[1]?.setTint(ContextCompat.getColor(this, R.color.primary_text))
-            } else {
-                button.setTextColor(ContextCompat.getColor(this, R.color.secondary_text))
-                button.compoundDrawables[1]?.setTint(ContextCompat.getColor(this, R.color.secondary_text))
-            }
-        }
-    }
 
-    private fun setupFooter() {
-        btnHome.setOnClickListener {
-            Log.d("AudioFlow", "Home button clicked")
-            try {
-                showScreen(homeScreen)
-            } catch (e: Exception) {
-                Log.e("AudioFlow", "Error showing home view", e)
-                Toast.makeText(this, "Error showing home view: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-
-        btnSearch.setOnClickListener {
-            Log.d("AudioFlow", "Search button clicked")
-            try {
-                val intent = Intent(this, SearchActivity::class.java)
-                startActivity(intent)
-            } catch (e: Exception) {
-                Log.e("AudioFlow", "Error showing search view", e)
-                Toast.makeText(this, "Error showing search view: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-
-        btnSettings.setOnClickListener {
-            Log.d("AudioFlow", "Settings button clicked")
-            try {
-                showScreen(settingsScreen)
-            } catch (e: Exception) {
-                Log.e("AudioFlow", "Error showing settings view", e)
-                Toast.makeText(this, "Error showing settings view: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
 
     private fun loadMusicFolders() {
         folderItems = audioMetadataRetriever.getMusicFolders().map { folder ->
@@ -1357,6 +1308,9 @@ class MainActivity : AppCompatActivity() {
 
 // fix favorite songs list
 // improving the design
+// song options favoritise the song
+// maybe changing favorite list to use the songs screen
+// share icon working on the player screen
 
 // Full width/expand width bugging when cover customizer open
 // rotate feature fixen (hopefully)
