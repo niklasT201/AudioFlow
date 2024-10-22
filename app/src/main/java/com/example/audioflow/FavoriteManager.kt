@@ -4,7 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -37,16 +40,33 @@ class FavoriteManager(private val context: Context) {
 
 class FavoritesActivity : AppCompatActivity() {
     private lateinit var favoriteManager: FavoriteManager
-    private lateinit var favoritesListView: ListView
+    private lateinit var songListView: ListView
     private lateinit var audioMetadataRetriever: AudioMetadataRetriever
+    private lateinit var songOptionsHandler: SongOptionsHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_favorites)
+        setContentView(R.layout.songs_screen)
 
         favoriteManager = FavoriteManager(this)
         audioMetadataRetriever = AudioMetadataRetriever(contentResolver)
-        favoritesListView = findViewById(R.id.favorites_list_view)
+        songListView = findViewById(R.id.song_list_view)
+
+        findViewById<AlphabetIndexView>(R.id.alphabet_index).visibility = View.GONE
+
+        findViewById<TextView>(R.id.tv_folder_name).text = "Favorite Songs"
+
+        findViewById<ImageButton>(R.id.back_btn).setOnClickListener {
+            finish()
+        }
+
+        // Initialize SongOptionsHandler
+        songOptionsHandler = SongOptionsHandler(
+            activity = this,
+            songOptionsFooter = findViewById(R.id.song_options_footer),
+            songListView = songListView,
+            playerOptionsManager = null
+        )
 
         updateFavoritesList()
     }
@@ -62,21 +82,48 @@ class FavoritesActivity : AppCompatActivity() {
         }
 
         if (favorites.isEmpty()) {
-            findViewById<TextView>(R.id.no_favorites_message).visibility = View.VISIBLE
-            favoritesListView.visibility = View.GONE
+            songListView.visibility = View.GONE
+            findViewById<TextView>(R.id.no_favorites_message)?.apply {
+                visibility = View.VISIBLE
+                text = "No favorite songs yet"
+            }
         } else {
-            findViewById<TextView>(R.id.no_favorites_message).visibility = View.GONE
-            favoritesListView.visibility = View.VISIBLE
+            songListView.visibility = View.VISIBLE
+            findViewById<TextView>(R.id.no_favorites_message)?.visibility = View.GONE
 
-            val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, favorites.map { it.title })
-            favoritesListView.adapter = adapter
+            val adapter = createSongListAdapter(favorites)
+            songListView.adapter = adapter
 
-            favoritesListView.setOnItemClickListener { _, _, position, _ ->
+            songListView.setOnItemClickListener { _, _, position, _ ->
                 val selectedSong = favorites[position]
                 val intent = Intent(this, MainActivity::class.java)
                 intent.putExtra("PLAY_SONG", selectedSong.file.absolutePath)
                 startActivity(intent)
             }
         }
+    }
+
+    private fun createSongListAdapter(songs: List<SongItem>): ArrayAdapter<SongItem> {
+        return object : ArrayAdapter<SongItem>(this, R.layout.list_item, songs) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = convertView ?: layoutInflater.inflate(R.layout.list_item, parent, false)
+                val song = getItem(position)
+                view.findViewById<TextView>(R.id.list_item_title).text = song?.title
+                view.findViewById<TextView>(R.id.list_item_artist).text = "${song?.artist} - ${song?.album}"
+                view.findViewById<ImageView>(R.id.song_current_song_icon).visibility = View.GONE
+
+                // Add click listener to the settings icon
+                view.findViewById<ImageView>(R.id.song_settings_icon).setOnClickListener {
+                    song?.let { showSongOptionsDialog(it, position) }
+                }
+
+                return view
+            }
+        }
+    }
+
+    private fun showSongOptionsDialog(song: SongItem, position: Int) {
+        // Implement your song options dialog here
+        // You can reuse the logic from MainActivity or create a simplified version
     }
 }

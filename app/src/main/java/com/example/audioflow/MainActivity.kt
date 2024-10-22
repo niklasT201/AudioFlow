@@ -214,10 +214,12 @@ class MainActivity : AppCompatActivity() {
         showScreen(homeScreen)
 
 
-        findViewById<Button>(R.id.btn_favorites).setOnClickListener {
+        findViewById<View>(R.id.favorites_container).setOnClickListener {
             val intent = Intent(this, FavoritesActivity::class.java)
             startActivity(intent)
         }
+
+        updateFavoriteCount()
 
         if (checkPermission()) {
             loadMusicFolders()
@@ -406,6 +408,12 @@ class MainActivity : AppCompatActivity() {
                 updateFavoriteButton()
             }
         }
+    }
+
+    private fun updateFavoriteCount() {
+        val count = favoriteManager.getFavorites().size
+        findViewById<TextView>(R.id.favorite_count).text =
+            if (count == 1) "1 song" else "$count songs"
     }
 
     fun isPlaying(): Boolean = mediaPlayer?.isPlaying == true
@@ -1307,9 +1315,7 @@ class MainActivity : AppCompatActivity() {
 // search func for songs list
 
 // fix favorite songs list
-// improving the design
 // song options favoritise the song
-// maybe changing favorite list to use the songs screen
 // share icon working on the player screen
 
 // Full width/expand width bugging when cover customizer open

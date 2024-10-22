@@ -19,7 +19,7 @@ class SongOptionsHandler(
     private val activity: AppCompatActivity,
     private val songOptionsFooter: LinearLayout,
     private val songListView: ListView,
-    private val playerOptionsManager: PlayerOptionsManager
+    private val playerOptionsManager: PlayerOptionsManager?
 ) {
     private var selectedPosition: Int = -1
 
@@ -193,7 +193,7 @@ class SongOptionsHandler(
 
     private fun showDeleteConfirmationDialog() {
         (activity as? MainActivity)?.let {
-            playerOptionsManager.showDeleteConfirmationDialog()
+            playerOptionsManager?.showDeleteConfirmationDialog()
             hideFooter()
         }
     }
