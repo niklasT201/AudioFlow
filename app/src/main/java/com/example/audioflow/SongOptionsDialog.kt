@@ -64,8 +64,15 @@ class SongOptionsDialog(private val context: Context) {
         }
 
         setupOptionItem(dialogView, R.id.item_add_to_favorites) {
-            onAddToFavorites(song)
-            Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()
+            val favoriteManager = FavoriteManager(context)
+            if (favoriteManager.isFavorite(song)) {
+                favoriteManager.removeFavorite(song)
+                Toast.makeText(context, "Removed from favorites", Toast.LENGTH_SHORT).show()
+            } else {
+                favoriteManager.addFavorite(song)
+                Toast.makeText(context, "Added to favorites", Toast.LENGTH_SHORT).show()
+            }
+
             dialog.dismiss()
         }
 

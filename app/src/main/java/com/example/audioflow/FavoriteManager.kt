@@ -98,7 +98,9 @@ class FavoritesActivity : AppCompatActivity() {
                 val selectedSong = favorites[position]
                 val intent = Intent(this, MainActivity::class.java)
                 intent.putExtra("PLAY_SONG", selectedSong.file.absolutePath)
+                intent.putExtra("FROM_FAVORITES", true)
                 startActivity(intent)
+                finish() // Add this to close the FavoritesActivity
             }
         }
     }

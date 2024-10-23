@@ -228,6 +228,46 @@ class MainActivity : AppCompatActivity() {
         } else {
             requestPermission()
         }
+
+        intent.getStringExtra("PLAY_SONG")?.let { songPath ->
+            val songFile = File(songPath)
+            if (songFile.exists()) {
+                val song = audioMetadataRetriever.getSongsInFolder(songFile.parentFile).find { it.file == songFile }
+                if (song != null) {
+                    currentPlaylist = listOf(song)
+                    currentSongIndex = 0
+                    playSong(0)
+                    // Only update folder list if not coming from favorites
+                    if (!intent.getBooleanExtra("FROM_FAVORITES", false)) {
+                        updateFolderList()
+                    }
+                    showScreen(playerScreen)
+                } else {
+                    Toast.makeText(this, "Error loading song", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(this, "Song file not found", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        if (intent.getBooleanExtra("FROM_FAVORITES", false)) {
+            handleFavoritesPlaylist()
+        }
+    }
+
+    private fun handleFavoritesPlaylist() {
+        if (intent.getBooleanExtra("FROM_FAVORITES", false)) {
+            val favorites = favoriteManager.getFavorites().mapNotNull { path ->
+                val file = File(path)
+                if (file.exists()) {
+                    audioMetadataRetriever.getSongsInFolder(file.parentFile).find { it.file == file }
+                } else {
+                    null
+                }
+            }
+            currentPlaylist = favorites
+            currentSongIndex = currentPlaylist.indexOfFirst { it.file.absolutePath == intent.getStringExtra("PLAY_SONG") }
+        }
     }
 
     private fun initializeViews() {
@@ -260,6 +300,12 @@ class MainActivity : AppCompatActivity() {
         playbackSpeedSeekBar = findViewById(R.id.playback_speed_seekbar)
         playbackSpeedText = findViewById(R.id.playback_speed_text)
         playerSettingsButton = findViewById(R.id.btn_player_settings)
+
+        findViewById<ImageButton>(R.id.btn_share_song).setOnClickListener {
+            currentPlaylist.getOrNull(currentSongIndex)?.let { song ->
+                shareSong(song)
+            }
+        }
     }
 
     private fun checkPermission(): Boolean {
@@ -289,6 +335,25 @@ class MainActivity : AppCompatActivity() {
             } else {
                 // Permission denied, handle this case (e.g., show a message to the user)
             }
+        }
+    }
+
+    private fun shareSong(song: SongItem) {
+        try {
+            val uri = FileProvider.getUriForFile(
+                this,
+                "${packageName}.fileprovider",
+                song.file
+            )
+            val shareIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                type = "audio/*"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(shareIntent, "Share ${song.title}"))
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error sharing: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -372,6 +437,7 @@ class MainActivity : AppCompatActivity() {
         try {
             val playerContainer = findViewById<View>(R.id.player_view_container)
             playerContainer.visibility = View.VISIBLE
+            updateFavoriteButton()
 
             // Delay the background update slightly to ensure views are properly laid out
             playerContainer.post {
@@ -412,6 +478,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateFavoriteCount() {
         val count = favoriteManager.getFavorites().size
+        val favoritesContainer = findViewById<View>(R.id.favorites_container)
+        favoritesContainer.visibility = if (count == 0) View.GONE else View.VISIBLE
         findViewById<TextView>(R.id.favorite_count).text =
             if (count == 1) "1 song" else "$count songs"
     }
@@ -773,8 +841,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateFolderList() {
-        folderItems.forEach { it.isCurrentFolder = it.folder.absolutePath == currentFolderPath }
-        (homeScreen.findViewById<ListView>(R.id.folder_list_view).adapter as ArrayAdapter<*>).notifyDataSetChanged()
+        try {
+            val folderListView = homeScreen.findViewById<ListView>(R.id.folder_list_view)
+            if (folderListView != null && folderListView.adapter != null) {
+                folderItems.forEach { it.isCurrentFolder = it.folder.absolutePath == currentFolderPath }
+                (folderListView.adapter as ArrayAdapter<*>).notifyDataSetChanged()
+            }
+        } catch (e: Exception) {
+            // Log the error but don't crash the app
+            Log.e("AudioFlow", "Error updating folder list: ${e.message}")
+        }
     }
 
 
@@ -937,6 +1013,10 @@ class MainActivity : AppCompatActivity() {
     fun playSong(position: Int, showPlayerScreen: Boolean = true) {
         if (position < 0 || position >= currentPlaylist.size) return
 
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+
         currentSongIndex = position
         val song = currentPlaylist[position]
 
@@ -978,8 +1058,10 @@ class MainActivity : AppCompatActivity() {
             updateMiniPlayerProgress(0f)
 
             // Current Folder Name Showing
-            currentFolderPath = song.file.parent
-            updateFolderList()
+            if (!intent.getBooleanExtra("FROM_FAVORITES", false)) {
+                currentFolderPath = song.file.parent
+                updateFolderList()
+            }
 
             // Refresh the song list view to show the current song icon
             refreshSongList()
@@ -1315,8 +1397,6 @@ class MainActivity : AppCompatActivity() {
 // search func for songs list
 
 // fix favorite songs list
-// song options favoritise the song
-// share icon working on the player screen
 
 // Full width/expand width bugging when cover customizer open
 // rotate feature fixen (hopefully)
