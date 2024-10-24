@@ -215,8 +215,10 @@ class MainActivity : AppCompatActivity() {
 
 
         findViewById<View>(R.id.favorites_container).setOnClickListener {
-            val intent = Intent(this, FavoritesActivity::class.java)
-            startActivity(intent)
+            if (favoriteManager.getFavorites().isNotEmpty()) {
+                val intent = Intent(this, FavoritesActivity::class.java)
+                startActivity(intent)
+            }
         }
 
         updateFavoriteCount()
@@ -1353,11 +1355,27 @@ class MainActivity : AppCompatActivity() {
                 songOptionsHandler.hideFooter()
             }
             contentFrame.getChildAt(0) == songsScreen -> {
-                showScreen(homeScreen)
-                songOptionsFooter.isVisible=false}
+                if (intent.getBooleanExtra("FROM_FAVORITES", false)) {
+                    // If we came from favorites, go back to FavoritesActivity
+                    val intent = Intent(this, FavoritesActivity::class.java)
+                    startActivity(intent)
+                    finish()
+                } else {
+                    showScreen(homeScreen)
+                    songOptionsFooter.isVisible = false
+                }
+            }
             contentFrame.getChildAt(0) == playerScreen -> {
-                showScreen(songsScreen)
-                hidePlayerScreen()}
+                if (intent.getBooleanExtra("FROM_FAVORITES", false)) {
+                    // If we came from favorites, go back to FavoritesActivity
+                    val intent = Intent(this, FavoritesActivity::class.java)
+                    startActivity(intent)
+                    finish()
+                } else {
+                    showScreen(songsScreen)
+                    hidePlayerScreen()
+                }
+            }
             contentFrame.getChildAt(0) == settingsScreen -> showScreen(homeScreen)
             contentFrame.getChildAt(0) == aboutScreen -> showScreen(settingsScreen)
             else -> super.onBackPressed()
@@ -1379,6 +1397,7 @@ class MainActivity : AppCompatActivity() {
             bound = false
         }
         settingsManager.cleanup()
+        favoriteManager.removeFavoriteChangeListener { updateFavoriteCount() }
         coverStyleCustomizer?.cleanup()
         mediaPlayer?.release()
         lastPlayedSong?.let { saveLastPlayedSong(it) }
@@ -1397,6 +1416,8 @@ class MainActivity : AppCompatActivity() {
 // search func for songs list
 
 // fix favorite songs list
+// player screen showing empty list
+// no songs but fav container visible
 
 // Full width/expand width bugging when cover customizer open
 // rotate feature fixen (hopefully)

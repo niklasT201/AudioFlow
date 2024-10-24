@@ -16,17 +16,32 @@ import java.io.File
 
 class FavoriteManager(private val context: Context) {
     private val sharedPreferences = context.getSharedPreferences("Favorites", Context.MODE_PRIVATE)
+    private var listeners = mutableListOf<() -> Unit>()
+
+    fun addFavoriteChangeListener(listener: () -> Unit) {
+        listeners.add(listener)
+    }
+
+    fun removeFavoriteChangeListener(listener: () -> Unit) {
+        listeners.remove(listener)
+    }
+
+    private fun notifyFavoriteChanged() {
+        listeners.forEach { it.invoke() }
+    }
 
     fun addFavorite(song: SongItem) {
         val favorites = getFavorites().toMutableSet()
         favorites.add(song.file.absolutePath)
         sharedPreferences.edit().putStringSet("favorites", favorites).apply()
+        notifyFavoriteChanged()
     }
 
     fun removeFavorite(song: SongItem) {
         val favorites = getFavorites().toMutableSet()
         favorites.remove(song.file.absolutePath)
         sharedPreferences.edit().putStringSet("favorites", favorites).apply()
+        notifyFavoriteChanged()
     }
 
     fun isFavorite(song: SongItem): Boolean {
@@ -43,6 +58,9 @@ class FavoritesActivity : AppCompatActivity() {
     private lateinit var songListView: ListView
     private lateinit var audioMetadataRetriever: AudioMetadataRetriever
     private lateinit var songOptionsHandler: SongOptionsHandler
+    private val favoriteChangeListener: () -> Unit = {
+        updateFavoritesList()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +86,7 @@ class FavoritesActivity : AppCompatActivity() {
             playerOptionsManager = null
         )
 
+        favoriteManager.addFavoriteChangeListener(favoriteChangeListener)
         updateFavoritesList()
     }
 
