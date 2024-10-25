@@ -82,11 +82,13 @@ class SongOptionsDialog(private val context: Context) {
         }
 
         setupOptionItem(dialogView, R.id.item_show_album) {
+            Toast.makeText(context, "This feature is not ready and needs a bit more time for development", Toast.LENGTH_LONG).show()
             onShowAlbum(song.album ?: "Unknown Album")
             dialog.dismiss()
         }
 
         setupOptionItem(dialogView, R.id.item_show_artist) {
+            Toast.makeText(context, "This feature is not ready and needs a bit more time for development", Toast.LENGTH_LONG).show()
             onShowArtist(song.artist ?: "Unknown Artist")
             dialog.dismiss()
         }

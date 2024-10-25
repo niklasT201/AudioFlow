@@ -118,8 +118,8 @@ class FavoritesActivity : AppCompatActivity() {
                 val intent = Intent(this, MainActivity::class.java)
                 intent.putExtra("PLAY_SONG", selectedSong.file.absolutePath)
                 intent.putExtra("FROM_FAVORITES", true)
+                intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 startActivity(intent)
-                finish() // Add this to close the FavoritesActivity
             }
         }
     }
@@ -146,5 +146,13 @@ class FavoritesActivity : AppCompatActivity() {
     private fun showSongOptionsDialog(song: SongItem, position: Int) {
         // Implement your song options dialog here
         // You can reuse the logic from MainActivity or create a simplified version
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        val intent = Intent(this, MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        startActivity(intent)
+        finish()
     }
 }

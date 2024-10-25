@@ -215,10 +215,12 @@ class MainActivity : AppCompatActivity() {
 
 
         findViewById<View>(R.id.favorites_container).setOnClickListener {
-            if (favoriteManager.getFavorites().isNotEmpty()) {
-                val intent = Intent(this, FavoritesActivity::class.java)
-                startActivity(intent)
-            }
+            //if (favoriteManager.getFavorites().isNotEmpty()) {
+            //    val intent = Intent(this, FavoritesActivity::class.java)
+            //    startActivity(intent)
+            //}
+
+            Toast.makeText(this, "This Feature is not ready and needs a bit more Time for Development", Toast.LENGTH_LONG).show()
         }
 
         updateFavoriteCount()
@@ -480,6 +482,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateFavoriteCount() {
         val count = favoriteManager.getFavorites().size
+        Log.d("FavoriteManager", "Updating favorite count: $count")
         val favoritesContainer = findViewById<View>(R.id.favorites_container)
         favoritesContainer.visibility = if (count == 0) View.GONE else View.VISIBLE
         findViewById<TextView>(R.id.favorite_count).text =
@@ -1166,15 +1169,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateSeekBar() {
-        mediaPlayer?.let { player ->
-            seekBar.progress = player.currentPosition
-            currentTimeTextView.text = formatTime(player.currentPosition)
+        try {
+            mediaPlayer?.let { player ->
+                if (player.isPlaying) {  // Only update if the player is actually playing
+                    seekBar.progress = player.currentPosition
+                    currentTimeTextView.text = formatTime(player.currentPosition)
 
-            // Update mini player progress
-            val progress = player.currentPosition.toFloat() / player.duration.toFloat()
-            updateMiniPlayerProgress(progress)
+                    // Update mini player progress
+                    val progress = player.currentPosition.toFloat() / player.duration.toFloat()
+                    updateMiniPlayerProgress(progress)
 
-            seekBar.postDelayed({ updateSeekBar() }, 1000)
+                    seekBar.postDelayed({ updateSeekBar() }, 1000)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error updating seekbar: ${e.message}")
         }
     }
 
@@ -1350,35 +1359,51 @@ class MainActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         when {
-            playerOptionsManager.isOverlayVisible() -> playerOptionsManager.hideOverlay()
+            playerOptionsManager.isOverlayVisible() -> {
+                playerOptionsManager.hideOverlay()
+            }
             songOptionsFooter.isVisible -> {
                 songOptionsHandler.hideFooter()
             }
-            contentFrame.getChildAt(0) == songsScreen -> {
-                if (intent.getBooleanExtra("FROM_FAVORITES", false)) {
-                    // If we came from favorites, go back to FavoritesActivity
-                    val intent = Intent(this, FavoritesActivity::class.java)
-                    startActivity(intent)
-                    finish()
-                } else {
-                    showScreen(homeScreen)
-                    songOptionsFooter.isVisible = false
-                }
-            }
             contentFrame.getChildAt(0) == playerScreen -> {
                 if (intent.getBooleanExtra("FROM_FAVORITES", false)) {
-                    // If we came from favorites, go back to FavoritesActivity
+                    // Go back to FavoritesActivity
+                    showScreen(songsScreen)
+                    hidePlayerScreen()
                     val intent = Intent(this, FavoritesActivity::class.java)
                     startActivity(intent)
                     finish()
                 } else {
+                    // Go back to songs screen
                     showScreen(songsScreen)
                     hidePlayerScreen()
                 }
             }
-            contentFrame.getChildAt(0) == settingsScreen -> showScreen(homeScreen)
-            contentFrame.getChildAt(0) == aboutScreen -> showScreen(settingsScreen)
-            else -> super.onBackPressed()
+            contentFrame.getChildAt(0) == songsScreen -> {
+                if (intent.getBooleanExtra("FROM_FAVORITES", false)) {
+                    // Go back to home screen when in favorites
+                    showScreen(homeScreen)
+                    songOptionsFooter.isVisible = false
+                    finish()
+                } else {
+                    // Go back to home screen
+                    showScreen(homeScreen)
+                    songOptionsFooter.isVisible = false
+                }
+            }
+            contentFrame.getChildAt(0) == settingsScreen -> {
+                showScreen(homeScreen)
+            }
+            contentFrame.getChildAt(0) == aboutScreen -> {
+                showScreen(settingsScreen)
+            }
+            contentFrame.getChildAt(0) == homeScreen -> {
+                // If we're on the home screen, exit the app
+                super.onBackPressed()
+            }
+            else -> {
+                super.onBackPressed()
+            }
         }
     }
 

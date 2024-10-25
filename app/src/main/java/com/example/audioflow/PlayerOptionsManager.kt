@@ -124,6 +124,7 @@ class PlayerOptionsManager(
 
         // Customize player option
         activity.findViewById<LinearLayout>(R.id.item_customize_player).setOnClickListener {
+            Toast.makeText(activity, "This feature is still in Alpha. Things could work not as intended", Toast.LENGTH_LONG).show()
             (activity as? Activity)?.showCoverStyleCustomization()
         }
 
